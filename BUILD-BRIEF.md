@@ -1,5 +1,7 @@
 # SignOff build brief
 
+> Two changes to this brief are proposed and not yet agreed: leading with the South African supplier as first customer ([ADR 0001](docs/decisions/0001-supplier-anchored-reframe.md)) and making the two-signature fallback the core design ([ADR 0002](docs/decisions/0002-plain-multisign-core.md)). Until they are accepted, this brief stands as written.
+
 ## Problem and user
 
 A Lusaka solar distributor needs to pay a South African supplier while checking invoices and changes to payout details. Rubicon, a South African solar wholesaler, warns customers about messages claiming its banking details have changed. The Solar Guys in Lusaka is a prospect for discovery, not a confirmed customer. Validate the process and cost with a finance lead before claiming adoption.
