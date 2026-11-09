@@ -4,7 +4,7 @@ SignOff is a proposed accounts payable assistant for a Lusaka solar distributor 
 
 **Status as of 9 November 2026:** planning and research. No application, validated payment, customer validation, partner integration, or product mockups have been verified. The names and examples in the demo are fictional. See [BUILD-BRIEF.md](BUILD-BRIEF.md) for the current agreed plan and [research](docs/RESEARCH.md) for sources.
 
-Start with the build brief, then review the [historical Claude plan](docs/CLAUDE-PLAN.md) and [evidence](docs/CLAUDE-EVIDENCE.md). Historical files contain earlier hypotheses and proposed directions. The build brief takes precedence where they differ.
+Start with the build brief, then review the [historical Claude plan](docs/CLAUDE-PLAN.md). Historical files contain earlier hypotheses and proposed directions. The build brief takes precedence where they differ.
 
 ## Competition requirements
 
