@@ -1,5 +1,7 @@
 # Work issues
 
+**Gate 0 status (10 November 2026):** F1 to F5 are in review as pull requests #12 to #16, stacked in that order. CI passed on GitHub for F2 to F5 (T-040 to T-043). Gate 0 closes when those pull requests are merged (D-038). Two acceptance points need the repository owner: F2's required checks before merge, and F3's GitHub secret scanning (S-005). The phase report is in [logs/PHASE-REPORTS.md](logs/PHASE-REPORTS.md).
+
 The build sliced into small, reviewable issues. Each maps to a requirement in [PRD.md](PRD.md) and a gate in [ENGINEERING.md](ENGINEERING.md#delivery-gates). Rule R-16 in [RULES.md](RULES.md): no work starts without an issue here.
 
 **How to use this file**

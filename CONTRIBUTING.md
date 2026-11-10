@@ -25,7 +25,7 @@ Read [README.md](README.md), [BUILD-BRIEF.md](BUILD-BRIEF.md), [docs/RULES.md](d
 - Record smaller decisions in [docs/logs/DECISION-JOURNAL.md](docs/logs/DECISION-JOURNAL.md); bigger ones as a decision record from [the template](docs/decisions/TEMPLATE.md).
 - Record evidence-bearing test runs in [docs/logs/TEST-LOG.md](docs/logs/TEST-LOG.md).
 - Record security findings and changes in [docs/logs/SECURITY-LOG.md](docs/logs/SECURITY-LOG.md).
-- At the end of each gate, run the phase-close checklist in [docs/RULES.md](docs/RULES.md#phase-close-checklist-rule-r-23).
+- At the end of each gate, run the phase-close checklist in [docs/RULES.md](docs/RULES.md#phase-close-checklist-rule-r-23) and write the phase report (R-24) in [docs/logs/PHASE-REPORTS.md](docs/logs/PHASE-REPORTS.md).
 
 ## Before asking for review
 
