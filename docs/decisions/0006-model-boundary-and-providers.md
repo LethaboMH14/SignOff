@@ -42,6 +42,6 @@
 
 ## Evidence required
 
-- A live evaluation with the chosen models, recorded in the test log with sample sizes, intervals and false approvals (T-088, not yet run).
+- A live evaluation with the chosen models, recorded in the test log with sample sizes, intervals and false approvals. Three providers ran on one sample each (T-092 to T-094). The pipeline held most invoices, so no accuracy claim is made.
 - The operator's written confirmation of zero-retention terms for each provider before any real invoice (S-032).
 - A re-check of each model identifier against the provider's public list immediately before a live run.
