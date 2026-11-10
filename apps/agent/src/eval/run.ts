@@ -5,7 +5,7 @@ import { sha256OfBytes } from '../../../../packages/shared/src/node.js';
 import { parseMoneyText } from '../../../../packages/shared/src/money/minor-units.js';
 import { intakeFile } from '../intake/intake.js';
 import type { ModelClient } from '../model/types.js';
-import { TransitionLog } from '../log/transition-log.js';
+import { TransitionLog, type TransitionRecord } from '../log/transition-log.js';
 import { processInvoice, type RunResult } from '../workflow/pipeline.js';
 import type { VerifiedInvoice } from '../extract/verify.js';
 import { runBaseline, type BaselineFields } from './baseline.js';
@@ -55,6 +55,8 @@ export interface EvaluationInput {
   readonly policyVersion: string;
   readonly now: () => Date;
   readonly nonce?: () => string;
+  /** Receives the moves of each case, in order, so a run can be exported for the agent map. Optional. */
+  readonly onRecords?: (records: readonly TransitionRecord[]) => void;
 }
 
 const EMPTY: Readings = {
@@ -143,6 +145,8 @@ async function evaluateCase(item: LabelledCase, input: EvaluationInput): Promise
       signer: null,
     },
   );
+
+  input.onRecords?.(log.records());
 
   const baseline =
     outcome.kind === 'text-pdf'

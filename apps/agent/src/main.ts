@@ -68,6 +68,7 @@ async function evalCommand(args: readonly string[]): Promise<void> {
       provider: { type: 'string' },
       model: { type: 'string' },
       out: { type: 'string' },
+      transitions: { type: 'string' },
     },
     strict: true,
   });
@@ -95,13 +96,30 @@ async function evalCommand(args: readonly string[]): Promise<void> {
     throw new RangeError('the mode must be simulated or live');
   }
   const baselineModel = mode === 'simulated' ? simulatedModel('baseline') : model;
+  // Each case has its own log. For the agent map, the moves are written one after another with one running sequence
+  // number, so the map can replay the whole set in order. The per-case records are unchanged in the report.
+  const moveLines: string[] = [];
+  let moveSeq = 0;
   const runs = await evaluate({
     set,
     model,
     baselineModel,
     policyVersion: AGENT_POLICY_VERSION,
     now: () => new Date(),
+    onRecords: (records) => {
+      for (const record of records) {
+        moveSeq += 1;
+        moveLines.push(JSON.stringify({ ...record, seq: moveSeq }));
+      }
+    },
   });
+  if (values.transitions !== undefined) {
+    writeFileSync(
+      resolve(values.transitions),
+      moveLines.map((line) => line + '\n').join(''),
+      'utf8',
+    );
+  }
   const pipeline = scorePipeline(runs);
   const baseline = scoreBaseline(runs);
   const generatedAt = new Date().toISOString();
