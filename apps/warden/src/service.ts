@@ -53,6 +53,15 @@ import {
   paymentFor,
   type PaymentTerms,
 } from './payment.js';
+import {
+  overviewOf,
+  proposalsOf,
+  proposalViewOf,
+  suppliersOf,
+  type OpsOverview,
+  type OpsProposal,
+  type OpsSupplier,
+} from './ops-view.js';
 import { isUnresolved, WardenState, type AttemptState, type LimitsState } from './state.js';
 
 /** Errors that map to an HTTP status. Their messages are safe to show the caller. */
@@ -297,6 +306,23 @@ export class WardenService {
 
   currentLimits(): LimitsState {
     return this.state.limits;
+  }
+
+  /** The operator console's reads. Each one returns a view built from the state, so reading changes nothing. */
+  opsOverview(): OpsOverview {
+    return overviewOf(this.state, this.deps.now());
+  }
+
+  opsProposals(): OpsProposal[] {
+    return proposalsOf(this.state);
+  }
+
+  opsProposal(attemptId: string): OpsProposal | undefined {
+    return proposalViewOf(this.state, attemptId);
+  }
+
+  opsSuppliers(): OpsSupplier[] {
+    return suppliersOf(this.state);
   }
 
   /** Decides one proposal. An ALLOW reserves the obligation and returns the Warden-signed transaction. */

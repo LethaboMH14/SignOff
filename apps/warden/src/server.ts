@@ -48,7 +48,49 @@ const SUPPLIER_CHANGES_PATH = /^\/v1\/suppliers\/(SUP-[A-Z0-9]{4,16})\/changes$/
 const SUPPLIER_CHANGE_STEP_PATH =
   /^\/v1\/suppliers\/(SUP-[A-Z0-9]{4,16})\/changes\/([0-9a-f-]{36})\/(confirm|approve)$/;
 
+const OPS_PROPOSAL_PATH = /^\/v1\/ops\/proposals\/([0-9a-f-]{36})$/;
+
+/**
+ * The operator read routes. Each sits behind the operator role, and each returns a view built from the state, so a
+ * read cannot change anything. A path not listed here is not a route.
+ */
+function readRouteFor(service: WardenService, path: string): Matched | null {
+  if (path === '/v1/ops/overview') {
+    return { role: 'operator', handler: () => Promise.resolve(service.opsOverview()) };
+  }
+  if (path === '/v1/ops/proposals') {
+    return {
+      role: 'operator',
+      handler: () => Promise.resolve({ proposals: service.opsProposals() }),
+    };
+  }
+  const proposal = OPS_PROPOSAL_PATH.exec(path);
+  if (proposal !== null) {
+    const attemptId = proposal[1] ?? '';
+    return {
+      role: 'operator',
+      handler: () => {
+        const view = service.opsProposal(attemptId);
+        if (view === undefined) {
+          throw new WardenError(404, 'no such proposal');
+        }
+        return Promise.resolve(view);
+      },
+    };
+  }
+  if (path === '/v1/ops/suppliers') {
+    return {
+      role: 'operator',
+      handler: () => Promise.resolve({ suppliers: service.opsSuppliers() }),
+    };
+  }
+  return null;
+}
+
 function routeFor(service: WardenService, method: string, path: string): Matched | null {
+  if (method === 'GET') {
+    return readRouteFor(service, path);
+  }
   if (method !== 'POST') {
     return null;
   }
@@ -194,6 +236,8 @@ function send(response: ServerResponse, status: number, body: unknown): void {
   response.writeHead(status, {
     'content-type': 'application/json',
     'content-length': Buffer.byteLength(text),
+    'cache-control': 'no-store',
+    'x-content-type-options': 'nosniff',
   });
   response.end(text);
 }

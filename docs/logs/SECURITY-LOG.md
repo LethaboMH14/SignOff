@@ -44,6 +44,8 @@ Status: `Open` (no control yet), `Designed` (in documents), `Implemented` (in co
 | T-32 | The Warden holds the callers' request secrets | Warden keys file | Symmetric HMAC needs the verifier's copy; the Warden's signing key is held only by the Warden process; the agent holds only its own secret | Documented; not tested | Accepted limitation, S-029 |
 | T-33 | Invoice text kept or used by a model provider | Model API | Real invoices refused unless the operator confirms zero-retention terms; free-tier models refused for real invoices; the evaluation uses fictional invoices only | Policy tests (TEST-LOG T-085) | Partly implemented: the provider's terms are the operator's to check (S-032) |
 | T-34 | A model reply steers a payment (payee, signer or approval) | Model reply | The reply must match a strict schema or it is held; the destination is never taken from the model or the document; the Warden decides; an unknown outcome goes to reconciliation | C2 and C7 tests (TEST-LOG T-081, T-082) | Implemented |
+| T-35 | Operator read routes expose signing material, invoice identifiers or public keys | Operator read routes (`GET /v1/ops/*`) | Operator role only, with signed requests. Each view is built field by field from an allowlist: no signed blobs, transaction fields, scoped key, invoice fingerprint, issuer or public key. Reads write no event. Every JSON response is `no-store` and `nosniff` | T-089 (forbidden-field, event-log and role tests) | Verified |
+
 
 ## 2. Check schedule
 
@@ -99,5 +101,7 @@ Findings, incidents and security-relevant changes. Newest at the bottom.
 | S-035 | 2026-11-10 | Runtime | Node 24 lacks `Uint8Array.prototype.toHex`, which pdf.js calls. The parser child adds it when it is missing, and nothing else does | T-03 | Scoped to the child; extraction tests pass (TEST-LOG T-079) | Closed |
 | S-036 | 2026-11-10 | Design limit | A killed agent run leaves its `run.lock` folder, which blocks the next run until a person removes it (as for the Warden, S-028) | none | Documented in the log module; no automatic recovery | Open |
 | S-037 | 2026-11-10 | Business risk | South African space-grouped and European amount layouts are held by design. Real invoices in those layouts would be held too: a measured over-blocking risk for the target customer | none | Measured on two labelled cases in simulated mode; D-070 | Open |
+| S-038 | 2026-11-10 | Change | Operator read routes added to the Warden for the console (D1W): overview, proposals and suppliers, read-only, operator role only, allowlisted views | T-35 | Tests in TEST-LOG T-089; review by the other team member pending | Closed in code, pending review |
+
 
 **Types:** `Design review`, `Finding`, `Incident`, `Dependency`, `Key rotation`, `Change`. An incident involving a real key or personal data also follows [SECURITY.md](../../SECURITY.md).
