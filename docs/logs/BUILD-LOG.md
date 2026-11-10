@@ -26,6 +26,11 @@ One entry per working session (rule R-19 in [RULES.md](../RULES.md)), newest fir
 
 ---
 
+### 2026-11-10 — Sibusiso with Claude (Haiku 5.5) — Gate C issues created and linked
+- Done: created issues #37 to #43 for C1 to C7, titled as in docs/ISSUES.md. Each carries its acceptance criteria, dependencies, status, evidence and branch, with the live runs marked UNVERIFIED where they have not been run. Linked them in the GH column of docs/ISSUES.md.
+- Changed decisions: none.
+- Evidence: the issue list (gh issue list for the repository).
+- Problems / blockers: the branch is local and not pushed, so the branch links in the issues do not resolve on GitHub until the push is approved. No pull request exists yet.
 ### 2026-11-10 — Sibusiso with Claude (Haiku 5.5) — Gate C: C1 to C7 agent reliability
 - Done: built the agent workspace (`apps/agent`) and the Warden contract package (`packages/warden-api`). Intake (C1), the injection screen (C3), extraction with quote and amount verification (C2), the labelled set of 30 fictional invoices (C4), the evaluation harness with a single-prompt baseline (C5), the decision log and audit export (C6), and the fixed workflow with a three-call budget (C7). The Warden contract, the shared evidence schemas and canonical hashing moved to packages, with re-export shims, and the Gate B tests pass unchanged.
 - Changed decisions: D-061 to D-071; [ADR 0006](../decisions/0006-model-boundary-and-providers.md) (Proposed).

@@ -51,13 +51,13 @@ The build sliced into small, reviewable issues. Each maps to a requirement in [P
 
 | ID | Title | Acceptance criteria | Depends | Size | Owner | GH | Status |
 |---|---|---|---|---|---|---|---|
-| C1 | Invoice intake | Watched folder or inbox triggers the workflow; file hashed; text PDF only; others held | F4 | S | | | Review (T-079) |
-| C2 | Extraction with source quotes | Strict structured output; each field quoted; code verifies quote and re-parses amount; abstains when unclear | C1 | M | | | Review (T-081) |
-| C3 | Prompt-injection handling | Invoice text passed as data; hidden-instruction fixtures cause holds, never actions | C2 | S | | | Review (T-080) |
-| C4 | Labelled test set | At least 30 invoices: clean, messy, injected, missing fields, forged payee; labels committed | C2 | M | | | Review (T-078) |
-| C5 | Evaluation and baseline | False approvals, false holds, field accuracy, sample size; compared with a single-prompt baseline | C4 | M | | | Review (T-084; live T-088 UNVERIFIED) |
-| C6 | Decision log and audit export | Every state transition with reason, actor, policy version, evidence; export per payment | B1 | M | | | Review (T-083) |
-| C7 | Workflow wiring | Fixed sequence: intake, extract, match, Warden, submit, reconcile; at most three model calls | C2, B4 | M | | | Review (T-082; live T-087 UNVERIFIED) |
+| C1 | Invoice intake | Watched folder or inbox triggers the workflow; file hashed; text PDF only; others held | F4 | S | | [#37](https://github.com/LethaboMH14/SignOff/issues/37) | Review (T-079) |
+| C2 | Extraction with source quotes | Strict structured output; each field quoted; code verifies quote and re-parses amount; abstains when unclear | C1 | M | | [#38](https://github.com/LethaboMH14/SignOff/issues/38) | Review (T-081) |
+| C3 | Prompt-injection handling | Invoice text passed as data; hidden-instruction fixtures cause holds, never actions | C2 | S | | [#39](https://github.com/LethaboMH14/SignOff/issues/39) | Review (T-080) |
+| C4 | Labelled test set | At least 30 invoices: clean, messy, injected, missing fields, forged payee; labels committed | C2 | M | | [#40](https://github.com/LethaboMH14/SignOff/issues/40) | Review (T-078) |
+| C5 | Evaluation and baseline | False approvals, false holds, field accuracy, sample size; compared with a single-prompt baseline | C4 | M | | [#41](https://github.com/LethaboMH14/SignOff/issues/41) | Review (T-084; live T-088 UNVERIFIED) |
+| C6 | Decision log and audit export | Every state transition with reason, actor, policy version, evidence; export per payment | B1 | M | | [#42](https://github.com/LethaboMH14/SignOff/issues/42) | Review (T-083) |
+| C7 | Workflow wiring | Fixed sequence: intake, extract, match, Warden, submit, reconcile; at most three model calls | C2, B4 | M | | [#43](https://github.com/LethaboMH14/SignOff/issues/43) | Review (T-082; live T-087 UNVERIFIED) |
 
 ## Gate D: operations and console
 
