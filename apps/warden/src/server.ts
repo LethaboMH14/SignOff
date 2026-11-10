@@ -109,6 +109,25 @@ function routeFor(service: WardenService, method: string, path: string): Matched
       },
     };
   }
+  if (path === '/v1/control/arm' || path === '/v1/control/disarm') {
+    const armed = path === '/v1/control/arm';
+    return {
+      role: 'operator',
+      handler: async (_body, actor) => {
+        await service.setArmed(armed, actor);
+        return { armed };
+      },
+    };
+  }
+  if (path === '/v1/control/heartbeat') {
+    return {
+      role: 'operator',
+      handler: async () => {
+        await service.heartbeat();
+        return { ok: true };
+      },
+    };
+  }
   if (path === '/v1/control/pause' || path === '/v1/control/resume') {
     const paused = path.endsWith('pause');
     return {

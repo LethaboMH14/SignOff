@@ -150,3 +150,12 @@ One entry per working session (rule R-19 in [RULES.md](../RULES.md)), newest fir
 - Changed decisions: supplier-led positioning and plain multi-signing proposed.
 - Evidence: desk research only.
 - Next: team review of the reframe.
+
+### 2026-11-11 — Sibusiso with Claude (Haiku 5.5) — S3 armed-mode watchdog, server side
+
+- Done: an armed Warden pauses itself when no operator heartbeat arrives within 30 seconds (a proposed setting). A heartbeat keeps it running and never resumes it. Arm, disarm and heartbeat are operator routes. A restart of an armed Warden starts paused. Branch `feat/S3-watchdog`, stacked on `feat/D3W-second-approver`.
+- Changed decisions: D-081.
+- Evidence: T-101. `npm run check` exit 0 (59 files, 816 tests).
+- Problems / blockers: the 30-second window is a proposed setting for review. The Arduino heartbeat (S1) is not connected, so the hardware path is UNVERIFIED.
+- Next: the payment desk (D1) on the console branch.
+
