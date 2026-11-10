@@ -57,7 +57,11 @@ Each case records the expected result and the actual result code or transaction 
 
 ## Security checks
 
-- Secret scanning and push protection on the repository, plus a local pre-commit check that refuses anything shaped like an XRPL seed (they start with `s`). The Ripple workshop singled out AI tools leaking seeds into public repositories.
+- GitHub secret scanning and push protection, plus a local pre-commit check using tested XRPL seed and private-key patterns (not a naive "starts with s" rule), itself tested against known test values and false positives. The Ripple workshop singled out AI tools leaking seeds into public repositories.
+- Each service reads only its own secret, through its own identity in the secret manager.
+- Logs redact seeds, keys, bank details and personal data; a test checks this.
+- A written, rehearsed key-rotation procedure for every key in [TRUST.md](TRUST.md).
+- No test seeds in public demo logs or recordings.
 - Dependency audit on every pull request; Dependabot enabled.
 - Keys only in a secret manager, never in the repository, logs, model context or ledger memos.
 - Invoice content treated as untrusted input everywhere.
@@ -102,15 +106,36 @@ One command that a judge can run to verify the repository's claims: it provision
 | Checks | GitHub Actions | |
 | Design | Figma for the four mockups | Before any console code |
 
-## Order of work
+## Payment state machine
 
-1. Ninety-minute Testnet check: two-signature RLUSD payment validates; each key alone fails; a payment above the trust line limit fails; a credential can be issued, accepted, checked and deleted; simulate returns the expected result. Record the hashes.
-2. Warden rules with unit tests.
-3. Agent loop on fixture invoices.
-4. Console: payment desk, hold view, limits, receipt.
-5. Attack suite and judge check.
-6. Deployment, video, submission a day early.
-7. *Stretch:* batch payment of several invoices, token escrow until goods are received, Privy agent wallet, wallet-based operator approval. Permission delegation is dropped for the hackathon (Devnet only).
+Every invoice moves through named states, and every transition is recorded with a reason, the actor, the policy version and the evidence used:
+
+`RECEIVED → EXTRACTED → NEEDS_EVIDENCE / REVIEW / HELD → AUTHORIZED → SUBMITTED → VALIDATED → RECONCILED`, or `FAILED`.
+
+- **One idempotency identity per payment:** supplier plus invoice number plus amount. A second attempt with the same identity is refused while the first is unresolved.
+- **Atomic reservation:** Warden reserves the amount against the daily limit before signing and releases it only on reconciliation or expiry.
+- **Bound approval:** Warden's decision covers the exact final transaction fields and the policy version. It signs only those bytes.
+- **Persist before submit:** sequence, transaction hash and expiry ledger are stored before submission.
+- **Reconcile before retry or "paid":** only a validated transaction with the expected delivered amount moves an invoice to `VALIDATED`. A timeout leads to reconciliation, never a blind resubmission.
+- **Fail closed:** if Warden cannot read the ledger, its records or its policy, it refuses.
+
+## Evidence for each test
+
+Every test in the attack suite and the Testnet checks records: the scenario, the expected result, the actual result code or hash, the policy version, the commit, and the date. A test without a recorded result does not count as passed.
+
+## Delivery gates
+
+From the [CFO and fraud research](CFO-AGENTIC-FRAUD-SECURITY-RESEARCH-2026-11-10.md), section 10. Each gate must pass before the next is claimed.
+
+| Gate | Must show |
+|---|---|
+| A. Ledger proof | RLUSD trust lines; signer list as in [TRUST.md](TRUST.md); a validated two-signature payment; every single-key and Agent + Recovery path rejected; recovery path tested; hashes recorded |
+| B. Warden controls | Authenticated proposals, verified payee, three-way match, duplicate lock, limits, pause; no failed hard control ever leads to a signature |
+| C. Reliability and evidence | Real PDF extraction with source spans, labelled test set, single-prompt baseline, decision log |
+| D. Operations and console | Payment desk, changed-payee hold, lowered-limit hold, validated receipt; never "paid" before validation; safe behaviour on timeout |
+| E. Credible pitch | A consenting finance-lead interview; the README status table complete; no savings or partner claims |
+
+After the gates, and only if verified on Testnet: credentials, batch payments, token escrow, a Privy agent wallet, and permission delegation.
 
 ## Keeping claims honest
 
@@ -119,7 +144,7 @@ Every item in the README's "Status of every claim" table moves through four stat
 | State | Evidence required |
 |---|---|
 | Planned | Described in a document |
-| Live on Testnet | A transaction hash or test run linked in the README |
+| Live on Testnet | A transaction hash or test run linked in the README, recorded as in "Evidence for each test" |
 | Simulated | Labelled "simulated" in the console, the README and the video |
 | Validated with customers | A recorded, consenting conversation or written statement |
 

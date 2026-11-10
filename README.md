@@ -55,7 +55,7 @@ flowchart LR
 
 | Guarantee | Enforced by |
 |---|---|
-| No payment with only one signature | **XRP Ledger** |
+| No payment unless signer weights reach the quorum; no single key reaches it | **XRP Ledger**, once the signer list is configured and tested |
 | Payee matches the supplier's verified payout record | Warden |
 | Invoice matches a purchase order and goods-received record | Warden |
 | No duplicate payment | Warden |
@@ -63,7 +63,7 @@ flowchart LR
 | Only a plain RLUSD payment; nothing that changes signers or settings | Warden |
 | Operator pause stops new payments | Warden |
 
-The ledger stops the agent from paying alone, even if the agent is tricked or its key is stolen. The ledger does **not** check payees, invoices or limits; Warden does, as a separately deployed service. Key holders, supplier enrolment, key rotation, recovery and the limits of supplier-signed records are in [docs/TRUST.md](docs/TRUST.md).
+Once configured and tested, the ledger stops the agent from paying alone, even if the agent is tricked or its key is stolen. The full signer matrix, including the recovery key, is in [docs/TRUST.md](docs/TRUST.md#signer-configuration-and-every-signing-path). The ledger does **not** check payees, invoices or limits; Warden does, as a separately deployed service. Key holders, supplier enrolment, key rotation, recovery and the limits of supplier-signed records are in [docs/TRUST.md](docs/TRUST.md).
 
 ## The rules a payment can break
 
@@ -101,9 +101,10 @@ This positioning was accepted by the team on 10 November 2026 ([ADR 0001](docs/d
 | Rand conversion and payout to a supplier's bank | | | Yes | |
 | Bank account verification (AVS) | | | Yes | |
 | Accounting system links (Xero, Sage) | | | Yes | |
-| Permission delegation | Dropped for the hackathon: not live on Testnet | | | |
-| XRPL credential on verified supplier accounts | Proposed (ADR 0004) | Not yet | | |
-| Trust line limit capping the spending balance | Proposed (ADR 0004) | Not yet | | |
+| Signer list: every single key and Agent + Recovery rejected | Yes (ADR 0004 test plan) | Not yet | | |
+| Permission delegation | Out of the hackathon build; status on our Testnet unverified | Not checked | | |
+| XRPL credential on verified supplier accounts (attestation only) | Stretch (ADR 0004 test plan) | Not yet | | |
+| Trust line limit as one exposure layer (not a loss cap) | Yes (ADR 0004 test plan) | Not yet | | |
 | Customer problem, pricing, willingness to pay | | | | No |
 | Savings or fraud prevented | | | | None claimed |
 
@@ -129,6 +130,7 @@ The track requires an autonomous transaction on XRPL Testnet or Devnet, limits e
 | [docs/PROBLEM.md](docs/PROBLEM.md) | Problem statement and sourced evidence with confidence ratings |
 | [docs/SOLUTION.md](docs/SOLUTION.md) | Rules, two-signature design, simpler options considered |
 | [docs/AGENT-RELIABILITY.md](docs/AGENT-RELIABILITY.md) | How hallucination is contained and measured |
+| [docs/CFO-AGENTIC-FRAUD-SECURITY-RESEARCH-2026-11-10.md](docs/CFO-AGENTIC-FRAUD-SECURITY-RESEARCH-2026-11-10.md) | Implementation requirements: CFO controls, fraud threats, tests, delivery gates (research; none implemented) |
 | [docs/TRUST.md](docs/TRUST.md) | Ledger versus Warden guarantees, keys, enrolment, rotation, recovery |
 | [docs/BUSINESS.md](docs/BUSINESS.md) | Customer, savings, revenue, feasibility, competitors, regulation |
 | [docs/ENGINEERING.md](docs/ENGINEERING.md) | Repository layout, review process, tests, security, release checks |
@@ -146,7 +148,8 @@ Where documents differ, the build brief takes precedence.
 - **Regulation is unsettled.** South Africa's cross-border crypto rules are still drafts. The August 2026 draft manual would let only individuals, "at this stage", move crypto assets offshore through authorised providers ([SARB](https://www.resbank.co.za/en/home/publications/publication-detail-pages/media-releases/2026/crypto-assets)). On 21 October 2026 the Minister of Finance said Treasury will take a different approach and publish a revised second draft ([MTBPS speech](https://www.gov.za/news/budget/minister-enoch-godongwana-mtbps-speech)). The buyer in this design sits outside South Africa for that reason. **This is not legal advice and no qualified lawyer has reviewed it.** See [docs/BUSINESS.md](docs/BUSINESS.md#regulation).
 - **A supplier wants rand, not RLUSD.** That depends on a licensed payout partner that has not been contacted.
 - **The RLUSD issuer can freeze or claw back the asset.**
-- **The ledger does not check payees or limits.** If Warden is compromised together with the agent key, the loss is bounded only by the spending account's balance.
+- **The ledger does not check payees or limits.** If Warden is compromised together with the agent key, the loss is bounded only by the spending account's actual balance. A trust line limit does not cap that loss.
+- **Upstream records can be wrong.** A compromised supplier list, purchase order or operator login defeats a perfect agent. See [docs/TRUST.md](docs/TRUST.md#threats-from-upstream-of-the-agent).
 - **A stolen operator credential or recovery key is outside this design's protection.**
 - Nothing here is production software. Testnet only, no real funds.
 

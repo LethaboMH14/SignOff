@@ -72,6 +72,10 @@ Copied from the dashboard.
 - **Participant guide.** Listed on the dashboard as locked.
 - **Track prize.** The historical plan records US$2,500 and an accelerator fast track for this track; not re-verified.
 
+## Claims and evidence
+
+Anything said in the pitch or video is narrative unless it is backed by one of: a commit in this repository, a valid Testnet transaction hash, a recorded test result, or a consenting customer interview. The README's status table is the single place that records which is which.
+
 ## How to present
 
 - Two thirds of the score is product and business. Open with the customer and the cost, not the ledger.

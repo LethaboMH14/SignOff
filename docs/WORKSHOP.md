@@ -1,5 +1,7 @@
 # Ripple Agentic Finance workshop: notes
 
+> **As of 5 November 2026.** These notes record what the presenters said on that date. Later information and corrections are in [Corrections after review](#corrections-after-review-10-november-2026). Nothing here has been checked on Testnet yet.
+
 Notes from the track workshop held online on 5 November 2026 (about 65 minutes), hosted by the W3Node organisers with two presenters from the Ripple side. Written from the meeting's auto-generated transcript, which mishears some product names; names below are corrected where the meaning is clear. The verbatim transcript is kept locally and is not published in this repository.
 
 Track as the team summarises it: **build an AI agent that moves money for a real business, with the XRP Ledger enforcing the rules.**
@@ -15,7 +17,7 @@ Track as the team summarises it: **build an AI agent that moves money for a real
 - Layer 1, settles in 3–5 seconds, fixed fee of about 12 drops (a tiny fraction of a cent), no mining, no smart contracts. Financial features are built into the protocol as "amendments" and called through one API.
 - **Account reserves:** an account needs 1 XRP to exist plus 0.2 XRP for every object it owns (a trust line, a signer list, a credential and so on). Plan funding for every account.
 - **Live on mainnet (so also on Testnet):** multi-purpose tokens (MPTs), token escrow (escrow for issued tokens, not just XRP), **credentials**, permissioned domains, and **batch transactions** (went live about two weeks before the workshop; atomic multi-transaction flows).
-- **Not live yet, Devnet only:** lending protocol, single-asset vault, **permission delegation**, sponsored fees and reserves, smart escrow.
+- **Described as not live yet, Devnet only (as of 5 November; see corrections):** lending protocol, single-asset vault, **permission delegation**, sponsored fees and reserves, smart escrow.
 - **Networks:** mainnet is production; Testnet mirrors mainnet's features; Devnet is for features not yet live.
 - **Out of scope for the hackathon:** the XRPL EVM sidechain and community networks. The judges want the XRPL Layer 1.
 
@@ -56,17 +58,29 @@ Track as the team summarises it: **build an AI agent that moves money for a real
 | Finding | Effect on the plan |
 |---|---|
 | A Ripple developer advocate is a judge | Use native XRPL features visibly and correctly; show transaction hashes, not slides |
-| Permission delegation is not live | Confirms [ADR 0002](decisions/0002-plain-multisign-core.md): plain multi-signing is the core. Delegation would mean moving the demo to Devnet; drop it from the hackathon |
-| Credentials are live | Use an XRPL credential to mark a verified supplier's payout account, so verification is publicly checkable. Proposed in [ADR 0004](decisions/0004-workshop-adjustments.md) |
-| RLUSD needs trust lines and reserves | Budget reserves; provision trust lines in the setup script; a trust line limit on the spending account caps how much RLUSD it can ever hold |
-| Simulate exists | Warden simulates every payment before co-signing |
+| Permission delegation was described as not yet live | Plain multi-signing stays the core ([ADR 0002](decisions/0002-plain-multisign-core.md)). Later status is disputed; see corrections. Out of the hackathon build either way |
+| Credentials are live | Stretch: issue a credential to a supplier account after off-ledger verification, as public evidence of our verifier's statement. It does not prove identity or stop a payment. Test plan in [ADR 0004](decisions/0004-workshop-adjustments.md) |
+| RLUSD needs trust lines and reserves | Budget reserves; provision trust lines in the setup script; the trust line limit is one exposure layer, not a loss cap (see corrections) |
+| Simulate exists | Warden simulates before co-signing as a preflight only; "paid" is shown only after a validated ledger result |
 | Batch transactions are live | Stretch: pay several approved invoices atomically |
 | Token escrow is live | Stretch: hold a payment in escrow until goods are received, if the RLUSD issuer allows it on Testnet (unverified) |
 | Privy recommended, with agent policies | Option: keep the agent's key in a Privy agent wallet so it never sits in our code. Time-boxed; must support multi-signing (unverified) |
-| Key handling stressed | Secret scanning on, seeds only in a secret manager, a pre-commit check for seeds |
+| Key handling stressed | GitHub secret scanning, a pre-commit check using tested XRPL seed patterns, seeds only in a secret manager, log redaction, a rehearsed rotation |
 | XRPL MCP server and starter kit | Use them during development |
 | x402 and MPP | Not core: SignOff pays business invoices, not per-call services. Say so if asked |
 | "A real business" | One recorded conversation with a real finance lead is now the top non-code priority |
+
+## Corrections after review (10 November 2026)
+
+From the review of pull request 2 and the [CFO and fraud research](CFO-AGENTIC-FRAUD-SECURITY-RESEARCH-2026-11-10.md):
+
+| Topic | Workshop (5 November) | Later information | Still unverified |
+|---|---|---|---|
+| Permission delegation | Not yet live | Reviewer reports `PermissionDelegationV1_1` activated on mainnet in October 2026 (see [known amendments](https://xrpl.org/resources/known-amendments)); the copy of that page we read was a September snapshot showing it in voting | Status on our target Testnet |
+| Trust line limit | Not discussed as a cap | Official docs: the account's own actions can exceed it, it can be changed, it does not cover XRP ([trust line tokens](https://xrpl.org/docs/concepts/tokens/fungible-tokens/trust-line-tokens)). **Not a loss or spend cap.** | Exact behaviour on Testnet |
+| Credentials | Live | An issuer's attestation, not proof of identity or a payment restriction ([credentials](https://xrpl.org/docs/concepts/decentralized-storage/credentials)) | Issue, accept, revoke on Testnet |
+| Simulate | Exists | Preflight only; ledger state can change ([simulate](https://xrpl.org/docs/references/http-websocket-apis/public-api-methods/transaction-methods/simulate)) | Behaviour under state change and retry |
+| Batch | Live about two weeks before | The September amendments snapshot listed the original Batch as disabled and replaced by a corrected version | Status on our target Testnet |
 
 ## Links named in the workshop
 

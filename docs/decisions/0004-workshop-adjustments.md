@@ -1,41 +1,75 @@
-# 0004: Adjustments after the Ripple workshop
+# 0004: Ledger features to test after the Ripple workshop
 
-- **Status:** Proposed, 10 November 2026. Awaiting team sign-off.
+- **Status:** Proposed as a **test plan**, 10 November 2026. Accepted by the reviewer only as a plan, not as proven ledger guarantees. Nothing below may be claimed until the Testnet evidence listed under each item exists.
 - **Affects:** [BUILD-BRIEF.md](../../BUILD-BRIEF.md) "XRPL spike", [TRUST.md](../TRUST.md), [ENGINEERING.md](../ENGINEERING.md).
-- **Source:** [WORKSHOP.md](../WORKSHOP.md).
+- **Sources:** [WORKSHOP.md](../WORKSHOP.md); review on pull request 2; [CFO and fraud research](../CFO-AGENTIC-FRAUD-SECURITY-RESEARCH-2026-11-10.md), sections 2 and 7.
 
 ## Context
 
-The track is "an AI agent that moves money for a real business, with the XRP Ledger enforcing the rules". Today the ledger enforces only one rule in SignOff: no single key can pay. Everything else is Warden. A Ripple developer advocate who will judge said in the workshop that credentials and batch transactions are live, that permission delegation is not, and that every RLUSD holder needs a trust line and reserve.
+The track is "an AI agent that moves money for a real business, with the XRP Ledger enforcing the rules". In SignOff the ledger is intended to enforce one rule: a payment needs signatures from both the agent and Warden. Everything else is Warden or a person. The workshop named several live XRPL features. Review showed that some of the first version of this record overstated what those features guarantee.
 
-## Decision
+None of these items may delay the core: a real two-signature RLUSD payment on Testnet, a changed-payee hold, and a lowered-limit hold.
 
-Move more of the rules onto the ledger, using only features that are live on Testnet.
+## Items to test
 
-| Rule | Before | Proposed |
+### 1. Signer list and every signing path (core, not optional)
+
+The claim "no single key can pay" is only true if no usable key reaches the quorum alone, including any recovery key, master key or regular key. Proposed configuration, to be tested:
+
+| Signer | Weight |
+|---|---|
+| Agent | 1 |
+| Warden | 2 |
+| Operator recovery | 1 |
+| **Quorum** | **3** |
+
+Master key disabled, no regular key. Intended outcomes:
+
+| Signing path | Total | Expected |
 |---|---|---|
-| No payment with one key | Ledger (multi-signing) | Unchanged |
-| Maximum the spending account can lose | Operator keeps the balance small | **Ledger:** the spending account's RLUSD trust line limit caps what it can ever hold. The operator tops it up from reserves. |
-| Supplier's payout account is verified | Warden's private record | **Ledger:** after the off-ledger identity and bank check, the operator's verifier account issues an XRPL **credential** to the supplier's payout account. Warden only pays accounts holding an accepted, unexpired credential. Anyone can check it on the explorer. |
-| Revoking a supplier | Warden record change | **Ledger:** delete the credential; Warden stops paying immediately. |
-| Payment preview | Not specified | Warden **simulates** every payment before co-signing and holds it if the result is not success. |
+| Any one key alone | 1 or 2 | Rejected |
+| Agent + Warden | 3 | Normal payment path |
+| Warden + Recovery | 3 | Rotation path (replace a lost or stolen agent key) |
+| Agent + Recovery | 2 | Rejected: Warden cannot be bypassed |
 
-Stretch goals, only after the core loop, console and attack suite work:
+Consequence to state openly: if the Warden key is lost, nobody can move what is in the spending account. That is acceptable only because the account holds a small working balance; reserves sit elsewhere.
 
-- **Batch:** pay several approved invoices to different suppliers all-or-nothing.
-- **Token escrow:** lock a payment until the goods are received, if the RLUSD issuer allows it on Testnet.
-- **Privy agent wallet:** keep the agent's signing key in Privy instead of our secret store, if Privy can produce a signature that works in an XRPL multi-signed transaction.
+**Evidence required:** a transaction hash or result code for every row.
 
-Dropped from the hackathon: **permission delegation**. It is not live, and using it would move the demo to Devnet.
+### 2. Trust line limit (exposure control, not a loss cap)
 
-## What stays honest
+An RLUSD trust line limit ordinarily restricts how much the account accepts from others. The account's own actions can take the balance above it, the limit can be changed by a signed transaction, and it does not cover XRP. **It is not a cap on what the account can hold, spend or lose.**
 
-- A credential proves that our verifier vouched for an account. It does not prove the verification was correct, and the ledger does not stop the two signers paying an account without one. That refusal is still a Warden check. [TRUST.md](../TRUST.md) must say so.
-- Credentials add reserve cost to the supplier's account (0.2 XRP each) and require the supplier to accept the credential.
-- The credential and trust-line behaviour must be verified on Testnet in the first spike before any document claims it.
+Use it only as one layer, alongside: a small pre-funded spending balance, a separate reserve the payment keys cannot reach, Warden's per-payment, per-supplier and daily limits, Warden refusing `TrustSet` and every non-payment transaction, and exposure computed from the actual spendable balance.
+
+**Evidence required:** observed behaviour at, above and after changing the limit.
+
+### 3. Credentials (attestation, stretch)
+
+A credential is a public statement by its issuer about an account. It does not prove the supplier's identity, bank-account ownership or control of the key, and the ledger does not stop the signers paying an account without one.
+
+If used, it is issued only after the off-ledger checks in [TRUST.md](../TRUST.md), and Warden checks issuer, subject, type, acceptance, expiry and revocation against the current ledger immediately before signing. Risks to document: wrong issuance, a stolen supplier key, a gap between revocation and the next check, and credential metadata being public.
+
+**Evidence required:** issue, accept, check, expire and delete on Testnet. Until then, stretch only.
+
+### 4. Simulation (preflight, not settlement)
+
+`simulate` previews a transaction against the current ledger. The ledger can change before submission and simulation moves no money.
+
+Warden binds its decision to the exact final transaction fields and policy version, signs only those bytes, stores the sequence, hash and expiry before submitting, then shows "paid" only after a **validated** transaction with the expected delivered amount.
+
+**Evidence required:** tests for state changes between simulate and submit, timeouts, restarts, retries and duplicate submissions.
+
+### 5. Permission delegation (out of the critical path)
+
+The workshop on 5 November described it as not yet live. The reviewer reports that `PermissionDelegationV1_1` activated on mainnet in October 2026; the official amendments page we could read was a September snapshot showing it still in voting. **Its status on our target Testnet is unverified.** It stays out of the hackathon build for schedule reasons. If ever used, avoid delegating any burn-type payment permission until its documented caveats are checked.
+
+**Evidence required:** a `feature` query on the Testnet node and a real test transaction.
+
+### 6. Stretch, only after the delivery gates in ENGINEERING.md
+
+Batch payment of several invoices, token escrow until goods are received (only if the RLUSD issuer allows it on Testnet), and a Privy agent wallet (only if it can sign for an XRPL multi-signed transaction).
 
 ## Why
 
-- It answers "the XRP Ledger enforcing the rules" with three ledger-level controls instead of one, using features the judge named.
-- It makes supplier verification publicly auditable, which is the heart of the fraud story.
-- It costs little: a few setup transactions and one ledger read per payment.
+These items move as much as is honestly possible onto the ledger, using features the Ripple judge named, while keeping every claim tied to evidence.
