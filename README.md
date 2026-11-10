@@ -128,6 +128,7 @@ The track requires an autonomous transaction on XRPL Testnet or Devnet, limits e
 | [BUILD-BRIEF.md](BUILD-BRIEF.md) | The agreed build, flow, stack and acceptance tests |
 | [docs/PROBLEM.md](docs/PROBLEM.md) | Problem statement and sourced evidence with confidence ratings |
 | [docs/SOLUTION.md](docs/SOLUTION.md) | Rules, two-signature design, simpler options considered |
+| [docs/AGENT-RELIABILITY.md](docs/AGENT-RELIABILITY.md) | How hallucination is contained and measured |
 | [docs/TRUST.md](docs/TRUST.md) | Ledger versus Warden guarantees, keys, enrolment, rotation, recovery |
 | [docs/BUSINESS.md](docs/BUSINESS.md) | Customer, savings, revenue, feasibility, competitors, regulation |
 | [docs/ENGINEERING.md](docs/ENGINEERING.md) | Repository layout, review process, tests, security, release checks |
