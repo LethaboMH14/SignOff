@@ -412,8 +412,7 @@ export class WardenService {
       }
       const asset = this.assetFor(attempt.currency);
       if (
-        asset === undefined ||
-        asset.ledgerCurrency !== attempt.ledgerCurrency ||
+        asset?.ledgerCurrency !== attempt.ledgerCurrency ||
         asset.issuer !== attempt.issuer
       ) {
         throw new WardenError(409, 'the approved payment asset changed');
