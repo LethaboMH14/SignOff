@@ -902,10 +902,7 @@ export class WardenService {
     }
     const wardenSigned = signAsSigner(this.deps.wardenWallet, prepared as unknown as Transaction);
     const finalBlob = combineSigned([blob, wardenSigned]);
-    assertSignedExactly(finalBlob, [
-      this.deps.config.agentAddress,
-      this.deps.config.wardenAddress,
-    ]);
+    assertSignedExactly(finalBlob, [this.deps.config.agentAddress, this.deps.config.wardenAddress]);
     return finalBlob;
   }
 
