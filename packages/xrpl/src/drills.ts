@@ -56,6 +56,14 @@ export async function timeoutDrill(
   return { decision, submissions, distinctBlobs: blobs.size, hash: plan.hash };
 }
 
+/** The simulated primary outage. Only this error means the primary endpoint failed during the drill. */
+class PrimaryUnreachable extends Error {
+  constructor() {
+    super('primary unreachable (drill)');
+    this.name = 'PrimaryUnreachable';
+  }
+}
+
 export interface FailoverDrillReport {
   readonly primary: string;
   readonly secondary: string;
@@ -82,13 +90,17 @@ export async function failoverDrill(
   );
   const downPrimary: LedgerPort = {
     ...deps.port,
-    submit: () => Promise.reject(new Error('primary unreachable (drill)')),
-    lookup: () => Promise.reject(new Error('primary unreachable (drill)')),
+    submit: () => Promise.reject(new PrimaryUnreachable()),
+    lookup: () => Promise.reject(new PrimaryUnreachable()),
   };
   let primaryFailed = false;
   try {
     await sendAndReconcile(plan, { ...deps, port: downPrimary, maxPolls: 1 });
-  } catch {
+  } catch (error) {
+    // Only the simulated outage counts as the primary failing. Any other error, such as a refused journal, is real.
+    if (!(error instanceof PrimaryUnreachable)) {
+      throw error;
+    }
     primaryFailed = true;
   }
   if (!primaryFailed) {

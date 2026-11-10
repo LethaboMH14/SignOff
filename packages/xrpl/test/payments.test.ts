@@ -5,9 +5,13 @@ import { createXrplPort } from '../src/xrpl-port.js';
 import { provisionTestnet, type ProvisionDeps } from '../src/provision.js';
 import { configureSigners } from '../src/signers.js';
 import { memoryJournalStore, memoryRegistryStore } from '../src/store.js';
-import { replay } from '../src/journal.js';
+import { JournalError, replay, type JournalRecord, type JournalState } from '../src/journal.js';
+import type { Decision } from '../src/reconcile.js';
+import { sendAndReconcile } from '../src/reliable.js';
 import {
+  loadSigners,
   PaymentError,
+  planTwoSignature,
   rlusdAmount,
   sendTwoSignatureTransfer,
   testTokenAmount,
@@ -282,5 +286,271 @@ describe('rebuild from the reserve (A7)', () => {
     expect(spendingStatuses.sort()).toEqual(['abandoned', 'master-disabled']);
     expect(testTokenBalance(w, before.spending, before.issuer)).toBe('0');
     expect(testTokenBalance(w, before.supplier, before.issuer)).toBe('5');
+  });
+});
+
+describe('a repeated run never sends a payment twice', () => {
+  it('returns the recorded result for a settled payment and sends nothing', async () => {
+    const w = world();
+    await ready(w);
+    const a = accounts(w);
+    const transfer: Transfer = {
+      paymentId: 'pay.once',
+      from: a.spending,
+      to: a.supplier,
+      amount: testTokenAmount(a.issuer, '10'),
+    };
+    const first = await sendTwoSignatureTransfer(w.deps, transfer);
+    const submittedBefore = w.ledger.submitted.length;
+    const recordsBefore = (await w.journal.readAll()).length;
+    const second = await sendTwoSignatureTransfer(w.deps, transfer);
+    expect(second).toEqual(first);
+    expect(w.ledger.submitted.length).toBe(submittedBefore);
+    expect((await w.journal.readAll()).length).toBe(recordsBefore);
+    expect(testTokenBalance(w, a.supplier, a.issuer)).toBe('10');
+  });
+
+  it('refuses a settled payment id that names different terms, and sends nothing', async () => {
+    const w = world();
+    await ready(w);
+    const a = accounts(w);
+    await sendTwoSignatureTransfer(w.deps, {
+      paymentId: 'pay.terms',
+      from: a.spending,
+      to: a.supplier,
+      amount: testTokenAmount(a.issuer, '10'),
+    });
+    const submittedBefore = w.ledger.submitted.length;
+    await expect(
+      sendTwoSignatureTransfer(w.deps, {
+        paymentId: 'pay.terms',
+        from: a.spending,
+        to: a.supplier,
+        amount: testTokenAmount(a.issuer, '11'),
+      }),
+    ).rejects.toThrow(PaymentError);
+    expect(w.ledger.submitted.length).toBe(submittedBefore);
+    expect(testTokenBalance(w, a.supplier, a.issuer)).toBe('10');
+  });
+
+  it('resumes an unresolved attempt with its stored blob, and never builds a new transaction', async () => {
+    const w = world();
+    await ready(w);
+    const a = accounts(w);
+    const transfer: Transfer = {
+      paymentId: 'pay.resume',
+      from: a.spending,
+      to: a.supplier,
+      amount: testTokenAmount(a.issuer, '6'),
+    };
+    const plan = await planTwoSignature(w.deps, transfer, await loadSigners(w.deps), 1);
+    const stored = {
+      paymentId: plan.paymentId,
+      attempt: 1,
+      at: '2026-11-10T10:00:00.000Z',
+      hash: plan.hash,
+      txBlob: plan.txBlob,
+      lastLedgerSequence: plan.lastLedgerSequence,
+    };
+    await w.journal.append({ ...stored, state: 'prepared' });
+    await w.journal.append({ ...stored, state: 'submitting' });
+    // The process stopped after journaling and before any response: the blob may or may not be on the ledger.
+    const before = w.ledger.submitted.length;
+    const outcome = await sendTwoSignatureTransfer(w.deps, transfer);
+    expect(outcome.decision.kind).toBe('paid');
+    expect(outcome.hash).toBe(plan.hash);
+    expect(outcome.attempts).toBe(1);
+    expect(w.ledger.submitted.slice(before)).toEqual([plan.txBlob]);
+    expect(testTokenBalance(w, a.supplier, a.issuer)).toBe('6');
+    expect(replay(await w.journal.readAll()).get('pay.resume')?.state).toBe('paid');
+  });
+
+  it('refuses to resume a stored attempt whose terms differ from the request', async () => {
+    const w = world();
+    await ready(w);
+    const a = accounts(w);
+    const stored: Transfer = {
+      paymentId: 'pay.drift',
+      from: a.spending,
+      to: a.supplier,
+      amount: testTokenAmount(a.issuer, '6'),
+    };
+    const plan = await planTwoSignature(w.deps, stored, await loadSigners(w.deps), 1);
+    const record = {
+      paymentId: plan.paymentId,
+      attempt: 1,
+      at: '2026-11-10T10:00:00.000Z',
+      hash: plan.hash,
+      txBlob: plan.txBlob,
+      lastLedgerSequence: plan.lastLedgerSequence,
+    };
+    await w.journal.append({ ...record, state: 'prepared' });
+    await w.journal.append({ ...record, state: 'submitting' });
+    const before = w.ledger.submitted.length;
+    await expect(
+      sendTwoSignatureTransfer(w.deps, { ...stored, amount: testTokenAmount(a.issuer, '7') }),
+    ).rejects.toThrow(PaymentError);
+    expect(w.ledger.submitted.length).toBe(before);
+  });
+
+  it('does not start an attempt beyond the limit after a restart', async () => {
+    const w = world();
+    await ready(w);
+    const a = accounts(w);
+    const at = '2026-11-10T10:00:00.000Z';
+    const entry = (attempt: number, state: JournalState) => ({
+      paymentId: 'pay.limit',
+      attempt,
+      state,
+      at,
+    });
+    for (const attempt of [1, 2]) {
+      await w.journal.append(entry(attempt, 'prepared'));
+      await w.journal.append(entry(attempt, 'submitting'));
+      await w.journal.append(entry(attempt, 'expired'));
+    }
+    const before = w.ledger.submitted.length;
+    const outcome = await sendTwoSignatureTransfer(
+      { ...w.deps, maxAttempts: 2 },
+      {
+        paymentId: 'pay.limit',
+        from: a.spending,
+        to: a.supplier,
+        amount: testTokenAmount(a.issuer, '2'),
+      },
+    );
+    expect(outcome.decision).toEqual({ kind: 'expired' });
+    expect(outcome.attempts).toBe(2);
+    expect(w.ledger.submitted.length).toBe(before);
+  });
+
+  it('refuses a new attempt for a settled payment at the reliable layer as well', async () => {
+    const w = world();
+    await ready(w);
+    const a = accounts(w);
+    const transfer: Transfer = {
+      paymentId: 'pay.layer',
+      from: a.spending,
+      to: a.supplier,
+      amount: testTokenAmount(a.issuer, '10'),
+    };
+    await sendTwoSignatureTransfer(w.deps, transfer);
+    const before = w.ledger.submitted.length;
+    const plan = await planTwoSignature(w.deps, transfer, await loadSigners(w.deps), 1);
+    await expect(sendAndReconcile(plan, w.deps)).rejects.toThrow(JournalError);
+    expect(w.ledger.submitted.length).toBe(before);
+  });
+
+  it('does not run the failover drill twice for the same payment', async () => {
+    const w = world();
+    await ready(w);
+    const a = accounts(w);
+    const secondary = createXrplPort(
+      new FakeClient(w.ledger) as unknown as Client,
+      'wss://testnet.xrpl-labs.com',
+    );
+    const transfer: Transfer = {
+      paymentId: 'failover.again',
+      from: a.spending,
+      to: a.supplier,
+      amount: testTokenAmount(a.issuer, '3'),
+    };
+    const first = await failoverDrill(w.deps, transfer, secondary);
+    expect(first.decision.kind).toBe('paid');
+    const before = w.ledger.submitted.length;
+    await expect(failoverDrill(w.deps, transfer, secondary)).rejects.toThrow(JournalError);
+    expect(w.ledger.submitted.length).toBe(before);
+    expect(testTokenBalance(w, a.supplier, a.issuer)).toBe('3');
+  });
+
+  it('does not run the timeout drill twice for the same payment', async () => {
+    const w = world();
+    await ready(w);
+    const a = accounts(w);
+    const transfer: Transfer = {
+      paymentId: 'timeout.again',
+      from: a.spending,
+      to: a.supplier,
+      amount: testTokenAmount(a.issuer, '4'),
+    };
+    const first = await timeoutDrill(w.deps, transfer);
+    expect(first.decision.kind).toBe('paid');
+    const before = w.ledger.submitted.length;
+    await expect(timeoutDrill(w.deps, transfer)).rejects.toThrow(JournalError);
+    expect(w.ledger.submitted.length).toBe(before);
+    expect(testTokenBalance(w, a.supplier, a.issuer)).toBe('4');
+  });
+
+  it('returns the recorded result for a repeated XRP payment and sends nothing', async () => {
+    const w = world();
+    await ready(w);
+    const a = accounts(w);
+    const transfer: Transfer = {
+      paymentId: 'pay.xrp',
+      from: a.spending,
+      to: a.supplier,
+      amount: { kind: 'xrp', drops: '1000000' },
+    };
+    const first = await sendTwoSignatureTransfer(w.deps, transfer);
+    expect(first.decision.kind).toBe('paid');
+    const before = w.ledger.submitted.length;
+    expect(await sendTwoSignatureTransfer(w.deps, transfer)).toEqual(first);
+    expect(w.ledger.submitted.length).toBe(before);
+  });
+
+  it('reports a settled failure, rejection or hold from the journal, and sends nothing', async () => {
+    const w = world();
+    await ready(w);
+    const a = accounts(w);
+    const signers = await loadSigners(w.deps);
+    const cases: {
+      paymentId: string;
+      state: JournalState;
+      extra: Partial<JournalRecord>;
+      decision: Decision;
+    }[] = [
+      {
+        paymentId: 'settled.failed',
+        state: 'failed',
+        extra: { engineResult: 'tecPATH_DRY', ledgerIndex: 7 },
+        decision: { kind: 'failed', engineResult: 'tecPATH_DRY', ledgerIndex: 7 },
+      },
+      {
+        paymentId: 'settled.rejected',
+        state: 'rejected',
+        extra: { engineResult: 'tefBAD_QUORUM' },
+        decision: { kind: 'rejected', engineResult: 'tefBAD_QUORUM' },
+      },
+      {
+        paymentId: 'settled.held',
+        state: 'held',
+        extra: { reason: 'delivered-mismatch' },
+        decision: { kind: 'hold', reason: 'delivered-mismatch' },
+      },
+    ];
+    for (const { paymentId, state, extra, decision } of cases) {
+      const transfer: Transfer = {
+        paymentId,
+        from: a.spending,
+        to: a.supplier,
+        amount: testTokenAmount(a.issuer, '1'),
+      };
+      const plan = await planTwoSignature(w.deps, transfer, signers, 1);
+      const stored = {
+        paymentId,
+        attempt: 1,
+        at: '2026-11-10T10:00:00.000Z',
+        hash: plan.hash,
+        txBlob: plan.txBlob,
+        lastLedgerSequence: plan.lastLedgerSequence,
+      };
+      await w.journal.append({ ...stored, state: 'prepared' });
+      await w.journal.append({ ...stored, state: 'submitting' });
+      await w.journal.append({ ...stored, state, ...extra });
+      const before = w.ledger.submitted.length;
+      const outcome = await sendTwoSignatureTransfer(w.deps, transfer);
+      expect(outcome.decision).toEqual(decision);
+      expect(w.ledger.submitted.length).toBe(before);
+    }
   });
 });

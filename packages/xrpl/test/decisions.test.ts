@@ -190,7 +190,15 @@ describe('decide', () => {
       decide({
         expected: xrp,
         lookup: { status: 'not-validated' },
-        lastValidatedLedger: 121,
+        lastValidatedLedger: 122,
+        lastLedgerSequence: 120,
+      }),
+    ).toEqual({ kind: 'wait' });
+    expect(
+      decide({
+        expected: xrp,
+        lookup: { status: 'not-validated' },
+        lastValidatedLedger: 123,
         lastLedgerSequence: 120,
       }),
     ).toEqual({ kind: 'expired' });

@@ -1,11 +1,15 @@
 import { classifySubmitResult } from './results.js';
 import { decide, type Decision, type Expected } from './reconcile.js';
-import type { JournalRecord, JournalState } from './journal.js';
+import { JournalError, replay, type JournalRecord, type JournalState } from './journal.js';
 import type { LedgerPort } from './port.js';
 
-/** Where journal records go. The node implementation appends to a file and flushes it to disk. */
+/**
+ * Where journal records go and where they are read back from. The node implementation appends to a file
+ * and flushes it to disk.
+ */
 export interface JournalSink {
   append(record: JournalRecord): Promise<void>;
+  readAll(): Promise<JournalRecord[]>;
 }
 
 /** One signed attempt to be sent and reconciled. */
@@ -56,6 +60,28 @@ function isPending(engineResult: string): boolean {
 }
 
 /**
+ * The journal decides before anything is sent. A payment id with no record may start attempt 1. One whose
+ * latest attempt expired may start the next attempt number. Anything else is refused: an unresolved attempt
+ * is resumed with its stored blob, and a settled payment is never sent again.
+ */
+async function assertMayPrepare(journal: JournalSink, plan: SendPlan): Promise<void> {
+  const view = replay(await journal.readAll()).get(plan.paymentId);
+  if (view === undefined) {
+    if (plan.attempt !== 1) {
+      throw new JournalError(
+        `payment ${plan.paymentId} has no earlier attempt; attempt 1 must come first`,
+      );
+    }
+    return;
+  }
+  if (view.state !== 'expired' || plan.attempt !== view.attempt + 1) {
+    throw new JournalError(
+      `payment ${plan.paymentId} is ${view.state} at attempt ${String(view.attempt)}; it is not sent again`,
+    );
+  }
+}
+
+/**
  * Sends a signed attempt and waits for its outcome. The journal is written before the network is
  * touched. A submission that throws or is deferred is never treated as a failure: the hash is
  * reconciled against validated ledgers, and an identical blob is resent (same hash, so it cannot apply
@@ -67,6 +93,7 @@ export async function sendAndReconcile(
   options: ReliableOptions,
 ): Promise<Decision> {
   const { port, journal, now } = options;
+  await assertMayPrepare(journal, plan);
   await journal.append(record(plan, 'prepared', now(), {}));
   await journal.append(record(plan, 'submitting', now(), { reason: 'send' }));
   let pending = false;
@@ -100,8 +127,10 @@ async function reconcile(
   const { port, journal, now, sleep, pollMs, maxPolls } = options;
   let pending = initiallyPending;
   for (let poll = 0; poll < maxPolls; poll += 1) {
-    const lookup = await port.lookup(plan.hash);
+    // The validated index is read first. Every ledger up to it is final, so the lookup that follows reflects
+    // them. Reading it after the lookup would allow an expiry that the lookup never checked.
     const lastValidatedLedger = await port.validatedLedgerIndex();
+    const lookup = await port.lookup(plan.hash);
     const decision = decide({
       expected: plan.expected,
       lookup,

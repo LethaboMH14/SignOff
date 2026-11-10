@@ -1,11 +1,18 @@
-import { compareDecimal, type IssuedAmount } from './amounts.js';
+import { decode } from 'xrpl';
+import { compareDecimal, sameIouAmount, type IssuedAmount } from './amounts.js';
 import { LSF_DISABLE_MASTER, RLUSD_TESTNET, TEST_TOKEN_CURRENCY } from './constants.js';
+import { nextStep, replay, type JournalRecord, type PaymentView } from './journal.js';
 import type { Decision, Expected } from './reconcile.js';
 import { requireAccount, walletOf } from './provision.js';
 import { assertSignedExactly, combineSigned, hashOfSigned, signAsSigner } from './multisig.js';
 import type { LedgerPort } from './port.js';
 import { diffSignerList } from './signer-list.js';
-import { sendAndReconcile, type SendPlan } from './reliable.js';
+import {
+  resumeAndReconcile,
+  sendAndReconcile,
+  type JournalSink,
+  type SendPlan,
+} from './reliable.js';
 import type { LedgerDeps, LogFn } from './single.js';
 import { desiredSignerList } from './signers.js';
 import type { Registry, RegistryAccount } from './registry.js';
@@ -154,26 +161,189 @@ export async function planTwoSignature(
   };
 }
 
+/** What the journal already holds for a payment id. It is decided before anything is signed or sent. */
+export type PriorAttempt =
+  | { readonly kind: 'none' }
+  | { readonly kind: 'settled'; readonly view: PaymentView }
+  | { readonly kind: 'unresolved'; readonly view: PaymentView }
+  | { readonly kind: 'expired'; readonly view: PaymentView };
+
+/** Reads the journal for one payment id and classifies it. A journal that does not replay is an error. */
+export async function priorAttemptOf(
+  journal: JournalSink,
+  paymentId: string,
+): Promise<PriorAttempt> {
+  const view = replay(await journal.readAll()).get(paymentId);
+  if (view === undefined) {
+    return { kind: 'none' };
+  }
+  switch (nextStep(view)) {
+    case 'submit':
+    case 'reconcile':
+      return { kind: 'unresolved', view };
+    case 'new-attempt':
+      return { kind: 'expired', view };
+    case 'none':
+      return { kind: 'settled', view };
+  }
+}
+
+/** The attempt number a send starts from, given what the journal already holds. */
+function firstAttemptOf(prior: PriorAttempt): number {
+  switch (prior.kind) {
+    case 'none':
+      return 1;
+    case 'unresolved':
+      return prior.view.attempt;
+    case 'expired':
+      return prior.view.attempt + 1;
+    case 'settled':
+      throw new PaymentError('a settled payment has no attempt to start');
+  }
+}
+
+/** The fields of a signed Payment that identify its terms. */
+interface SignedTerms {
+  readonly Account: string;
+  readonly Destination: string;
+  readonly Amount:
+    string | { readonly currency: string; readonly issuer: string; readonly value: string };
+}
+
 /**
- * Sends a two-signature transfer. An expired attempt is replaced by a fresh one, up to maxAttempts; any
- * other outcome, including 'wait' (the poll budget ran out), stops the loop, because only an expired
- * attempt is known to be dead.
+ * Throws unless a signed blob moves exactly the terms of this transfer. A payment id names one obligation,
+ * so a stored attempt with other terms is never resumed and never reported as the answer to this request.
+ */
+export function assertSameTerms(blob: string, transfer: Transfer): void {
+  const terms = decode(blob) as unknown as SignedTerms;
+  const sameParties =
+    terms.Account === transfer.from.address && terms.Destination === transfer.to.address;
+  const sameAmount =
+    transfer.amount.kind === 'xrp'
+      ? typeof terms.Amount === 'string' && terms.Amount === transfer.amount.drops
+      : typeof terms.Amount !== 'string' &&
+        sameIouAmount(transfer.amount.amount, {
+          currency: terms.Amount.currency,
+          issuer: terms.Amount.issuer,
+          value: terms.Amount.value,
+        });
+  if (!sameParties || !sameAmount) {
+    throw new PaymentError('this payment id already names different terms; it was not sent again');
+  }
+}
+
+function isHoldReason(value: string): value is 'delivered-mismatch' | 'validated-after-expiry' {
+  return value === 'delivered-mismatch' || value === 'validated-after-expiry';
+}
+
+/** The decision a settled journal record already states. */
+function decisionOfRecord(record: JournalRecord): Decision {
+  switch (record.state) {
+    case 'paid':
+      return {
+        kind: 'paid',
+        ledgerIndex: must(record.ledgerIndex, 'a paid record has no ledger index'),
+      };
+    case 'failed':
+      return {
+        kind: 'failed',
+        engineResult: must(record.engineResult, 'a failed record has no engine result'),
+        ledgerIndex: must(record.ledgerIndex, 'a failed record has no ledger index'),
+      };
+    case 'rejected':
+      return {
+        kind: 'rejected',
+        engineResult: must(record.engineResult, 'a rejected record has no engine result'),
+      };
+    case 'held': {
+      const reason = must(record.reason, 'a held record has no reason');
+      if (!isHoldReason(reason)) {
+        throw new PaymentError('a held record has an unknown reason');
+      }
+      return { kind: 'hold', reason };
+    }
+    default:
+      throw new PaymentError(`the journal state ${record.state} is not settled`);
+  }
+}
+
+/** The outcome a settled payment already has. It is reported without sending anything. */
+function outcomeOfSettled(paymentId: string, view: PaymentView): TransferOutcome {
+  return {
+    paymentId,
+    attempts: view.attempt,
+    decision: decisionOfRecord(view.latest),
+    hash: view.latest.hash ?? null,
+  };
+}
+
+/** Rebuilds the plan of an unresolved attempt from its journal record, and checks it before it is resent. */
+function planOfRecord(record: JournalRecord, transfer: Transfer, signers: Signers): SendPlan {
+  const txBlob = must(
+    record.txBlob,
+    'the journal record has no signed transaction; inspect the journal',
+  );
+  const hash = must(record.hash, 'the journal record has no hash; inspect the journal');
+  const lastLedgerSequence = must(
+    record.lastLedgerSequence,
+    'the journal record has no expiry; inspect the journal',
+  );
+  // Both values are public transaction data, not secrets, so a constant-time comparison is not needed here.
+  // eslint-disable-next-line security/detect-possible-timing-attacks
+  if (hashOfSigned(txBlob) !== hash) {
+    throw new PaymentError(
+      'the journal hash does not match its signed transaction; inspect the journal',
+    );
+  }
+  assertSignedExactly(txBlob, [signers.agent.address, signers.warden.address]);
+  assertSameTerms(txBlob, transfer);
+  return {
+    paymentId: transfer.paymentId,
+    attempt: record.attempt,
+    txBlob,
+    hash,
+    lastLedgerSequence,
+    expected: expectedOf(transfer.amount),
+  };
+}
+
+/**
+ * Sends a two-signature transfer without ever sending the same obligation twice. The journal is read first.
+ * A settled payment returns its recorded outcome. An unresolved attempt is resumed with its stored blob and
+ * is never rebuilt. A new attempt follows only an expired one, and is numbered from the journal. Expired
+ * attempts are replaced up to maxAttempts across all runs. Any other outcome, including 'wait', stops the loop.
  */
 export async function sendTwoSignatureTransfer(
   deps: PaymentDeps,
   transfer: Transfer,
 ): Promise<TransferOutcome> {
+  const prior = await priorAttemptOf(deps.journal, transfer.paymentId);
+  if (prior.kind === 'settled') {
+    assertSameTerms(
+      must(prior.view.latest.txBlob, 'the settled record has no signed transaction'),
+      transfer,
+    );
+    return outcomeOfSettled(transfer.paymentId, prior.view);
+  }
   const signers = await loadSigners(deps);
   await assertSignerConfiguration(deps.port, transfer.from, signers);
-  let hash: string | null = null;
-  for (let attempt = 1; attempt <= deps.maxAttempts; attempt += 1) {
-    const plan = await planTwoSignature(deps, transfer, signers, attempt);
+  let attempt = firstAttemptOf(prior);
+  let resume: SendPlan | undefined =
+    prior.kind === 'unresolved' ? planOfRecord(prior.view.latest, transfer, signers) : undefined;
+  let hash: string | null = prior.kind === 'expired' ? (prior.view.latest.hash ?? null) : null;
+  while (attempt <= deps.maxAttempts) {
+    const plan = resume ?? (await planTwoSignature(deps, transfer, signers, attempt));
+    const decision =
+      resume === undefined
+        ? await sendAndReconcile(plan, deps)
+        : await resumeAndReconcile(plan, deps);
+    resume = undefined;
     hash = plan.hash;
-    const decision = await sendAndReconcile(plan, deps);
     if (decision.kind !== 'expired') {
       return { paymentId: transfer.paymentId, attempts: attempt, decision, hash };
     }
     deps.log('payment_attempt_expired', { attempt });
+    attempt += 1;
   }
   return {
     paymentId: transfer.paymentId,

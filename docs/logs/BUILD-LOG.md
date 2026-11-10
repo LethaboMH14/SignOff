@@ -26,6 +26,14 @@ One entry per working session (rule R-19 in [RULES.md](../RULES.md)), newest fir
 
 ---
 
+### 2026-11-10 — Sibusiso with Claude (Haiku 5.5) — Gate A review: re-runs, reconciliation and the rebuild guard
+
+- Done: reviewed the Gate A payment, reconciliation, drill and rebuild code before merge. Wrote regression tests for the defects found; eleven of the new or changed tests failed on the previous code. Fixed: (1) the journal is read before every send, so a settled payment id is never sent again, an unresolved attempt is resumed with its stored blob, and a new attempt follows only an expired one; (2) reconciliation reads the validated ledger before the lookup and expires only beyond the safety margin; (3) the drills refuse a repeated run, and the failover drill treats only its simulated outage as a primary failure; (4) testnet:rebuild runs only with --confirm. CI on the pull request passed at the start of the review.
+- Changed decisions: D-046 to D-048 in the decision journal.
+- Evidence: T-063 (RLUSD issuer and trust-line flags), T-064 (CI), T-065 (regression tests), T-066 (check), T-067 (live re-runs refused, no transaction), T-068 (ledger re-check). Security log: S-022 and S-023; T-26 updated.
+- Problems / blockers: (1) A3 still needs testnet RLUSD in the spending account. The RLUSD issuer and our trust lines do not block a payment (T-063). (2) The proof commands now refuse to repeat a settled payment id, so a new proof payment needs a new id; the commands do not accept one yet. (3) A rebuild that stops partway is not resumable: a second run would treat the half-built account as the one to abandon. Not tested; noted for Gate B. (4) A stale run.lock after a crash needs manual removal, after the journal is inspected; this is by design.
+- Next: commit and push the fixes to pull request #19. Fund the spending account with testnet RLUSD, then run `npm run testnet:pay-rlusd`. Gate B needs a decision: its first item (B1) depends on A3.
+
 ### 2026-11-10 — Sibusiso with Claude (Haiku 5.5) — Gate A: A1 to A7 ledger proof
 
 - Done: built the Gate A ledger layer in `packages/xrpl` and the Testnet command line in `scripts/testnet` on `feat/gate-a-ledger-proof`, based on main. It covers the endpoint allow-list and network check, amounts and transaction builders, signer configuration with read-back, reconciliation, a journal written before every submission, provisioning (A1), signer configuration (A2), the two-signature payment (A3; test token live, and an RLUSD command that refuses until the account is funded), single-key rejections (A4), reconciliation after a lost response (A5), failover (A6) and rebuild from the reserve (A7). Offline tests run against an in-memory ledger that models the rules. Live runs were made on the XRP Ledger Testnet.

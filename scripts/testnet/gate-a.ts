@@ -2,6 +2,7 @@
 // opens, and the local registry, journal and lock live outside the repository. Output contains roles,
 // result codes, counts and transaction hashes only; no addresses and no seeds.
 // Usage: npm run testnet:<provision|signers|pay|pay-rlusd|rejections|timeout|failover|rebuild>
+// The rebuild abandons the current spending account and refunds it, so it runs only with --confirm.
 import { randomUUID } from 'node:crypto';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -168,6 +169,13 @@ async function main(): Promise<void> {
   const runner = RUNNERS.get(command);
   if (runner === undefined) {
     process.stderr.write(`usage: gate-a <${[...RUNNERS.keys()].join('|')}>\n`);
+    process.exitCode = 2;
+    return;
+  }
+  if (command === 'rebuild' && !process.argv.includes('--confirm')) {
+    process.stderr.write(
+      'rebuild abandons the current spending account and refunds its balances; run it again with --confirm to proceed\n',
+    );
     process.exitCode = 2;
     return;
   }

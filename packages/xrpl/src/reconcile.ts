@@ -1,4 +1,5 @@
 import { type IssuedAmount, sameIouAmount } from './amounts.js';
+import { LEDGER_SAFETY_MARGIN } from './constants.js';
 
 /**
  * The amount a payment must deliver, as the payer intended it. 'none' is for transactions that move no
@@ -54,8 +55,9 @@ function deliveredMatches(expected: Expected, delivered: Delivered): boolean {
 
 /**
  * Decides what a transaction's outcome means. Only a validated tesSUCCESS that delivered the expected
- * amount is paid. A transaction is expired only when a validated ledger beyond its LastLedgerSequence
- * exists and the hash is still not validated: at that point it can never apply, so a new attempt is safe.
+ * amount is paid. A transaction is expired only when a validated ledger more than the safety margin beyond
+ * its LastLedgerSequence exists and the hash is still not validated: at that point it can never apply, so a
+ * new attempt is safe.
  */
 export function decide(input: ReconcileInput): Decision {
   const { expected, lookup, lastValidatedLedger, lastLedgerSequence } = input;
@@ -71,7 +73,7 @@ export function decide(input: ReconcileInput): Decision {
     }
     return { kind: 'paid', ledgerIndex: lookup.ledgerIndex };
   }
-  if (lastValidatedLedger > lastLedgerSequence) {
+  if (lastValidatedLedger > lastLedgerSequence + LEDGER_SAFETY_MARGIN) {
     return { kind: 'expired' };
   }
   return { kind: 'wait' };
