@@ -100,6 +100,7 @@ Findings, incidents and security-relevant changes. Newest at the bottom.
 | S-036 | 2026-11-10 | Design limit | A killed agent run leaves its `run.lock` folder, which blocks the next run until a person removes it (as for the Warden, S-028) | none | Documented in the log module; no automatic recovery | Open |
 | S-037 | 2026-11-10 | Business risk | South African space-grouped and European amount layouts are held by design. Real invoices in those layouts would be held too: a measured over-blocking risk for the target customer | none | Measured on two labelled cases in simulated mode; D-070 | Open |
 | S-039 | 2026-11-10 | Change | Model providers changed: Hugging Face retired; Groq, Gemini and Meta added. Keys remain environment-only. Meta's address comes from META_API_BASE_URL and is accepted only as https with no credentials, query or fragment. Live runs can be paced | T-04 | Address validation and key-handling tests in TEST-LOG T-091; review by the other team member pending | Closed in code, pending review |
+| S-050 | 2026-11-11 | Change | The agent command line reads a local `.env` file at start-up. Values are placed only in the process environment and are never printed. The shell wins over the file. The Warden and the console do not read `.env` | T-04 | Tests in TEST-LOG T-100; review by the other team member pending | Closed in code, pending review |
 
 
 **Types:** `Design review`, `Finding`, `Incident`, `Dependency`, `Key rotation`, `Change`. An incident involving a real key or personal data also follows [SECURITY.md](../../SECURITY.md).

@@ -15,6 +15,8 @@ import { parseArgs } from 'node:util';
 
 import { Wallet } from 'xrpl';
 
+import { loadDotEnv } from '../../../packages/shared/src/node.js';
+
 import { evidenceRegister } from '../../../packages/shared/src/evidence-register.js';
 import { EvidenceFile } from '../../../packages/shared/src/schemas/evidence.js';
 import { WardenClient, coSignAsAgent } from '../../../packages/warden-api/src/client.js';
@@ -283,6 +285,10 @@ async function runCommand(args: readonly string[]): Promise<void> {
 }
 
 async function main(argv: readonly string[]): Promise<void> {
+  const dotEnv = loadDotEnv(resolve('.env'));
+  if (dotEnv.loaded.length > 0) {
+    line(`loaded ${String(dotEnv.loaded.length)} variables from .env`);
+  }
   const [command, ...rest] = argv;
   if (command === 'eval') {
     await evalCommand(rest);

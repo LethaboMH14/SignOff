@@ -34,6 +34,14 @@ One entry per working session (rule R-19 in [RULES.md](../RULES.md)), newest fir
 - Problems / blockers: Gemini `gemini-2.5-flash` returned HTTP 404, and the Gemma free models on OpenRouter returned HTTP 429 at the time of the probes. Meta's first probe was cut off at 64 tokens, so Meta replies need a larger reply budget than the probe default.
 - Next: the live evaluation on the labelled set with Groq, Gemini and OpenRouter. Meta is probed only.
 
+### 2026-11-11 — Sibusiso with Claude (Haiku 5.5) — Local .env reader for the agent
+
+- Done: the agent command line reads a local `.env` file at start-up, with no new dependency. The shell wins over the file, and no value is printed. Branch `feat/keys-dotenv`, stacked on `feat/C5-live-providers`.
+- Changed decisions: D-080.
+- Evidence: T-100.
+- Problems / blockers: the full `npm run check` has not been run on this branch yet.
+- Next: the Warden's standby watchdog (S3) and the payment desk (D1).
+
 ### 2026-11-10 — Sibusiso with Claude (Haiku 5.5) — Gate C issues created and linked
 - Done: created issues #37 to #43 for C1 to C7, titled as in docs/ISSUES.md. Each carries its acceptance criteria, dependencies, status, evidence and branch, with the live runs marked UNVERIFIED where they have not been run. Linked them in the GH column of docs/ISSUES.md.
 - Changed decisions: none.
