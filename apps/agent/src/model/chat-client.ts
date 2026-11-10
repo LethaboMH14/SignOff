@@ -21,6 +21,8 @@ const DEFAULT_TIMEOUT_MS = 60_000;
 export interface ChatClientOptions {
   readonly provider: ProviderDefinition;
   readonly model: string;
+  /** The address to call. Defaults to the provider's own address. Meta's comes from the operator's environment. */
+  readonly baseUrl?: string;
   /** The provider key. It stays in memory for the run and is never logged, echoed or written to a file. */
   readonly apiKey: string;
   readonly timeoutMs?: number;
@@ -36,7 +38,11 @@ export function createChatClient(options: ChatClientOptions): ModelClient {
   }
   const fetchImpl = options.fetchImpl ?? fetch;
   const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
-  const url = new URL('chat/completions', `${options.provider.baseUrl}/`);
+  const base = options.baseUrl ?? options.provider.baseUrl;
+  if (base === null) {
+    throw new RangeError('no address is known for this provider');
+  }
+  const url = new URL('chat/completions', `${base}/`);
   const jsonSchema = options.jsonSchema ?? true;
 
   return {

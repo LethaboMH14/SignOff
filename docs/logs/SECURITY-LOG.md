@@ -99,5 +99,7 @@ Findings, incidents and security-relevant changes. Newest at the bottom.
 | S-035 | 2026-11-10 | Runtime | Node 24 lacks `Uint8Array.prototype.toHex`, which pdf.js calls. The parser child adds it when it is missing, and nothing else does | T-03 | Scoped to the child; extraction tests pass (TEST-LOG T-079) | Closed |
 | S-036 | 2026-11-10 | Design limit | A killed agent run leaves its `run.lock` folder, which blocks the next run until a person removes it (as for the Warden, S-028) | none | Documented in the log module; no automatic recovery | Open |
 | S-037 | 2026-11-10 | Business risk | South African space-grouped and European amount layouts are held by design. Real invoices in those layouts would be held too: a measured over-blocking risk for the target customer | none | Measured on two labelled cases in simulated mode; D-070 | Open |
+| S-039 | 2026-11-10 | Change | Model providers changed: Hugging Face retired; Groq, Gemini and Meta added. Keys remain environment-only. Meta's address comes from META_API_BASE_URL and is accepted only as https with no credentials, query or fragment. Live runs can be paced | T-04 | Address validation and key-handling tests in TEST-LOG T-091; review by the other team member pending | Closed in code, pending review |
+
 
 **Types:** `Design review`, `Finding`, `Incident`, `Dependency`, `Key rotation`, `Change`. An incident involving a real key or personal data also follows [SECURITY.md](../../SECURITY.md).

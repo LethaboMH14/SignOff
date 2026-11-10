@@ -6,7 +6,12 @@ import {
   MAX_MODEL_CALLS,
   ModelBudget,
 } from '../../src/model/budget.js';
-import { assertModelAllowed, PROVIDERS, providerById } from '../../src/model/providers.js';
+import {
+  assertModelAllowed,
+  baseUrlOf,
+  PROVIDERS,
+  providerById,
+} from '../../src/model/providers.js';
 import type { ModelClient, ModelRequest } from '../../src/model/types.js';
 
 const REQUEST: ModelRequest = {
@@ -18,29 +23,30 @@ const REQUEST: ModelRequest = {
 describe('providers', () => {
   it('finds each provider by identifier', () => {
     expect(providerById('openrouter')).toBe(PROVIDERS.openrouter);
-    expect(providerById('huggingface')).toBe(PROVIDERS.huggingface);
+    expect(providerById('groq')).toBe(PROVIDERS.groq);
+    expect(providerById('gemini')).toBe(PROVIDERS.gemini);
+    expect(providerById('meta')).toBe(PROVIDERS.meta);
   });
 
-  it('refuses an unknown provider', () => {
+  it('refuses an unknown provider, the retired Hugging Face route, and a prototype key', () => {
     expect(() => providerById('anthropic')).toThrow('unknown model provider');
+    expect(() => providerById('huggingface')).toThrow('unknown model provider');
     expect(() => providerById('__proto__')).toThrow('unknown model provider');
   });
 
   it('names the key variable for each provider and never a key value', () => {
     expect(PROVIDERS.openrouter.keyEnv).toBe('OPENROUTER_API_KEY');
-    expect(PROVIDERS.huggingface.keyEnv).toBe('HF_TOKEN');
+    expect(PROVIDERS.groq.keyEnv).toBe('GROQ_API_KEY');
+    expect(PROVIDERS.gemini.keyEnv).toBe('GEMINI_API_KEY');
+    expect(PROVIDERS.meta.keyEnv).toBe('META_API_KEY');
   });
 
-  it('accepts the default models and Meta models on OpenRouter', () => {
-    expect(() => {
-      assertModelAllowed(PROVIDERS.openrouter.defaultModel);
-    }).not.toThrow();
-    expect(() => {
-      assertModelAllowed(PROVIDERS.huggingface.defaultModel);
-    }).not.toThrow();
-    expect(() => {
-      assertModelAllowed('meta-llama/llama-3.3-70b-instruct');
-    }).not.toThrow();
+  it('accepts the default model of every provider', () => {
+    for (const provider of Object.values(PROVIDERS)) {
+      expect(() => {
+        assertModelAllowed(provider.defaultModel);
+      }).not.toThrow();
+    }
   });
 
   it('refuses Anthropic and Claude models in any letter case', () => {
@@ -65,6 +71,43 @@ describe('providers', () => {
     expect(() => {
       assertModelAllowed('a'.repeat(201));
     }).toThrow('the model identifier has characters or a length that is not allowed');
+  });
+});
+
+describe('baseUrlOf', () => {
+  it('returns the fixed address of a provider that publishes one', () => {
+    expect(baseUrlOf(PROVIDERS.groq, {})).toBe('https://api.groq.com/openai/v1');
+    expect(baseUrlOf(PROVIDERS.gemini, {})).toBe(
+      'https://generativelanguage.googleapis.com/v1beta/openai',
+    );
+  });
+
+  it("reads Meta's address from its variable, without a trailing slash", () => {
+    expect(
+      baseUrlOf(PROVIDERS.meta, { META_API_BASE_URL: 'https://meta.example.test/compat/v1/' }),
+    ).toBe('https://meta.example.test/compat/v1');
+  });
+
+  it('names only the variable when the Meta address is missing, unsafe or malformed', () => {
+    expect(() => baseUrlOf(PROVIDERS.meta, {})).toThrow(
+      'set META_API_BASE_URL in your environment to use meta',
+    );
+    expect(() => baseUrlOf(PROVIDERS.meta, { META_API_BASE_URL: '   ' })).toThrow(
+      'set META_API_BASE_URL in your environment',
+    );
+    expect(() => baseUrlOf(PROVIDERS.meta, { META_API_BASE_URL: 'not a url' })).toThrow(
+      'META_API_BASE_URL is not a valid address',
+    );
+    for (const unsafe of [
+      'http://meta.example.test/v1',
+      'https://someone@meta.example.test/v1',
+      'https://meta.example.test/v1?token=1',
+      'https://meta.example.test/v1#part',
+    ]) {
+      expect(() => baseUrlOf(PROVIDERS.meta, { META_API_BASE_URL: unsafe })).toThrow(
+        'META_API_BASE_URL must be an https address with no credentials, query or fragment',
+      );
+    }
   });
 });
 

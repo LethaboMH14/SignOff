@@ -26,6 +26,14 @@ One entry per working session (rule R-19 in [RULES.md](../RULES.md)), newest fir
 
 ---
 
+### 2026-11-10 — Sibusiso with Claude (Haiku 5.5) — Model providers: OpenRouter, Groq, Gemini and Meta
+
+- Done: Hugging Face is retired on the user's instruction. Groq, Gemini and Meta are added, with their defaults checked by one minimal probe each (T-090). Meta's address is read from META_API_BASE_URL and validated. Live runs can be paced with `--min-interval-ms`. The README and ADR 0006 are updated to match. Branch `feat/C5-live-providers`, from `feat/gate-c-agent-reliability`.
+- Changed decisions: D-073. ADR 0006 gains decisions 8 and 9 and a context note.
+- Evidence: T-090 (probes) and T-091 (tests, typecheck and lint). The live evaluation results are recorded in the test log when the runs finish.
+- Problems / blockers: Gemini `gemini-2.5-flash` returned HTTP 404, and the Gemma free models on OpenRouter returned HTTP 429 at the time of the probes. Meta's first probe was cut off at 64 tokens, so Meta replies need a larger reply budget than the probe default.
+- Next: the live evaluation on the labelled set with Groq, Gemini and OpenRouter. Meta is probed only.
+
 ### 2026-11-10 — Sibusiso with Claude (Haiku 5.5) — Gate C issues created and linked
 - Done: created issues #37 to #43 for C1 to C7, titled as in docs/ISSUES.md. Each carries its acceptance criteria, dependencies, status, evidence and branch, with the live runs marked UNVERIFIED where they have not been run. Linked them in the GH column of docs/ISSUES.md.
 - Changed decisions: none.
