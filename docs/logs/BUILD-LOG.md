@@ -198,3 +198,13 @@ One entry per working session (rule R-19 in [RULES.md](../RULES.md)), newest fir
 - Problems / blockers: no live receipt has been checked against Testnet (T-106). No RLUSD payment has run (A3 is blocked, T-059), so receipts are for the test-issued token and are labelled that way. The rand rate is a placeholder from configuration, and no market rate is claimed. The browser check of the receipt is not run (the pane was hidden). Test IDs: T-101 and D-081 belong to feat/S3-watchdog, D-080 to the keys branch; this stack uses T-102 to T-106, D-078 to D-079 and D-082, and the stacks need renumbering at merge.
 - Next: the accessibility and phone check (D5), then the health checks and deployment configuration (D6).
 
+
+### 2026-11-11 — Sibusiso with Claude (Haiku 5.5) — D5 accessibility and keyboard checks
+
+- Done: an axe-core scan over the sign-in, payment desk (plain and with a waiting raise), held-invoice and receipt screens, with no serious or critical problem, and keyboard checks on the held-invoice screen. Dev dependencies axe-core, jsdom and @types/jsdom, pinned exactly. Branch `feat/D5-mobile-a11y`, stacked on `feat/D4-receipt`.
+- Changed decisions: D-083.
+- Evidence: T-107 (7 of 7 pass; repository check exit 0: 987 tests). The browser layout check of the held-invoice, receipt and limits screens is UNVERIFIED (T-108), because the built-in browser pane was hidden.
+- Lenses. Prompt engineering: not applicable; no model is called. Context engineering: the scan runs over the same markup the browser receives, so the review and the tests agree. Swarm engineering: not applicable.
+- Problems / blockers: the phone and desktop layout of the three later screens is not measured (T-108). Colour contrast is not checked by the scan. The agent map (SVG) scrolls inside its own box at 375 px; that is the existing design, not a page scroll, and it is not a D5 screen. Axe-core is run in jsdom, so it does not see layout-dependent rules.
+- Next: the motion layer (D7), then the health checks and deployment configuration (D6).
+
