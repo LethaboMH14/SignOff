@@ -49,6 +49,7 @@ const SUPPLIER_CHANGE_STEP_PATH =
   /^\/v1\/suppliers\/(SUP-[A-Z0-9]{4,16})\/changes\/([0-9a-f-]{36})\/(confirm|approve)$/;
 
 const OPS_PROPOSAL_PATH = /^\/v1\/ops\/proposals\/([0-9a-f-]{36})$/;
+const LIMIT_APPROVAL_PATH = /^\/v1\/policy\/limits\/([0-9a-f-]{36})\/approve$/;
 
 /**
  * The operator read routes. Each sits behind the operator role, and each returns a view built from the state, so a
@@ -121,7 +122,15 @@ function routeFor(service: WardenService, method: string, path: string): Matched
   if (path === '/v1/policy/limits') {
     return {
       role: 'operator',
-      handler: async (body, actor) => ({ policyVersion: await service.setLimits(body, actor) }),
+      handler: (body, actor) => service.setLimits(body, actor),
+    };
+  }
+  const limitApproval = LIMIT_APPROVAL_PATH.exec(path);
+  if (limitApproval !== null) {
+    const requestId = limitApproval[1] ?? '';
+    return {
+      role: 'operator',
+      handler: (_body, actor) => service.approveLimits(requestId, actor),
     };
   }
   if (path === '/v1/approvals') {

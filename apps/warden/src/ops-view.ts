@@ -1,5 +1,11 @@
 import { dailyUsage, sastDay } from './checks.js';
-import type { AttemptState, AttemptStatus, SupplierState, WardenState } from './state.js';
+import type {
+  AttemptState,
+  AttemptStatus,
+  PendingLimitChange,
+  SupplierState,
+  WardenState,
+} from './state.js';
 
 /**
  * The read model for the operator console. Every view is built field by field from the state and lists only what the
@@ -18,6 +24,18 @@ export interface OpsOverview {
     readonly dailyTotalMinor: number;
   };
   readonly usageToday: { readonly day: string; readonly totalMinor: number };
+  readonly pendingLimitChange: OpsPendingLimitChange | null;
+}
+
+/** A raised limit waiting for a second operator. */
+export interface OpsPendingLimitChange {
+  readonly requestId: string;
+  readonly requestedBy: string;
+  readonly requestedAt: string;
+  readonly expiresAt: string;
+  readonly perPaymentMinor: number;
+  readonly supplierDailyMinor: number;
+  readonly dailyTotalMinor: number;
 }
 
 export interface OpsReason {
@@ -63,6 +81,21 @@ export interface OpsSupplier {
   } | null;
 }
 
+function pendingViewOf(pending: PendingLimitChange | null): OpsPendingLimitChange | null {
+  if (pending === null) {
+    return null;
+  }
+  return {
+    requestId: pending.requestId,
+    requestedBy: pending.requestedBy,
+    requestedAt: pending.requestedAt,
+    expiresAt: pending.expiresAt,
+    perPaymentMinor: pending.perPaymentMinor,
+    supplierDailyMinor: pending.supplierDailyMinor,
+    dailyTotalMinor: pending.dailyTotalMinor,
+  };
+}
+
 export function overviewOf(state: WardenState, now: Date): OpsOverview {
   const day = sastDay(now);
   return {
@@ -74,6 +107,7 @@ export function overviewOf(state: WardenState, now: Date): OpsOverview {
       dailyTotalMinor: state.limits.dailyTotalMinor,
     },
     usageToday: { day, totalMinor: dailyUsage(state.attempts.values(), day, null) },
+    pendingLimitChange: pendingViewOf(state.pendingLimits),
   };
 }
 

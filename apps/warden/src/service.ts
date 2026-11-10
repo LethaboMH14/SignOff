@@ -101,6 +101,14 @@ const LimitsPatch = z.strictObject({
 });
 export type LimitsPatch = z.infer<typeof LimitsPatch>;
 
+/** The outcome of a limits request: applied at once, or held until a second operator approves it. */
+export type LimitsOutcome =
+  | { readonly applied: true; readonly policyVersion: string }
+  | { readonly applied: false; readonly requestId: string; readonly expiresAt: string };
+
+/** A raised limit waits this long for a second operator, then lapses. A proposed rule, for review. */
+export const LIMIT_INCREASE_WINDOW_MS = 24 * 60 * 60 * 1000;
+
 const PayeeInput = z.strictObject({
   address: z.string().refine((value) => isValidClassicAddress(value), 'not a classic address'),
   destinationTag: z.int().min(0).max(4_294_967_295).nullable(),
@@ -464,10 +472,11 @@ export class WardenService {
   }
 
   /**
-   * Changes the limits. A lower limit applies to the next proposal, because every decision reads the current
-   * limits. Raising a limit is recorded with its operator; a second approver for increases belongs to Gate D.
+   * Changes the limits. A lower limit applies to the next proposal at once, because every decision reads the current
+   * limits. It also closes a raise that is waiting for approval, so an old raise cannot undo it later. A raise is not
+   * applied here: it waits for a second operator, who must be a different person (see approveLimits).
    */
-  async setLimits(patch: unknown, actorId: string): Promise<string> {
+  async setLimits(patch: unknown, actorId: string): Promise<LimitsOutcome> {
     const parsed = LimitsPatch.safeParse(patch);
     if (!parsed.success) {
       throw new WardenError(400, 'the limits do not match the schema');
@@ -476,17 +485,85 @@ export class WardenService {
       await this.applyDueChanges();
       const now = this.deps.now();
       const current = this.state.limits;
+      const requested = {
+        perPaymentMinor: parsed.data.perPaymentMinor ?? current.perPaymentMinor,
+        supplierDailyMinor: parsed.data.supplierDailyMinor ?? current.supplierDailyMinor,
+        dailyTotalMinor: parsed.data.dailyTotalMinor ?? current.dailyTotalMinor,
+      };
+      const raises =
+        requested.perPaymentMinor > current.perPaymentMinor ||
+        requested.supplierDailyMinor > current.supplierDailyMinor ||
+        requested.dailyTotalMinor > current.dailyTotalMinor;
+      if (raises) {
+        if (this.state.pendingLimits !== null) {
+          throw new WardenError(409, 'a limit increase is already waiting for a second operator');
+        }
+        const requestId = this.deps.newId();
+        const expiresAt = new Date(now.getTime() + LIMIT_INCREASE_WINDOW_MS).toISOString();
+        await this.record({
+          type: 'limits.requested',
+          at: now.toISOString(),
+          requestId,
+          requestedBy: actorId,
+          ...requested,
+          expiresAt,
+        });
+        return { applied: false, requestId, expiresAt };
+      }
+      const pending = this.state.pendingLimits;
+      if (pending !== null) {
+        await this.record({
+          type: 'limits.expired',
+          at: now.toISOString(),
+          requestId: pending.requestId,
+          reason: 'superseded',
+        });
+      }
       const policyVersion = `${sastDay(now)}.${String(current.revision + 1)}`;
       await this.record({
         type: 'policy.limits',
         at: now.toISOString(),
         policyVersion,
-        perPaymentMinor: parsed.data.perPaymentMinor ?? current.perPaymentMinor,
-        supplierDailyMinor: parsed.data.supplierDailyMinor ?? current.supplierDailyMinor,
-        dailyTotalMinor: parsed.data.dailyTotalMinor ?? current.dailyTotalMinor,
+        ...requested,
         changedBy: actorId,
       });
-      return policyVersion;
+      return { applied: true, policyVersion };
+    });
+  }
+
+  /**
+   * The second operator's approval of a raised limit. It must come from a different person than the one who asked, and
+   * it applies the raised values exactly as they were asked for.
+   */
+  async approveLimits(
+    requestId: string,
+    actorId: string,
+  ): Promise<{ readonly policyVersion: string }> {
+    return this.exclusive(async () => {
+      await this.applyDueChanges();
+      const pending = this.state.pendingLimits;
+      if (pending?.requestId !== requestId) {
+        throw new WardenError(404, 'no such limit increase is waiting for approval');
+      }
+      if (pending.requestedBy === actorId) {
+        throw new WardenError(
+          422,
+          'the person who asked for a limit increase cannot also approve it',
+        );
+      }
+      const now = this.deps.now();
+      const policyVersion = `${sastDay(now)}.${String(this.state.limits.revision + 1)}`;
+      await this.record({
+        type: 'limits.approved',
+        at: now.toISOString(),
+        requestId,
+        approvedBy: actorId,
+        policyVersion,
+        perPaymentMinor: pending.perPaymentMinor,
+        supplierDailyMinor: pending.supplierDailyMinor,
+        dailyTotalMinor: pending.dailyTotalMinor,
+      });
+      return { policyVersion };
     });
   }
 
@@ -948,6 +1025,15 @@ export class WardenService {
   /** Moves any payout change whose cooling-off has ended into effect. Recorded, so a restart sees the same state. */
   private async applyDueChanges(): Promise<void> {
     const now = this.deps.now();
+    const pending = this.state.pendingLimits;
+    if (pending !== null && Date.parse(pending.expiresAt) <= now.getTime()) {
+      await this.record({
+        type: 'limits.expired',
+        at: now.toISOString(),
+        requestId: pending.requestId,
+        reason: 'expired',
+      });
+    }
     for (const supplier of [...this.state.suppliers.values()]) {
       const change = supplier.change;
       if (

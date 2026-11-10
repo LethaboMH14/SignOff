@@ -77,6 +77,15 @@ export class WardenClient {
     return this.send('POST', '/v1/policy/limits', patch, true);
   }
 
+  approveLimits(requestId: string): Promise<unknown> {
+    return this.send(
+      'POST',
+      `/v1/policy/limits/${encodeURIComponent(requestId)}/approve`,
+      undefined,
+      true,
+    );
+  }
+
   approveProposal(proposal: unknown): Promise<unknown> {
     return this.send('POST', '/v1/approvals', { proposal }, true);
   }

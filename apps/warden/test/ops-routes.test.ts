@@ -170,6 +170,7 @@ describe('the operator reads over HTTP', () => {
       policyVersion: h.config.policyVersion,
       limits: h.config.initialLimits,
       usageToday: { day: '2026-11-10', totalMinor: STANDARD.amountMinor },
+      pendingLimitChange: null,
     });
   });
 

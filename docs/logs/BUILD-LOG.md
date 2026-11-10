@@ -34,6 +34,14 @@ One entry per working session (rule R-19 in [RULES.md](../RULES.md)), newest fir
 - Problems / blockers: none in code. Issue IDs D1W, D3W and D7 are proposed and need the reviewer's approval before merge.
 - Next: D3W (second approver for limit increases), then D1 (console).
 
+### 2026-11-10 — Sibusiso with Claude (Haiku 5.5) — D3W second operator for limit increases
+
+- Done: a raise becomes a pending request that a second, different operator approves. A lowering applies at once and closes a waiting raise. A waiting raise lapses after 24 hours (proposed). Routes: `POST /v1/policy/limits` returns applied or pending, and `POST /v1/policy/limits/{id}/approve` approves a raise. The overview shows any waiting raise. Branch `feat/D3W-second-approver`, stacked on `feat/D1W-warden-read`.
+- Changed decisions: D-074.
+- Evidence: T-095. `npm run check` exit 0 (58 files, 807 tests).
+- Problems / blockers: the 24-hour window is a proposed rule for review. The service tests were updated for the new return shape of setLimits. Lowerings behave as before.
+- Next: the console (D1), with the live agent map.
+
 ### 2026-11-10 — Sibusiso with Claude (Haiku 5.5) — Gate C issues created and linked
 - Done: created issues #37 to #43 for C1 to C7, titled as in docs/ISSUES.md. Each carries its acceptance criteria, dependencies, status, evidence and branch, with the live runs marked UNVERIFIED where they have not been run. Linked them in the GH column of docs/ISSUES.md.
 - Changed decisions: none.

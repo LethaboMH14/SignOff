@@ -10,6 +10,17 @@ export interface LimitsState {
   readonly dailyTotalMinor: number;
 }
 
+/** A raised limit that is waiting for a second operator. At most one is open at a time. */
+export interface PendingLimitChange {
+  readonly requestId: string;
+  readonly requestedBy: string;
+  readonly requestedAt: string;
+  readonly expiresAt: string;
+  readonly perPaymentMinor: number;
+  readonly supplierDailyMinor: number;
+  readonly dailyTotalMinor: number;
+}
+
 export interface ChangeState {
   readonly changeId: string;
   readonly newPayee: PayeeRecord;
@@ -73,6 +84,8 @@ export function isUnresolved(status: AttemptStatus): boolean {
 export class WardenState {
   limits: LimitsState;
   paused = false;
+  /** The raised limits waiting for a second operator, or null. Any applied change to the limits clears it. */
+  pendingLimits: PendingLimitChange | null = null;
   readonly approvals = new Map<string, Set<string>>();
   readonly suppliers = new Map<string, SupplierState>();
   readonly attempts = new Map<string, AttemptState>();
@@ -95,6 +108,36 @@ export class WardenState {
           supplierDailyMinor: event.supplierDailyMinor,
           dailyTotalMinor: event.dailyTotalMinor,
         };
+        return;
+      case 'limits.requested':
+        this.pendingLimits = {
+          requestId: event.requestId,
+          requestedBy: event.requestedBy,
+          requestedAt: event.at,
+          expiresAt: event.expiresAt,
+          perPaymentMinor: event.perPaymentMinor,
+          supplierDailyMinor: event.supplierDailyMinor,
+          dailyTotalMinor: event.dailyTotalMinor,
+        };
+        return;
+      case 'limits.approved':
+        if (this.pendingLimits?.requestId !== event.requestId) {
+          throw new Error('the event log refers to a limit change that is not pending');
+        }
+        this.limits = {
+          revision: this.limits.revision + 1,
+          policyVersion: event.policyVersion,
+          perPaymentMinor: event.perPaymentMinor,
+          supplierDailyMinor: event.supplierDailyMinor,
+          dailyTotalMinor: event.dailyTotalMinor,
+        };
+        this.pendingLimits = null;
+        return;
+      case 'limits.expired':
+        if (this.pendingLimits?.requestId !== event.requestId) {
+          throw new Error('the event log refers to a limit change that is not pending');
+        }
+        this.pendingLimits = null;
         return;
       case 'pause.set':
         this.paused = event.paused;

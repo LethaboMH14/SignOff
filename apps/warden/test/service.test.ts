@@ -457,7 +457,11 @@ describe('B5 limits', () => {
     await activeSupplier(service, base, generateSupplierKey().publicKey);
     const first = await service.propose(proposalFor(newAttemptId(), STANDARD, config, clock.now));
     expect(first.decision.decision).toBe('ALLOW');
-    const version = await service.setLimits({ perPaymentMinor: 500 }, OPERATOR_A);
+    const outcome = await service.setLimits({ perPaymentMinor: 500 }, OPERATOR_A);
+    if (!outcome.applied) {
+      throw new Error('a lowered limit should apply at once');
+    }
+    const version = outcome.policyVersion;
     expect(version).not.toBe(config.policyVersion);
     const next = await service.propose({
       ...proposalFor(newAttemptId(), second, config, clock.now),
@@ -877,7 +881,11 @@ describe('the event log and recovery', () => {
     const log = memoryEventLog();
     const first = await openService(base, config, evidenceFrom([]), { clock, log });
     await first.setPaused(true, OPERATOR_A);
-    const version = await first.setLimits({ perPaymentMinor: 500 }, OPERATOR_B);
+    const outcome = await first.setLimits({ perPaymentMinor: 500 }, OPERATOR_B);
+    if (!outcome.applied) {
+      throw new Error('a lowered limit should apply at once');
+    }
+    const version = outcome.policyVersion;
     const restarted = await openService(base, config, evidenceFrom([]), { clock, log });
     expect(restarted.health()).toEqual({ paused: true, policyVersion: version });
     expect(restarted.currentLimits().perPaymentMinor).toBe(500);
