@@ -1,8 +1,14 @@
 # SignOff build brief
 
+> Updated 10 November 2026 after the team accepted [ADR 0001](docs/decisions/0001-supplier-anchored-reframe.md), [ADR 0002](docs/decisions/0002-plain-multisign-core.md) and [ADR 0003](docs/decisions/0003-no-quantum-in-mvp.md). Trust boundaries are in [docs/TRUST.md](docs/TRUST.md). The technical constraints below are unchanged.
+
 ## Problem and user
 
-A Lusaka solar distributor needs to pay a South African supplier while checking invoices and changes to payout details. Rubicon, a South African solar wholesaler, warns customers about messages claiming its banking details have changed. The Solar Guys in Lusaka is a prospect for discovery, not a confirmed customer. Validate the process and cost with a finance lead before claiming adoption.
+A buyer outside South Africa, such as a Lusaka solar distributor, pays a South African supplier and must check invoices and any change to payout details. The **buyer** initiates and controls payments: it runs the agent, holds the spending account and sets the limits. The **South African supplier** is the proposed distribution and verification entry point: it enrols, publishes signed payout details and invites its buyers. This positioning is a go-to-market hypothesis. Who buys, who pays and who authorises onboarding still have to be validated with real finance leads.
+
+Rubicon, a South African solar wholesaler, warns customers about messages claiming its banking details have changed. The Solar Guys in Lusaka is a prospect for discovery, not a confirmed customer. Validate the process and cost with a finance lead before claiming adoption.
+
+A supplier's signature only counts once it is linked to an independently verified supplier identity, with an authenticated change and recovery process ([docs/TRUST.md](docs/TRUST.md)).
 
 The demo uses fictional invoices and settles RLUSD to a project-controlled account on XRPL Testnet. Any conversion or payment of ZAR to a supplier is labelled **simulated**. Yellow Card is a candidate rail to investigate, not an integrated partner. Review applicable Zambian and South African rules with counsel before any real-money pilot.
 
@@ -30,9 +36,13 @@ TypeScript on Node 24, React and Vite for the console, LangGraph.js for orchestr
 
 ## XRPL spike
 
-Time-box the initial spike to 90 minutes after provisioning Testnet accounts. Configure SPEND with Payment delegation to a CONTROL account. CONTROL has Agent and Warden signers with quorum two, its master key disabled, and no regular key. Verify a validated RLUSD payment, rejection with one key, rejection of an unauthorized transaction type, and operator revocation. Record actual results and transaction hashes.
+Time-box the initial spike to 90 minutes after provisioning Testnet accounts.
 
-If this combination does not work, put the two-signature quorum directly on SPEND with an offline operator recovery key. Document that this fallback loses the ledger's delegation-based transaction-type restriction.
+**Baseline (accepted, ADR 0002).** Put a signer list on SPEND with Agent and Warden signers and quorum two. Disable SPEND's master key and set no regular key. Keep an offline operator recovery path (see [docs/TRUST.md](docs/TRUST.md)). Verify a validated RLUSD payment with both signatures, rejection with the Agent key alone, rejection with the Warden key alone, and that an operator pause stops Warden from co-signing. Record actual results and transaction hashes.
+
+This baseline does not let the ledger restrict which transaction types the two signers send together. Warden must refuse anything that is not a plain RLUSD payment, and documentation must say this is a Warden check, not a ledger guarantee.
+
+**Optional enhancement.** Only after the baseline, console and attack suite work, and only after confirming on Testnet that the feature is enabled: configure SPEND with Payment delegation to a CONTROL account with the same two signers. Verify rejection of an unauthorised transaction type and operator revocation before claiming either.
 
 Warden verifies the exact issuer, destination, tag, amount, per-payment and daily limits, and stable vendor-plus-invoice identity. Atomically reserve spend and allow one unresolved transaction per account. Persist the transaction hash before submission. Reconcile expiry and ledger history before retrying. Only show paid when the validated result and delivered amount match. Calculate exposure from actual spendable balances. Never put keys or invoice data in public ledger memos.
 
