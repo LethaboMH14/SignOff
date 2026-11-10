@@ -1,0 +1,11 @@
+# Line endings: LF in the repository and in every working copy, on every platform.
+* text=auto eol=lf
+
+# Binary files are never converted or diffed as text.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.pdf binary
+*.mp4 binary
+*.zip binary

@@ -1,0 +1,29 @@
+# Dependencies and build output
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+
+# Secrets and local environment (rule R-12). Only the example template is tracked.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.keystore
+*.jks
+id_rsa
+id_dsa
+id_ecdsa
+id_ed25519
+
+# Local-only notes and transcripts. They can contain other people's personal data.
+/notes/
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

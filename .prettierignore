@@ -1,0 +1,7 @@
+# Formatting is enforced for code and configuration. Documents are reviewed by people.
+node_modules
+dist
+coverage
+package-lock.json
+docs
+*.md
