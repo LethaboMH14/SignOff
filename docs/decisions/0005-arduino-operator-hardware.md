@@ -24,7 +24,7 @@ Use accessible labels/icons alongside LED colors. A compact dark presentation ba
 
 ## Trust boundaries
 
-\`\`\`mermaid
+```mermaid
 flowchart LR
   A["STOP button / LEDs on Uno"] <-->|"USB serial: no secrets"| B["Operator laptop bridge"]
   B -->|"Authenticated pause-only command"| W["Independent Warden"]
@@ -32,7 +32,7 @@ flowchart LR
   W -->|"Confirmed state"| B
   W -->|"Hold / no new signature"| X["Payment workflow"]
   R["Validated XRPL reconciler"] -->|"Verified payment state"| B
-\`\`\`
+```
 
 - The Uno R3 has no built-in networking or secure key storage. Keep all XRPL, reserve, issuer and operator signing secrets off the device; do not embed long-lived secrets in sketch, serial messages, source or demo logs.
 - The bridge must not have broad finance-admin permissions. Grant a **short-lived narrowly scoped pause/status capability** on an authenticated operator session; **never** grant resume or transaction signing authority to the Arduino bridge.
