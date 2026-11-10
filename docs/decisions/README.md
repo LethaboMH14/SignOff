@@ -1,5 +1,7 @@
 # Decision records
 
+New records start from [TEMPLATE.md](TEMPLATE.md). Smaller decisions go in the [decision journal](../logs/DECISION-JOURNAL.md).
+
 Each file records one decision: the context, the choice, and what it costs. A record is **Proposed** until the team agrees, then **Accepted**. Accepted records are reflected in [BUILD-BRIEF.md](../../BUILD-BRIEF.md).
 
 | No. | Decision | Status |
