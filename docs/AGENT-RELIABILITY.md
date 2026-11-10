@@ -6,6 +6,19 @@ The design assumes the agents will sometimes hallucinate. The goal is that a hal
 
 Hallucination is also not the main risk. A model that extracts perfectly can still propose a fraudulent invoice if the supplier list, purchase order or delivery record is wrong. Those threats are in [TRUST.md](TRUST.md#threats-from-upstream-of-the-agent).
 
+## 0. A workflow, not a free-roaming agent
+
+Anthropic's guidance is to use the simplest design that works, and fixed workflows where the task is well defined and predictability matters ([Building effective agents](https://www.anthropic.com/engineering/building-effective-agents)). Paying an invoice is well defined. So SignOff's sequence is fixed in code; the model is called at set points and never chooses its own next step or tools. In Anthropic's terms this is prompt chaining with programmatic checks between steps.
+
+Other practices taken from that guidance and the API documentation:
+
+- **Strict, schema-enforced output** for extraction, so every response parses ([structured outputs](https://platform.claude.com/docs/en/build-with-claude/structured-outputs)). Hand-check the schema features actually enforced.
+- **Tools designed as carefully as prompts:** few tools, clear names, examples and boundaries. The agent's only write tool is `propose_payment`; everything else is read-only.
+- **Make mistakes hard:** amounts as integer minor units and currency codes, supplier referenced by enrolled identifier only, never a free-text account.
+- **Prompts and tool schemas versioned** and recorded with every decision.
+- **Stopping rules:** fixed number of model calls per invoice (at most three); on reaching it, hold.
+- **Evaluate on many examples** before trusting a change, as below.
+
 ## 1. The model decides as little as possible
 
 | Job | Done by |
