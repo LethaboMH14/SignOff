@@ -90,6 +90,22 @@ export type SupplierView = z.infer<typeof SupplierView>;
 
 export const SupplierList = z.object({ suppliers: z.array(SupplierView).max(5000) });
 
+/** The Warden's answer to a limit change: applied at once, or waiting for a second operator. */
+export const LimitsAnswer = z.union([
+  z.object({
+    applied: z.literal(true),
+    policyVersion: z.string().min(1).max(40),
+  }),
+  z.object({
+    applied: z.literal(false),
+    requestId: z.uuid(),
+    expiresAt: z.string().min(1).max(40),
+  }),
+]);
+
+/** The Warden's answer to an approval: the policy version the raised limits now belong to. */
+export const ApprovalAnswer = z.object({ policyVersion: z.string().min(1).max(40) });
+
 /** The Warden's proposal as the desk's rule takes it: the reason codes and the fields the rule reads. */
 export function proposalRecordOf(view: ProposalView): ProposalRecord {
   return {

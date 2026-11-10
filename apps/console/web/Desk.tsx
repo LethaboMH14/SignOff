@@ -2,19 +2,32 @@ import { useCallback, useEffect, useState } from 'react';
 
 import {
   ApiError,
-  type DeskData,
+  approveLimit,
   confirmPassword,
+  type DeskData,
+  type LimitValues,
   loadDesk,
   loadInvoice,
+  type PendingAction,
   type SessionInfo,
+  setLimits,
   setPaused,
 } from './api.js';
+import { type ActionPorts, confirmAndPerform, performAction, type Settled } from './actions.js';
 import type { InvoiceDetail } from '../src/server/invoice-view.js';
 import { DeskView } from './DeskView.js';
 import { InvoiceView } from './InvoiceView.js';
 
 /** How often the desk asks the console for fresh rows. A change also refreshes at once. */
 const REFRESH_MS = 5000;
+
+/** The console calls for changes. Each is the function the API client exports. */
+const PORTS: ActionPorts = {
+  pause: setPaused,
+  limits: setLimits,
+  approve: approveLimit,
+  confirm: confirmPassword,
+};
 
 function messageOf(failure: unknown): string {
   return failure instanceof ApiError ? failure.message : 'The desk did not load. Try again.';
@@ -25,13 +38,16 @@ export interface DeskProps {
   readonly onSession: (session: SessionInfo) => void;
 }
 
-/** The desk with its state: it reads the console API, and asks for the password again before a pause or resume. */
+/**
+ * The desk with its state. It reads the console API. A pause, a limit change or an approval that the console refuses
+ * for want of a recent password waits; the password is asked for; the same change is then sent again.
+ */
 export function Desk({ session, onSession }: DeskProps) {
   const [data, setData] = useState<DeskData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  /** The pause (true) or resume (false) waiting for the password, or null when nothing is waiting. */
-  const [wanted, setWanted] = useState<boolean | null>(null);
+  /** The change waiting for the password, or null when nothing is waiting. */
+  const [pending, setPending] = useState<PendingAction | null>(null);
   /** The invoice whose held-invoice view is open, and its detail once it has loaded. */
   const [openId, setOpenId] = useState<string | null>(null);
   const [detail, setDetail] = useState<InvoiceDetail | null>(null);
@@ -69,49 +85,59 @@ export function Desk({ session, onSession }: DeskProps) {
     };
   }, [refresh]);
 
-  const applyPause = useCallback(
-    async (paused: boolean, current: SessionInfo) => {
-      setBusy(true);
-      try {
-        await setPaused(paused, current.csrfToken);
-        setWanted(null);
-        await refresh();
-      } catch (failure) {
-        if (failure instanceof ApiError && failure.code === 'STEP_UP_REQUIRED') {
-          setWanted(paused);
-        } else {
-          setError(messageOf(failure));
-        }
-      } finally {
-        setBusy(false);
+  /** Applies the state a change leaves behind: what waits, what went wrong, the session, and whether to reload. */
+  const settle = useCallback(
+    (settled: Settled, previous: SessionInfo) => {
+      setPending(settled.pending);
+      setError(settled.error);
+      if (settled.session !== previous) {
+        onSession(settled.session);
+      }
+      if (settled.refresh) {
+        void refresh();
       }
     },
-    [refresh],
+    [onSession, refresh],
+  );
+
+  const run = useCallback(
+    async (action: PendingAction, current: SessionInfo) => {
+      setBusy(true);
+      const settled = await performAction(action, current, PORTS);
+      setBusy(false);
+      settle(settled, current);
+    },
+    [settle],
   );
 
   const onTogglePause = useCallback(() => {
     if (data !== null) {
-      void applyPause(!data.overview.paused, session);
+      void run({ kind: 'pause', paused: !data.overview.paused }, session);
     }
-  }, [applyPause, data, session]);
+  }, [data, run, session]);
+
+  const onRequestLimits = useCallback(
+    (values: LimitValues) => {
+      void run({ kind: 'limits', values }, session);
+    },
+    [run, session],
+  );
+
+  const onApprove = useCallback(
+    (requestId: string) => {
+      void run({ kind: 'approve', requestId }, session);
+    },
+    [run, session],
+  );
 
   const onConfirm = useCallback(
     async (password: string) => {
       setBusy(true);
-      try {
-        await confirmPassword(password, session.csrfToken);
-        const fresh: SessionInfo = { ...session, stepUp: true };
-        onSession(fresh);
-        if (wanted !== null) {
-          await applyPause(wanted, fresh);
-        }
-      } catch (failure) {
-        setError(messageOf(failure));
-      } finally {
-        setBusy(false);
-      }
+      const settled = await confirmAndPerform(password, session, pending, PORTS);
+      setBusy(false);
+      settle(settled, session);
     },
-    [applyPause, onSession, session, wanted],
+    [pending, session, settle],
   );
 
   if (openId !== null) {
@@ -133,11 +159,13 @@ export function Desk({ session, onSession }: DeskProps) {
       data={data}
       error={error}
       busy={busy}
-      waitingFor={wanted}
+      pending={pending}
       onTogglePause={onTogglePause}
+      onRequestLimits={onRequestLimits}
+      onApprove={onApprove}
       onConfirm={onConfirm}
       onCancelConfirm={() => {
-        setWanted(null);
+        setPending(null);
       }}
       onOpen={(rowId) => {
         void openInvoice(rowId);

@@ -24,12 +24,34 @@ export interface DeskOverview {
     readonly dailyTotalMinor: number;
   };
   readonly usageToday: { readonly day: string; readonly totalMinor: number };
-  readonly pendingLimitChange: {
-    readonly requestId: string;
-    readonly requestedBy: string;
-    readonly expiresAt: string;
-  } | null;
+  readonly pendingLimitChange: PendingRaise | null;
 }
+
+/** A raised limit waiting for a second operator, as the signed-in person may see it. */
+export interface PendingRaise {
+  readonly requestId: string;
+  /** The requester by name, or "you" when the signed-in person asked for it. */
+  readonly requestedBy: string;
+  readonly expiresAt: string;
+  readonly perPaymentMinor: number;
+  readonly supplierDailyMinor: number;
+  readonly dailyTotalMinor: number;
+  readonly approvalAllowed: boolean;
+  readonly why: string;
+}
+
+/** Limits in minor units. A value left out is not changed. */
+export interface LimitValues {
+  readonly perPaymentMinor?: number;
+  readonly supplierDailyMinor?: number;
+  readonly dailyTotalMinor?: number;
+}
+
+/** A change that waits for the password to be confirmed before it is sent again. */
+export type PendingAction =
+  | { readonly kind: 'pause'; readonly paused: boolean }
+  | { readonly kind: 'limits'; readonly values: LimitValues }
+  | { readonly kind: 'approve'; readonly requestId: string };
 
 export interface DeskData {
   readonly asOf: string;
@@ -132,4 +154,17 @@ export function loadDesk(): Promise<DeskData> {
 
 export function setPaused(paused: boolean, csrf: string): Promise<unknown> {
   return request('POST', '/api/control/pause', { paused }, csrf);
+}
+
+/** Asks for new limits. The answer says whether they applied, or whether a higher one waits for a second operator. */
+export function setLimits(
+  values: LimitValues,
+  csrf: string,
+): Promise<{ readonly applied: boolean }> {
+  return request('POST', '/api/limits', values, csrf);
+}
+
+/** Approves a waiting raise. A second operator makes this call; the console refuses the requester's own approval. */
+export function approveLimit(requestId: string, csrf: string): Promise<unknown> {
+  return request('POST', `/api/limits/${encodeURIComponent(requestId)}/approve`, undefined, csrf);
 }

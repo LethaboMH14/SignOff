@@ -17,6 +17,7 @@ import {
   SECOND_OPERATOR_NAME,
   signIn,
   VIEWER_NAME,
+  WAITING_REQUEST,
 } from './helpers/api.js';
 
 const ATTEMPT = '0b1c2d3e-4f50-4a6b-8c7d-9e0f1a2b3c4d';
@@ -364,19 +365,32 @@ describe('the changes', () => {
 
   it('lets a second person approve a waiting raise, and passes the Warden refusal on in its own words', async () => {
     const { url, harness } = await start();
+    const { operator } = harness.operatorsByName();
     const second = await signIn(url, SECOND_OPERATOR_NAME);
     await stepUpFor(url, second.cookie, second.csrf);
-    const requestId = '1d2e3f40-5a6b-4c7d-8e9f-a0b1c2d3e4f5';
-    const approved = await call(url, `/api/limits/${requestId}/approve`, {
+    harness.warden.overview = {
+      ...(harness.warden.overview as object),
+      pendingLimitChange: {
+        requestId: WAITING_REQUEST,
+        requestedBy: operator.wardenPrincipal,
+        requestedAt: '2026-11-11T08:30:00.000Z',
+        expiresAt: '2026-11-12T08:30:00.000Z',
+        perPaymentMinor: 900000,
+        supplierDailyMinor: 1000000,
+        dailyTotalMinor: 2000000,
+      },
+    };
+    const approved = await call(url, `/api/limits/${WAITING_REQUEST}/approve`, {
       method: 'POST',
       cookie: second.cookie,
       csrf: second.csrf,
       origin: url,
     });
     expect(approved.status).toBe(200);
-    expect(harness.warden.calls).toEqual([`approve:${requestId}`]);
+    expect(approved.json).toEqual({ approved: true, policyVersion: '2026-11-11.2' });
+    expect(harness.warden.calls).toContain(`approve:${WAITING_REQUEST}`);
     harness.warden.refuseWith = 409;
-    const refused = await call(url, `/api/limits/${requestId}/approve`, {
+    const refused = await call(url, `/api/limits/${WAITING_REQUEST}/approve`, {
       method: 'POST',
       cookie: second.cookie,
       csrf: second.csrf,
@@ -384,6 +398,84 @@ describe('the changes', () => {
     });
     expect(refused.status).toBe(409);
     expect(refused.json).toEqual({ error: 'the Warden refused' });
+  });
+
+  it('refuses a person who asked for a raise to approve it, and sends nothing to the Warden', async () => {
+    const { url, harness } = await start();
+    const { operator } = harness.operatorsByName();
+    harness.warden.overview = {
+      ...(harness.warden.overview as object),
+      pendingLimitChange: {
+        requestId: WAITING_REQUEST,
+        requestedBy: operator.wardenPrincipal,
+        requestedAt: '2026-11-11T08:30:00.000Z',
+        expiresAt: '2026-11-12T08:30:00.000Z',
+        perPaymentMinor: 900000,
+        supplierDailyMinor: 1000000,
+        dailyTotalMinor: 2000000,
+      },
+    };
+    const requester = await signIn(url, OPERATOR_NAME);
+    await stepUpFor(url, requester.cookie, requester.csrf);
+    const reply = await call(url, `/api/limits/${WAITING_REQUEST}/approve`, {
+      method: 'POST',
+      cookie: requester.cookie,
+      csrf: requester.csrf,
+      origin: url,
+    });
+    expect(reply.status).toBe(403);
+    expect(harness.warden.calls.some((item) => item.startsWith('approve:'))).toBe(false);
+  });
+
+  it('shows a waiting raise to the requester as theirs to wait on, and to another operator as theirs to approve', async () => {
+    const { url, harness } = await start();
+    const { operator } = harness.operatorsByName();
+    harness.warden.overview = {
+      ...(harness.warden.overview as object),
+      pendingLimitChange: {
+        requestId: WAITING_REQUEST,
+        requestedBy: operator.wardenPrincipal,
+        requestedAt: '2026-11-11T08:30:00.000Z',
+        expiresAt: '2026-11-12T08:30:00.000Z',
+        perPaymentMinor: 900000,
+        supplierDailyMinor: 1000000,
+        dailyTotalMinor: 2000000,
+      },
+    };
+    const requester = await signIn(url, OPERATOR_NAME);
+    const other = await signIn(url, SECOND_OPERATOR_NAME);
+    const asRequester = await call(url, '/api/desk', { cookie: requester.cookie });
+    const asOther = await call(url, '/api/desk', { cookie: other.cookie });
+    expect(asRequester.json).toMatchObject({
+      overview: { pendingLimitChange: { requestedBy: 'you', approvalAllowed: false } },
+    });
+    expect(asOther.json).toMatchObject({
+      overview: { pendingLimitChange: { requestedBy: OPERATOR_NAME, approvalAllowed: true } },
+    });
+  });
+
+  it('sends a limit increase only with a step-up, and says it waits for a second operator', async () => {
+    const { url, harness } = await start();
+    const operator = await signIn(url, OPERATOR_NAME);
+    const refusedWithoutStepUp = await call(url, '/api/limits', {
+      method: 'POST',
+      cookie: operator.cookie,
+      csrf: operator.csrf,
+      origin: url,
+      body: { perPaymentMinor: 900000 },
+    });
+    expect(refusedWithoutStepUp.status).toBe(403);
+    expect(harness.warden.calls).toEqual([]);
+    await stepUpFor(url, operator.cookie, operator.csrf);
+    const raised = await call(url, '/api/limits', {
+      method: 'POST',
+      cookie: operator.cookie,
+      csrf: operator.csrf,
+      origin: url,
+      body: { perPaymentMinor: 900000 },
+    });
+    expect(raised.status).toBe(200);
+    expect(raised.json).toMatchObject({ applied: false, requestId: WAITING_REQUEST });
   });
 
   it('refuses an approval whose request id is not in the expected form', async () => {

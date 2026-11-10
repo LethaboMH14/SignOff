@@ -11,6 +11,16 @@ import { LoginGuard, SessionStore } from '../../src/server/auth/sessions.js';
  */
 
 export const START_MS = Date.parse('2026-11-11T08:00:00.000Z');
+const START_ISO = '2026-11-11T08:30:00.000Z';
+const EXPIRES_ISO = '2026-11-12T08:30:00.000Z';
+/** The request id the fake gives a raise that waits for a second operator. */
+export const WAITING_REQUEST = '3f2e1d0c-9b8a-4c7d-8e6f-5a4b3c2d1e0f';
+
+interface FakeLimits {
+  perPaymentMinor: number;
+  supplierDailyMinor: number;
+  dailyTotalMinor: number;
+}
 export const PASSWORD = randomBytes(18).toString('base64url');
 export const OPERATOR_NAME = 'alice';
 export const SECOND_OPERATOR_NAME = 'bongani';
@@ -69,12 +79,61 @@ export class FakeWarden implements WardenPort {
     return this.answer(`pause:${String(paused)}`, { paused });
   }
 
+  /** Like the Warden: a lowering applies at once; a raise waits for a second operator, and its requester is someone else. */
   setLimits(patch: unknown): Promise<unknown> {
-    return this.answer(`limits:${JSON.stringify(patch)}`, { applied: false });
+    const current = (this.overview as { readonly limits: FakeLimits }).limits;
+    const values = patch as Partial<FakeLimits>;
+    const next: FakeLimits = {
+      perPaymentMinor: values.perPaymentMinor ?? current.perPaymentMinor,
+      supplierDailyMinor: values.supplierDailyMinor ?? current.supplierDailyMinor,
+      dailyTotalMinor: values.dailyTotalMinor ?? current.dailyTotalMinor,
+    };
+    const raises =
+      next.perPaymentMinor > current.perPaymentMinor ||
+      next.supplierDailyMinor > current.supplierDailyMinor ||
+      next.dailyTotalMinor > current.dailyTotalMinor;
+    if (raises) {
+      this.overview = {
+        ...(this.overview as object),
+        pendingLimitChange: {
+          requestId: WAITING_REQUEST,
+          requestedBy: 'operator-someone-else',
+          requestedAt: START_ISO,
+          expiresAt: EXPIRES_ISO,
+          ...next,
+        },
+      };
+      return this.answer(`limits:${JSON.stringify(patch)}`, {
+        applied: false,
+        requestId: WAITING_REQUEST,
+        expiresAt: EXPIRES_ISO,
+      });
+    }
+    this.overview = { ...(this.overview as object), limits: next };
+    return this.answer(`limits:${JSON.stringify(patch)}`, {
+      applied: true,
+      policyVersion: '2026-11-11.1',
+    });
   }
 
   approveLimits(requestId: string): Promise<unknown> {
-    return this.answer(`approve:${requestId}`, { approved: true });
+    const overview = this.overview as {
+      readonly pendingLimitChange: (FakeLimits & { readonly requestId: string }) | null;
+    };
+    const pending = overview.pendingLimitChange;
+    if (pending?.requestId !== requestId) {
+      return this.answer(`approve:${requestId}`, undefined, 404);
+    }
+    this.overview = {
+      ...(this.overview as object),
+      limits: {
+        perPaymentMinor: pending.perPaymentMinor,
+        supplierDailyMinor: pending.supplierDailyMinor,
+        dailyTotalMinor: pending.dailyTotalMinor,
+      },
+      pendingLimitChange: null,
+    };
+    return this.answer(`approve:${requestId}`, { policyVersion: '2026-11-11.2' });
   }
 
   private answer(call: string, body: unknown, status: number | null = null): Promise<unknown> {

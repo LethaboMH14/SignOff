@@ -11,7 +11,9 @@ import { cookieOf, readBody, sendEmpty, sendJson } from './http.js';
 import type { ConsoleMode } from './app.js';
 import { invoiceDetailOf } from './invoice-view.js';
 import {
+  ApprovalAnswer,
   latestInvoicesOf,
+  LimitsAnswer,
   OverviewView,
   ProposalList,
   ProposalView,
@@ -280,6 +282,40 @@ async function stepUp(
   sendJson(response, 200, { stepUpUntil: new Date(until).toISOString() });
 }
 
+/**
+ * A raised limit waiting for a second operator, as the signed-in person may see it. The requester is named by person,
+ * and approval is offered only to an operator who is not the requester. The Warden checks the same rule again.
+ */
+function pendingViewOf(
+  pending: OverviewView['pendingLimitChange'],
+  caller: Caller,
+  ctx: ApiContext,
+):
+  | (NonNullable<OverviewView['pendingLimitChange']> & {
+      readonly approvalAllowed: boolean;
+      readonly why: string;
+    })
+  | null {
+  if (pending === null) {
+    return null;
+  }
+  const isRequester = caller.operator.wardenPrincipal === pending.requestedBy;
+  const requestedBy = isRequester
+    ? 'you'
+    : (ctx.operators.byPrincipal(pending.requestedBy)?.username ?? 'another operator');
+  const approvalAllowed = caller.operator.role === 'operator' && !isRequester;
+  return {
+    ...pending,
+    requestedBy,
+    approvalAllowed,
+    why: approvalAllowed
+      ? 'A second operator approves this raise. Approval needs your password.'
+      : isRequester
+        ? 'You asked for this raise, so another operator must approve it.'
+        : 'Only operators can approve a raise.',
+  };
+}
+
 async function desk(
   request: IncomingMessage,
   response: ServerResponse,
@@ -312,7 +348,7 @@ async function desk(
         policyVersion: overview.policyVersion,
         limits: overview.limits,
         usageToday: overview.usageToday,
-        pendingLimitChange: overview.pendingLimitChange,
+        pendingLimitChange: pendingViewOf(overview.pendingLimitChange, caller, ctx),
       },
       counts: countsOf(rows),
       rows,
@@ -378,8 +414,14 @@ async function limits(
     return;
   }
   try {
-    await warden.setLimits(body);
-    sendJson(response, 200, { requested: true });
+    const answer = LimitsAnswer.parse(await warden.setLimits(body));
+    sendJson(
+      response,
+      200,
+      answer.applied
+        ? { applied: true, policyVersion: answer.policyVersion }
+        : { applied: false, requestId: answer.requestId, expiresAt: answer.expiresAt },
+    );
   } catch (error) {
     const failure = wardenFailure(error);
     sendJson(response, failure.status, { error: failure.message });
@@ -410,8 +452,20 @@ async function approveLimit(
     return;
   }
   try {
-    await warden.approveLimits(requestId);
-    sendJson(response, 200, { approved: true });
+    // The console refuses the requester's own approval before the Warden is asked. The Warden checks it again.
+    const pending = OverviewView.parse(await warden.opsOverview()).pendingLimitChange;
+    if (pending?.requestId !== requestId) {
+      sendJson(response, 409, { error: 'no such limit increase is waiting for approval' });
+      return;
+    }
+    if (pending.requestedBy === caller.operator.wardenPrincipal) {
+      sendJson(response, 403, {
+        error: 'you asked for this limit increase, so another operator must approve it',
+      });
+      return;
+    }
+    const approval = ApprovalAnswer.parse(await warden.approveLimits(requestId));
+    sendJson(response, 200, { approved: true, policyVersion: approval.policyVersion });
   } catch (error) {
     const failure = wardenFailure(error);
     sendJson(response, failure.status, { error: failure.message });

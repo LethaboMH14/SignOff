@@ -1,6 +1,6 @@
 import { type SubmitEvent, useState } from 'react';
 
-import { type DeskData } from './api.js';
+import { type DeskData, type LimitValues, type PendingAction } from './api.js';
 import { DISPLAY_STATES, type DisplayState } from '../src/model/desk.js';
 import { StateChip } from './StateChip.js';
 
@@ -47,13 +47,39 @@ export function countOf(
   return new Map<string, number>(Object.entries(counts)).get(state) ?? 0;
 }
 
+/** A limit in minor units, written as an amount to type: 5000.00. */
+export function majorTextOf(minor: number): string {
+  return (minor / 100).toFixed(2);
+}
+
+/** The minor units for an amount typed as 5000 or 5000.00, or null when it is not a positive amount. */
+export function minorOf(text: string): number | null {
+  const trimmed = text.trim();
+  const [whole = '', fraction = '', ...rest] = trimmed.split('.');
+  const digits = (value: string): boolean => /^[0-9]*$/.test(value);
+  if (
+    rest.length > 0 ||
+    whole.length === 0 ||
+    whole.length > 10 ||
+    fraction.length > 2 ||
+    !digits(whole) ||
+    !digits(fraction)
+  ) {
+    return null;
+  }
+  const minor = Math.round(Number(trimmed) * 100);
+  return minor > 0 ? minor : null;
+}
+
 export interface DeskViewProps {
   readonly data: DeskData | null;
   readonly error: string | null;
   readonly busy: boolean;
-  /** Set while a pause or resume waits for the password to be confirmed. */
-  readonly waitingFor: boolean | null;
+  /** The change waiting for the password to be confirmed, or null when nothing is waiting. */
+  readonly pending: PendingAction | null;
   readonly onTogglePause: () => void;
+  readonly onRequestLimits: (values: LimitValues) => void;
+  readonly onApprove: (requestId: string) => void;
   readonly onConfirm: (password: string) => Promise<void>;
   readonly onCancelConfirm: () => void;
   /** Opens the held-invoice view for a row. */
@@ -107,9 +133,102 @@ function StepUp({
   );
 }
 
+interface CurrentLimits {
+  readonly perPaymentMinor: number;
+  readonly supplierDailyMinor: number;
+  readonly dailyTotalMinor: number;
+}
+
+/** The limits form. A lower limit applies at once; a higher one waits for a second operator. */
+function LimitsForm({
+  current,
+  busy,
+  onSubmit,
+}: {
+  readonly current: CurrentLimits;
+  readonly busy: boolean;
+  readonly onSubmit: (values: LimitValues) => void;
+}) {
+  const [perPayment, setPerPayment] = useState(majorTextOf(current.perPaymentMinor));
+  const [perSupplier, setPerSupplier] = useState(majorTextOf(current.supplierDailyMinor));
+  const [total, setTotal] = useState(majorTextOf(current.dailyTotalMinor));
+  const [problem, setProblem] = useState<string | null>(null);
+  return (
+    <form
+      className="limits-form"
+      aria-label="Change limits"
+      onSubmit={(event: SubmitEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        const values = {
+          perPaymentMinor: minorOf(perPayment),
+          supplierDailyMinor: minorOf(perSupplier),
+          dailyTotalMinor: minorOf(total),
+        };
+        if (
+          values.perPaymentMinor === null ||
+          values.supplierDailyMinor === null ||
+          values.dailyTotalMinor === null
+        ) {
+          setProblem('Enter each limit as an amount, such as 5000.00.');
+          return;
+        }
+        setProblem(null);
+        onSubmit({
+          perPaymentMinor: values.perPaymentMinor,
+          supplierDailyMinor: values.supplierDailyMinor,
+          dailyTotalMinor: values.dailyTotalMinor,
+        });
+      }}
+    >
+      <p>A lower limit applies at once. A higher one waits for a second operator.</p>
+      <label>
+        Per payment
+        <input
+          name="perPayment"
+          inputMode="decimal"
+          value={perPayment}
+          onChange={(event) => {
+            setPerPayment(event.target.value);
+          }}
+        />
+      </label>
+      <label>
+        Per supplier, per day
+        <input
+          name="perSupplier"
+          inputMode="decimal"
+          value={perSupplier}
+          onChange={(event) => {
+            setPerSupplier(event.target.value);
+          }}
+        />
+      </label>
+      <label>
+        Total, per day
+        <input
+          name="total"
+          inputMode="decimal"
+          value={total}
+          onChange={(event) => {
+            setTotal(event.target.value);
+          }}
+        />
+      </label>
+      {problem === null ? null : (
+        <p role="alert" className="notice">
+          {problem}
+        </p>
+      )}
+      <button type="submit" disabled={busy}>
+        Ask for these limits
+      </button>
+    </form>
+  );
+}
+
 /** The payment desk. It only shows what the console API gave it; nothing here decides a payment state. */
 export function DeskView(props: DeskViewProps) {
-  const { data, error, busy, waitingFor } = props;
+  const { data, error, busy, pending } = props;
   if (data === null) {
     return (
       <section className="desk" aria-label="Payment desk">
@@ -118,6 +237,7 @@ export function DeskView(props: DeskViewProps) {
     );
   }
   const { overview } = data;
+  const raise = overview.pendingLimitChange;
   return (
     <section className="desk" aria-label="Payment desk">
       {error === null ? null : (
@@ -163,17 +283,53 @@ export function DeskView(props: DeskViewProps) {
             <dd>{moneyOf(overview.limits.dailyTotalMinor, null)}</dd>
           </div>
         </dl>
-        {overview.pendingLimitChange === null ? null : (
-          <p className="notice">
-            A raised limit is waiting for a second operator. It expires{' '}
-            {sastOf(overview.pendingLimitChange.expiresAt)}.
-          </p>
+
+        {raise === null ? null : (
+          <section className="notice" aria-labelledby="raise-title">
+            <h3 id="raise-title">A raised limit is waiting</h3>
+            <p>
+              Asked by {raise.requestedBy}. It expires {sastOf(raise.expiresAt)}. Per payment{' '}
+              {moneyOf(raise.perPaymentMinor, null)}; per supplier, per day{' '}
+              {moneyOf(raise.supplierDailyMinor, null)}; total, per day{' '}
+              {moneyOf(raise.dailyTotalMinor, null)}.
+            </p>
+            <p>
+              <button
+                type="button"
+                disabled={busy || !raise.approvalAllowed}
+                aria-describedby="approve-why"
+                onClick={() => {
+                  props.onApprove(raise.requestId);
+                }}
+              >
+                Approve the raised limit
+              </button>
+            </p>
+            <p id="approve-why">{raise.why}</p>
+          </section>
         )}
-        {waitingFor === null ? (
-          <button type="button" disabled={busy} onClick={props.onTogglePause}>
+
+        <p>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => {
+              props.onTogglePause();
+            }}
+          >
             {overview.paused ? 'Resume payments' : 'Pause new payments'}
           </button>
-        ) : (
+        </p>
+
+        <LimitsForm
+          current={overview.limits}
+          busy={busy}
+          onSubmit={(values) => {
+            props.onRequestLimits(values);
+          }}
+        />
+
+        {pending === null ? null : (
           <StepUp busy={busy} onConfirm={props.onConfirm} onCancel={props.onCancelConfirm} />
         )}
       </section>

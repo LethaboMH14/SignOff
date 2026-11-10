@@ -178,3 +178,13 @@ One entry per working session (rule R-19 in [RULES.md](../RULES.md)), newest fir
 - Problems / blockers: the browser check is not run (the pane was hidden). Payout approval is not available in the console, by design for this version. The next-step texts are drafts. Test IDs T-101 and D-081 belong to feat/S3-watchdog, so this stack continues from T-102 and D-078; the two stacks need renumbering at merge.
 - Next: the limits and pause panel (D3), then the receipt (D4).
 
+
+### 2026-11-11 — Sibusiso with Claude (Haiku 5.5) — D3 limits and pause in the console
+
+- Done: the desk's Warden section has a limits form and a panel for a raised limit that waits. A lowering applies at once; a higher limit waits; the requester cannot approve it. Each change, approval included, asks for the password when the last confirmation is more than five minutes old, and is sent again once it is given. Branch `feat/D3-limits-pause`, stacked on `feat/D2-held-invoice`.
+- Changed decisions: D-079.
+- Evidence: T-104 (152 console tests; repository check exit 0: 960 tests; coverage above the thresholds). The browser check is not run (T-103).
+- Lenses. Prompt engineering: not applicable; no model is called. Context engineering: each change carries the operator's own Warden principal, so the Warden records who asked and who approved, and the desk names the requester only as "you" or by username. Graph engineering: a limit change becomes a new policy version when it applies, and the desk shows the raise as a waiting state until then.
+- Problems / blockers: the browser check of the form is not run (the pane was hidden). The 24-hour raise window and the 30-second watchdog are proposed settings for review. The Warden suite covers the limit rules (T-095); the console adds the requester check and the confirmation. The function-coverage threshold was met by testing the browser state rules directly (web/actions.ts) and the browser client with a stubbed fetch, not by changing the threshold. Test IDs T-101 and D-081 belong to feat/S3-watchdog; this stack uses T-102 to T-104 and D-078 to D-079, and the two stacks need renumbering at merge.
+- Next: the receipt (D4).
+

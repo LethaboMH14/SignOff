@@ -1,6 +1,6 @@
 # apps/console
 
-The operator console. Built so far: the payment desk with sign-in (D1), and the live agent map (D8). Not built yet: the held-invoice view (D2), limit and pause controls with the second approver in the console (D3), and the receipt (D4). See [ISSUES.md](../../docs/ISSUES.md).
+The operator console. Built so far: the payment desk with sign-in (D1), the held-invoice view (D2), limit and pause controls with the second approver (D3), and the live agent map (D8). Not built yet: the receipt (D4). See [ISSUES.md](../../docs/ISSUES.md).
 
 ## The payment desk
 
@@ -10,7 +10,8 @@ The first screen after sign-in. It shows the Warden's state (running or paused, 
 - **Every state has words and a symbol.** The symbol is hidden from assistive technology, and colour is never the only signal.
 - **Reasons come from codes.** Each reason is fixed text keyed by its reason code. A code with no text is shown as its code, never as an invented sentence. The texts are drafts until they are reviewed.
 - **Simulated runs are labelled.** A replay says SIMULATED on the screen.
-- **Changes need the password again.** A pause, a resume or a limit change asks for the password if the last confirmation is more than five minutes old.
+- **Changes need the password again.** A pause, a resume, a limit change or an approval asks for the password if the last confirmation is more than five minutes old.
+- **Limits.** A lower limit applies at once. A higher one waits for a second operator. The person who asked cannot approve it: the console says so, and refuses the approval before it reaches the Warden, which checks the same rule again.
 
 The desk reads the Warden's operator views and the agent's transition log. It shows the agent's model-call count for each invoice (at most three).
 
@@ -93,6 +94,7 @@ The console never writes to the agent's log, binds to the loopback address only,
 - The replay is simulated. A live run with the Warden has not run, so no ledger or paid move has been shown on this desk or this map.
 - The reason texts are drafts: fixed text per code, not yet reviewed.
 - The desk's daily chart from the mockups is not built.
+- The limits form and the approval have been tested in code, not yet checked by eye in the browser (see T-103 in the test log).
 - The phone layout was measured in the built-in browser before the model-call line was added; the final build's phone check is not yet recorded. No accessibility scan has been run (D5).
 - Sign-in has not been tested with a real operator account on a shared machine, and the console is not deployed (D6).
 

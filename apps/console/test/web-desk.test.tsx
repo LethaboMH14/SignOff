@@ -1,8 +1,16 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 
-import { type DeskData } from '../web/api.js';
-import { DeskView, HEADLINE_STATES, moneyOf, sastOf } from '../web/DeskView.js';
+import { type DeskData, type PendingAction, type PendingRaise } from '../web/api.js';
+import {
+  countOf,
+  DeskView,
+  HEADLINE_STATES,
+  majorTextOf,
+  minorOf,
+  moneyOf,
+  sastOf,
+} from '../web/DeskView.js';
 import { Login } from '../web/Login.js';
 import { slugOf, StateChip, symbolOf } from '../web/StateChip.js';
 import { DISPLAY_STATES } from '../src/model/desk.js';
@@ -58,12 +66,27 @@ function dataOf(overrides: Partial<DeskData> = {}): DeskData {
   };
 }
 
+function raiseOf(overrides: Partial<PendingRaise> = {}): PendingRaise {
+  return {
+    requestId: 'c'.repeat(8),
+    requestedBy: 'alice',
+    expiresAt: '2026-11-12T08:00:00.000Z',
+    perPaymentMinor: 900000,
+    supplierDailyMinor: 1000000,
+    dailyTotalMinor: 2000000,
+    approvalAllowed: true,
+    why: 'A second operator approves this raise. Approval needs your password.',
+    ...overrides,
+  };
+}
+
 const NO_OP = (): void => undefined;
 const NO_OP_ASYNC = (): Promise<void> => Promise.resolve();
+const PAUSE: PendingAction = { kind: 'pause', paused: true };
 
 function deskOf(
   data: DeskData | null,
-  waitingFor: boolean | null = null,
+  pending: PendingAction | null = null,
   error: string | null = null,
 ): string {
   return renderToStaticMarkup(
@@ -71,8 +94,10 @@ function deskOf(
       data={data}
       error={error}
       busy={false}
-      waitingFor={waitingFor}
+      pending={pending}
       onTogglePause={NO_OP}
+      onRequestLimits={NO_OP}
+      onApprove={NO_OP}
       onConfirm={NO_OP_ASYNC}
       onCancelConfirm={NO_OP}
       onOpen={NO_OP}
@@ -135,27 +160,51 @@ describe('the desk', () => {
     );
   });
 
-  it('asks for the password before a pause, and says what it is for', () => {
-    const markup = deskOf(dataOf(), true);
+  it('asks for the password before a change, and says what it is for', () => {
+    const markup = deskOf(dataOf(), PAUSE);
     expect(markup).toContain('aria-label="Confirm your password"');
     expect(markup).toContain('Confirm your password to make this change.');
     expect(deskOf(dataOf())).not.toContain('Confirm your password to make this change.');
   });
 
-  it('says a raised limit is waiting for a second operator', () => {
+  it('offers the limits form, with the current limits as amounts to type', () => {
+    const markup = deskOf(dataOf());
+    expect(markup).toContain('aria-label="Change limits"');
+    expect(markup).toContain('Per payment');
+    expect(markup).toContain('value="5000.00"');
+    expect(markup).toContain('value="20000.00"');
+  });
+});
+
+describe('a raised limit waiting for a second operator', () => {
+  it('names the requester and shows the approval, enabled for another operator', () => {
+    const markup = deskOf(
+      dataOf({ overview: { ...dataOf().overview, pendingLimitChange: raiseOf() } }),
+    );
+    expect(markup).toContain('A raised limit is waiting');
+    expect(markup).toContain('Asked by');
+    expect(markup).toContain('alice');
+    expect(markup).toMatch(
+      /<button type="button" aria-describedby="approve-why">Approve the raised limit<\/button>/,
+    );
+    expect(markup).toContain('A second operator approves this raise.');
+  });
+
+  it('disables the approval for the person who asked, and says why', () => {
     const markup = deskOf(
       dataOf({
         overview: {
           ...dataOf().overview,
-          pendingLimitChange: {
-            requestId: 'c'.repeat(8),
-            requestedBy: 'alice',
-            expiresAt: '2026-11-12T08:00:00.000Z',
-          },
+          pendingLimitChange: raiseOf({
+            requestedBy: 'you',
+            approvalAllowed: false,
+            why: 'You asked for this raise, so another operator must approve it.',
+          }),
         },
       }),
     );
-    expect(markup).toContain('waiting for a second operator');
+    expect(markup).toMatch(/disabled=""[^>]*>Approve the raised limit</);
+    expect(markup).toContain('You asked for this raise, so another operator must approve it.');
   });
 });
 
@@ -165,6 +214,21 @@ describe('formatting', () => {
     expect(moneyOf(125000, 'USD')).toBe('1,250.00 USD');
     expect(sastOf('not a time')).toBe('time not recorded');
     expect(sastOf('2026-11-11T09:00:00.000Z')).toContain('11:00');
+  });
+
+  it('reads an amount typed as 5000 or 5000.00 as minor units, and refuses anything else', () => {
+    expect(minorOf('5000')).toBe(500000);
+    expect(minorOf(' 5000.00 ')).toBe(500000);
+    expect(minorOf('12.5')).toBe(1250);
+    expect(minorOf('0')).toBeNull();
+    expect(minorOf('12.345')).toBeNull();
+    expect(minorOf('abc')).toBeNull();
+    expect(majorTextOf(500000)).toBe('5000.00');
+  });
+
+  it('counts a missing state as zero', () => {
+    expect(countOf(counts({ Paid: 3 }), 'Paid')).toBe(3);
+    expect(countOf(counts(), 'Held')).toBe(0);
   });
 });
 

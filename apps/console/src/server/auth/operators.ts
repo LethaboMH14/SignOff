@@ -21,6 +21,8 @@ export interface Operator {
 
 export interface OperatorStore {
   find(username: string): Operator | undefined;
+  /** The operator who holds a Warden principal, so a request's requester can be named by person. */
+  byPrincipal(principal: string): Operator | undefined;
   readonly size: number;
 }
 
@@ -76,6 +78,8 @@ export function operatorStoreOf(records: readonly unknown[]): OperatorStore {
   }
   return {
     find: (username) => byName.get(username.toLowerCase()),
+    byPrincipal: (principal) =>
+      [...byName.values()].find((operator) => operator.wardenPrincipal === principal),
     size: byName.size,
   };
 }
