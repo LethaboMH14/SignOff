@@ -1,16 +1,17 @@
 # Engineering plan
 
-How this repository will be built, reviewed, tested and released. **This is a plan. Built so far: packages/shared, packages/xrpl, scripts and .github; apps and Warden are not started**, and it is sized for the four days before the deadline. Items marked *stretch* are done only if the core flow works first.
+How this repository will be built, reviewed, tested and released. **This is a plan. Built so far: packages/shared, packages/xrpl, packages/warden-api, apps/warden, apps/agent (Gate C, simulated evaluation only), scripts and .github; the console is not started**, and it is sized for the four days before the deadline. Items marked *stretch* are done only if the core flow works first.
 
 ## Repository layout
 
 ```
 apps/
   console/     Operator console (React, Vite)
-  agent/       Invoice intake, extraction, matching, payment proposals
+  agent/       Invoice intake, extraction, matching, payment proposals (Gate C)
   warden/      Rule checks, second signature, ledger submission (deployed separately)
 packages/
   shared/      Schemas, types, rule definitions, test fixtures
+  warden-api/  The Warden's wire contract: request signing, result types, caller client
   xrpl/        Gate A ledger layer: signer setup, payments, reconciliation, provisioning, rebuild (Testnet only)
 docs/          Problem, solution, business, decisions, runbooks
 scripts/       Secret scan, hook setup, Testnet command line (scripts/testnet); judge check and attack suite not started

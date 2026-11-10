@@ -27,6 +27,8 @@ import {
   type SendPlan,
 } from '../../../packages/xrpl/src/index.js';
 
+import type { CoSignResult, ProposeResult } from '../../../packages/warden-api/src/contract.js';
+
 import { canonicalJson, fingerprintOf } from './canonical.js';
 import {
   dailyUsage,
@@ -77,23 +79,11 @@ export interface WardenDeps {
   readonly newId: () => string;
 }
 
-export interface ProposeResult {
-  /** Null only when the proposal did not parse, so there is no attempt to name. */
-  readonly attemptId: string | null;
-  readonly decision: WardenDecision;
-  /** The Warden-signed transaction the agent must co-sign. Present only for an ALLOW that is still awaiting. */
-  readonly toCoSign: string | null;
-}
-
-export type Outcome = 'paid' | 'failed' | 'rejected' | 'expired' | 'held' | 'pending';
-
-export interface CoSignResult {
-  readonly attemptId: string;
-  readonly outcome: Outcome;
-  readonly hash: string;
-  readonly ledgerIndex: number | null;
-  readonly engineResult: string | null;
-}
+export type {
+  CoSignResult,
+  Outcome,
+  ProposeResult,
+} from '../../../packages/warden-api/src/contract.js';
 
 const LimitsPatch = z.strictObject({
   perPaymentMinor: z.int().min(1).max(1_000_000_000_000_000).optional(),

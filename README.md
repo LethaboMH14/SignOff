@@ -92,7 +92,7 @@ This positioning was accepted by the team on 10 November 2026 ([ADR 0001](docs/d
 
 | Item | Planned | Live on Testnet | Simulated in demo | Validated with customers |
 |---|---|---|---|---|
-| Agent run on an invoice file | Yes | Not yet | | |
+| Agent run on an invoice file | Yes | Not yet: a live model run and the Warden integration are not run in the build ([TEST-LOG T-087, T-088](docs/logs/TEST-LOG.md)) | Built and tested in software: intake, source-quoted extraction, injection screen, matching, decision log and audit export ([TEST-LOG T-076 to T-086](docs/logs/TEST-LOG.md)). Simulated evaluation on 30 fictional invoices: the pipeline decides 30 of 30, with no false approvals; the stand-ins are not a model measurement ([simulated report](apps/agent/results/simulated-eval.md)) | |
 | Two-signature RLUSD payment | Yes | Not yet: blocked until testnet RLUSD is funded. The same two-signature path has run with a test-issued token ([TEST-LOG T-053](docs/logs/TEST-LOG.md)) | | |
 | Rejection of a single-key payment | Yes | Live on Testnet: agent alone and Warden alone refused with tefBAD_QUORUM ([TEST-LOG T-054](docs/logs/TEST-LOG.md)) | | |
 | Warden rules, holds and operator limits | Yes | Live on Testnet with a test-issued token, not RLUSD: refusals and holds for duplicates, payee, receipt and limit, concurrency, pause, lowered limit and a non-payment co-signature ([TEST-LOG T-071](docs/logs/TEST-LOG.md)); frozen line held, then paid ([T-072](docs/logs/TEST-LOG.md)) | | |

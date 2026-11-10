@@ -26,6 +26,12 @@ One entry per working session (rule R-19 in [RULES.md](../RULES.md)), newest fir
 
 ---
 
+### 2026-11-10 — Sibusiso with Claude (Haiku 5.5) — Gate C: C1 to C7 agent reliability
+- Done: built the agent workspace (`apps/agent`) and the Warden contract package (`packages/warden-api`). Intake (C1), the injection screen (C3), extraction with quote and amount verification (C2), the labelled set of 30 fictional invoices (C4), the evaluation harness with a single-prompt baseline (C5), the decision log and audit export (C6), and the fixed workflow with a three-call budget (C7). The Warden contract, the shared evidence schemas and canonical hashing moved to packages, with re-export shims, and the Gate B tests pass unchanged.
+- Changed decisions: D-061 to D-071; [ADR 0006](../decisions/0006-model-boundary-and-providers.md) (Proposed).
+- Evidence: TEST-LOG T-076 to T-086 (passing), with the simulated report at `apps/agent/results/simulated-eval.md`. Not run in this session, and marked UNVERIFIED: the live Warden integration (T-087) and any live model measurement (T-088). No provider key and no Warden process were available.
+- Problems / blockers: no provider keys in the build session; South African and European amount layouts are held by design (D-070; S-037); the Gate C GitHub issues are not created, because R-16 needs approval; PR #27 (Gate B) is still open.
+
 ### 2026-11-10 — Sibusiso with Claude (Haiku 5.5) — Gate B issues created and linked
 
 - Done: after the owner approved it, created the GitHub issues for B1 to B9: [#28](https://github.com/LethaboMH14/SignOff/issues/28) to [#36](https://github.com/LethaboMH14/SignOff/issues/36), with the title, acceptance criteria, dependencies, status, evidence and pull request link for each. Linked each issue in the GH column of `docs/ISSUES.md`. Updated the pull request body, which had said the issues were not yet created.

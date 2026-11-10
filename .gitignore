@@ -27,3 +27,7 @@ id_ed25519
 Thumbs.db
 .idea/
 .vscode/
+
+# Agent runtime data: the watched inbox holds invoices, and the state folder holds the decision log. Neither is committed.
+/apps/agent/inbox/
+/apps/agent/state/
