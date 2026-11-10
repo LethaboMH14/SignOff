@@ -75,7 +75,9 @@ export function createLogger(options: LoggerOptions): Logger {
     } catch {
       // The log call must never fail the work it describes. Try a minimal line, then give up silently.
       try {
-        sink.write(JSON.stringify({ level, service: options.service, event: 'logger.failed' }));
+        // Never fall back to the raw configured name: it can contain a token or personal data.
+        // A literal safe identifier keeps the failure path non-throwing and prevents accidental leaks.
+        sink.write(JSON.stringify({ level, service: 'logger', event: 'logger.failed' }));
       } catch {
         // A sink that throws twice is not something a log call can fix.
       }
