@@ -63,4 +63,7 @@ Findings, incidents and security-relevant changes. Newest at the bottom.
 | S-010 | 2026-11-10 | Finding (test) | A test showed that invoice numbers differing only in spacing or punctuation produced different obligation keys, so a duplicate written that way could pass as a new payable. Fixed by reducing the number to letters and digits (D-026). | T-09 | Fixed in F4 | Closed |
 | S-011 | 2026-11-10 | Change | F5 adds structural and textual redaction and a fail-safe logger. Verified by T-033 to T-039, including a mutation test (T-036). | T-16, T-21 | Recorded | Closed |
 
+| S-012 | 2026-11-10 | Review finding | F5 error fallback wrote unredacted `options.service` when the first sink write failed. Sensitive email or seed-like data in service names could leak despite the main redactor. | T-08, T-21 | Replaced fallback service with a fixed safe literal and added an explicit failing-sink regression (T-040). | Closed; CI #42835936809 passes |
+| S-013 | 2026-11-10 | Review finding | Object property *names* could contain sensitive data, but F5 initially redacted only their values. | T-16, T-21 | Sanitize every output field name with redaction and length limit; test generated seed and fictional email used as keys (T-041). | Closed; CI #42835936809 passes |
+
 **Types:** `Design review`, `Finding`, `Incident`, `Dependency`, `Key rotation`, `Change`. An incident involving a real key or personal data also follows [SECURITY.md](../../SECURITY.md).
