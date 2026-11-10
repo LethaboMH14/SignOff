@@ -16,7 +16,7 @@ The build sliced into small, reviewable issues. Each maps to a requirement in [P
 | ID | Title | Acceptance criteria | Depends | Size | Owner | GH | Status |
 |---|---|---|---|---|---|---|---|
 | F1 | Repository scaffold | Monorepo layout from ENGINEERING.md; TypeScript strict; Node 24; one command to install | — | S | Sibusiso (AI-assisted) | [#7](https://github.com/LethaboMH14/SignOff/issues/7) | Review |
-| F2 | CI pipeline | Type check, lint, unit tests and build run on every pull request and must pass to merge | F1 | S | Sibusiso (AI-assisted) | [#8](https://github.com/LethaboMH14/SignOff/issues/8) | Todo |
+| F2 | CI pipeline | Type check, lint, unit tests and build run on every pull request and must pass to merge | F1 | S | Sibusiso (AI-assisted) | [#8](https://github.com/LethaboMH14/SignOff/issues/8) | Review |
 | F3 | Secret protection | GitHub secret scanning on; pre-commit check using tested XRPL seed patterns, with a test for true and false positives; `.env` ignored | F1, F2 | S | Sibusiso (AI-assisted) | [#9](https://github.com/LethaboMH14/SignOff/issues/9) | Todo |
 | F4 | Shared schemas | Zod schemas for invoice extraction, payment proposal, Warden decision, obligation; amounts as integer minor units | F1 | S | Sibusiso (AI-assisted) | [#10](https://github.com/LethaboMH14/SignOff/issues/10) | Todo |
 | F5 | Log redaction | Logger that removes seeds, keys, bank details and personal data; test proves it | F1 | S | Sibusiso (AI-assisted) | [#11](https://github.com/LethaboMH14/SignOff/issues/11) | Todo |
