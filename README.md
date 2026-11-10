@@ -102,6 +102,7 @@ This positioning was accepted by the team on 10 November 2026 ([ADR 0001](docs/d
 | Bank account verification (AVS) | | | Yes | |
 | Accounting system links (Xero, Sage) | | | Yes | |
 | Signer list: Agent + Warden the only accepted path; each key alone rejected | Yes (ADR 0004 test plan) | Not yet | | |
+| Physical pause button, status light, goods-received scanner (Arduino) | Stretch (ADR 0005) | Not yet | | |
 | Permission delegation | Out of the hackathon build; status on our Testnet unverified | Not checked | | |
 | XRPL credential on verified supplier accounts (attestation only) | Stretch (ADR 0004 test plan) | Not yet | | |
 | Trust line limit as one exposure layer (not a loss cap) | Yes (ADR 0004 test plan) | Not yet | | |

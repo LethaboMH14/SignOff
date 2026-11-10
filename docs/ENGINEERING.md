@@ -143,7 +143,7 @@ From the [CFO and fraud research](CFO-AGENTIC-FRAUD-SECURITY-RESEARCH-2026-11-10
 | D. Operations and console | Payment desk, changed-payee hold, lowered-limit hold, validated receipt; never "paid" before validation; safe behaviour on timeout |
 | E. Credible pitch | A consenting finance-lead interview; the README status table complete; no savings or partner claims |
 
-After the gates, and only if verified on Testnet: credentials, batch payments, token escrow, a Privy agent wallet, and permission delegation.
+After the gates, and only if verified on Testnet: credentials, batch payments, token escrow, a Privy agent wallet, and permission delegation. Also after the gates, time-boxed to half a day: the Arduino pause button, status light and goods-received scanner ([ADR 0005](decisions/0005-arduino-operator-hardware.md)).
 
 ## Keeping claims honest
 
