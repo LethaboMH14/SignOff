@@ -123,6 +123,10 @@ Every invoice moves through named states, and every transition is recorded with 
 
 Every test in the attack suite and the Testnet checks records: the scenario, the expected result, the actual result code or hash, the policy version, the commit, and the date. A test without a recorded result does not count as passed.
 
+## Service levels and compliance
+
+Targets, the fastest reliability measures and dependency failure behaviour are in [SERVICE-LEVELS.md](SERVICE-LEVELS.md). Obligations and how the design meets them are in [COMPLIANCE.md](COMPLIANCE.md). Hard objectives (no rule-breaking payment, no duplicate, no false "paid", full traceability) block a release on any failure.
+
 ## Delivery gates
 
 From the [CFO and fraud research](CFO-AGENTIC-FRAUD-SECURITY-RESEARCH-2026-11-10.md), section 10. Each gate must pass before the next is claimed.

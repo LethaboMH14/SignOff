@@ -130,6 +130,8 @@ The track requires an autonomous transaction on XRPL Testnet or Devnet, limits e
 | [docs/PROBLEM.md](docs/PROBLEM.md) | Problem statement and sourced evidence with confidence ratings |
 | [docs/SOLUTION.md](docs/SOLUTION.md) | Rules, two-signature design, simpler options considered |
 | [docs/AGENT-RELIABILITY.md](docs/AGENT-RELIABILITY.md) | How hallucination is contained and measured |
+| [docs/SERVICE-LEVELS.md](docs/SERVICE-LEVELS.md) | Service level targets, failure behaviour, fastest reliability measures |
+| [docs/COMPLIANCE.md](docs/COMPLIANCE.md) | Obligations, who carries them, and what the build does (not legal advice) |
 | [docs/CFO-AGENTIC-FRAUD-SECURITY-RESEARCH-2026-11-10.md](docs/CFO-AGENTIC-FRAUD-SECURITY-RESEARCH-2026-11-10.md) | Implementation requirements: CFO controls, fraud threats, tests, delivery gates (research; none implemented) |
 | [docs/TRUST.md](docs/TRUST.md) | Ledger versus Warden guarantees, keys, enrolment, rotation, recovery |
 | [docs/BUSINESS.md](docs/BUSINESS.md) | Customer, savings, revenue, feasibility, competitors, regulation |

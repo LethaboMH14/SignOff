@@ -60,3 +60,12 @@ Sources gathered while testing the idea against the judging criteria. Confidence
 - Draft Crypto Assets Manual, primary statement. [SARB](https://www.resbank.co.za/en/home/publications/publication-detail-pages/media-releases/2026/crypto-assets)
 - Medium-Term Budget Policy Statement, 21 October 2026, crypto section. [gov.za](https://www.gov.za/news/budget/minister-enoch-godongwana-mtbps-speech) · [Parliament](https://www.parliament.gov.za/2026-medium-term-budget-policy-statement-minister-finance-mr-enoch-godongwana)
 - Reporting on the revised approach. [Connecting Africa](https://www.connectingafrica.com/fintech/sa-national-treasury-rethinking-crypto-regulation) · [EWN](https://www.ewn.co.za/2026/10/22/treasury-to-revise-crypto-rule-proposals-after-draft-elicited-thousands-of-comments) · [TechCentral](https://techcentral.co.za/treasury-crypto-rules-rethink-mtbps/287515/)
+
+## Added 10 November 2026: reliability and compliance
+
+- Agent design guidance. [Anthropic, Building effective agents](https://www.anthropic.com/engineering/building-effective-agents)
+- Schema-enforced output. [Claude structured outputs](https://platform.claude.com/docs/en/build-with-claude/structured-outputs)
+- Ledger submission procedure. [XRPL reliable transaction submission](https://xrpl.org/docs/concepts/transactions/reliable-transaction-submission)
+- Travel rule in South Africa (FIC Directive 9). [Acts Online](https://acts.co.za/news/blog/2026/03/fic-crypto-travel-rule-draft-guidance) · [Moonstone](https://www.moonstone.co.za/fic-tightens-crypto-asset-compliance-with-travel-rule-directive/) · [Government Gazette](https://www.gov.za/sites/default/files/gcis_document/202411/51556gon5543.pdf)
+- RLUSD freeze policy. [Aave governance post](https://governance.aave.com/t/arfc-add-rlusd-to-core-instance/20214/2) · [Yellow](https://yellow.com/news/ripple-cto-confirms-rlusd-can-be-frozen-to-meet-regulatory-demands)
+- Stablecoin screening practice (vendor). [Elliptic](https://www.elliptic.co/stablecoin-screening.html)
