@@ -1,8 +1,8 @@
 # Engineering plan
 
-How this repository will be built, reviewed, tested and released. **This is a plan. None of it exists yet**, and it is sized for the four days before the deadline. Items marked *stretch* are done only if the core flow works first.
+How this repository will be built, reviewed, tested and released. **This is a plan. Built so far: packages/shared, packages/xrpl, scripts and .github; apps and Warden are not started**, and it is sized for the four days before the deadline. Items marked *stretch* are done only if the core flow works first.
 
-## Repository layout (planned)
+## Repository layout
 
 ```
 apps/
@@ -11,9 +11,9 @@ apps/
   warden/      Rule checks, second signature, ledger submission (deployed separately)
 packages/
   shared/      Schemas, types, rule definitions, test fixtures
-  xrpl/        Ledger helpers: account setup, signing, reliable submission
+  xrpl/        Gate A ledger layer: signer setup, payments, reconciliation, provisioning, rebuild (Testnet only)
 docs/          Problem, solution, business, decisions, runbooks
-scripts/       Testnet provisioning, judge check, attack suite
+scripts/       Secret scan, hook setup, Testnet command line (scripts/testnet); judge check and attack suite not started
 .github/       Pull request template, workflows
 ```
 

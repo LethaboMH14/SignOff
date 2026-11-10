@@ -9,7 +9,8 @@
     "node": ">=24.0.0 <25"
   },
   "workspaces": [
-    "packages/shared"
+    "packages/shared",
+    "packages/xrpl"
   ],
   "overrides": {
     "minimatch": "11.0.5"
@@ -18,6 +19,13 @@
     "prepare": "node scripts/setup-hooks.mjs",
     "setup:hooks": "node scripts/setup-hooks.mjs",
     "secrets:scan": "tsx scripts/secret-scan.ts --all",
+    "testnet:provision": "tsx scripts/testnet/gate-a.ts provision",
+    "testnet:signers": "tsx scripts/testnet/gate-a.ts signers",
+    "testnet:pay": "tsx scripts/testnet/gate-a.ts pay",
+    "testnet:rejections": "tsx scripts/testnet/gate-a.ts rejections",
+    "testnet:timeout": "tsx scripts/testnet/gate-a.ts timeout",
+    "testnet:failover": "tsx scripts/testnet/gate-a.ts failover",
+    "testnet:rebuild": "tsx scripts/testnet/gate-a.ts rebuild",
     "build": "npm run build --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present && tsc --project tsconfig.json",
     "lint": "eslint . --max-warnings=0",

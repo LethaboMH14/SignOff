@@ -25,13 +25,13 @@ The build sliced into small, reviewable issues. Each maps to a requirement in [P
 
 | ID | Title | Acceptance criteria | Depends | Size | Owner | GH | Status |
 |---|---|---|---|---|---|---|---|
-| A1 | Testnet provisioning script | One command creates spending, reserve and supplier accounts, funds XRP, opens RLUSD trust lines, records addresses (no seeds) | F1, F3 | M | | | Todo |
-| A2 | Signer list | Agent 1, Warden 1, quorum 2; master key disabled; no regular key; verified by reading the account back | A1 | S | | | Todo |
-| A3 | Two-signature payment | Validated RLUSD payment with expected delivered amount; hash logged | A2 | M | | | Todo |
-| A4 | Single-key rejections | Agent alone and Warden alone rejected; result codes logged | A2 | S | | | Todo |
-| A5 | Reliable submission | Expiry set, persist before submit, reconcile by validated history, no blind resubmit; timeout test | A3 | M | | | Todo |
-| A6 | Node failover | Second Testnet node; failover keeps exact transaction identity | A5 | S | | | Todo |
-| A7 | Rebuild from reserve | Scripted abandon-and-refund path tested | A1 | S | | | Todo |
+| A1 | Testnet provisioning script | One command creates spending, reserve and supplier accounts, funds XRP, opens RLUSD trust lines, records addresses (no seeds) | F1, F3 | M | Sibusiso (AI-assisted) | | Review |
+| A2 | Signer list | Agent 1, Warden 1, quorum 2; master key disabled; no regular key; verified by reading the account back | A1 | S | Sibusiso (AI-assisted) | | Review |
+| A3 | Two-signature payment | Validated RLUSD payment with expected delivered amount; hash logged | A2 | M | Sibusiso (AI-assisted) | | Doing (RLUSD run blocked, T-059) |
+| A4 | Single-key rejections | Agent alone and Warden alone rejected; result codes logged | A2 | S | Sibusiso (AI-assisted) | | Review |
+| A5 | Reliable submission | Expiry set, persist before submit, reconcile by validated history, no blind resubmit; timeout test | A3 | M | Sibusiso (AI-assisted) | | Review |
+| A6 | Node failover | Second Testnet node; failover keeps exact transaction identity | A5 | S | Sibusiso (AI-assisted) | | Review |
+| A7 | Rebuild from reserve | Scripted abandon-and-refund path tested | A1 | S | Sibusiso (AI-assisted) | | Review |
 
 ## Gate B: Warden controls
 

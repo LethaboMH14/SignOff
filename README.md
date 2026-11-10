@@ -4,8 +4,8 @@
 
 SignOff reads supplier invoices, checks them against purchasing records, and pays the routine ones without a human click. Every payment needs two signatures. The agent holds one. The second belongs to an independent rulebook service, called Warden, that the agent cannot read, edit or talk its way past. If a payment breaks a rule, Warden withholds its signature, and the XRP Ledger will not accept a payment with only one.
 
-> **Status, 10 November 2026: direction agreed, build not started.**
-> No application code exists. No payment has been validated, no customer has been interviewed, no partner is integrated, and no mockups exist. See [Status of every claim](#status-of-every-claim) below.
+> **Status, 10 November 2026: Gate 0 foundation is merged, and its phase close is in review. Gate A is built and tested on the XRP Ledger Testnet and is in review. The RLUSD payment has not run yet.**
+> The repository holds the Gate 0 foundation and the Gate A ledger layer, which runs on the XRP Ledger Testnet only. Payments so far use a test-issued token, not RLUSD. No customer has been interviewed, no partner is integrated, and no mockups exist. See [Status of every claim](#status-of-every-claim) below.
 
 Built for the [Node Engine Hackathon](https://w3node.io/node-engine) at W3Node, Cape Town, in the Agentic Finance track. Submissions close on Friday 13 November 2026 at 23:59 SAST.
 
@@ -93,15 +93,15 @@ This positioning was accepted by the team on 10 November 2026 ([ADR 0001](docs/d
 | Item | Planned | Live on Testnet | Simulated in demo | Validated with customers |
 |---|---|---|---|---|
 | Agent run on an invoice file | Yes | Not yet | | |
-| Two-signature RLUSD payment | Yes | Not yet | | |
-| Rejection of a single-key payment | Yes | Not yet | | |
+| Two-signature RLUSD payment | Yes | Not yet: blocked until testnet RLUSD is funded. The same two-signature path has run with a test-issued token ([TEST-LOG T-053](docs/logs/TEST-LOG.md)) | | |
+| Rejection of a single-key payment | Yes | Live on Testnet: agent alone and Warden alone refused with tefBAD_QUORUM ([TEST-LOG T-054](docs/logs/TEST-LOG.md)) | | |
 | Warden rules, holds and operator limits | Yes | Not yet | | |
 | Supplier enrolment and signed payout record | Yes | Not yet | Identity check simulated | |
 | Invoices, suppliers and buyers | | | Fictional | |
 | Rand conversion and payout to a supplier's bank | | | Yes | |
 | Bank account verification (AVS) | | | Yes | |
 | Accounting system links (Xero, Sage) | | | Yes | |
-| Signer list: Agent + Warden the only accepted path; each key alone rejected | Yes (ADR 0004 test plan) | Not yet | | |
+| Signer list: Agent + Warden the only accepted path; each key alone rejected | Yes (ADR 0004 test plan) | Live on Testnet: quorum 2, master key disabled, read back ([TEST-LOG T-052](docs/logs/TEST-LOG.md)); single-key refusals ([TEST-LOG T-054](docs/logs/TEST-LOG.md)) | | |
 | Arduino Warden Switch: one-way pause, Warden-confirmed status; optional RFID | Stretch ([ADR 0005](docs/decisions/0005-arduino-operator-hardware.md)); [judge runbook](docs/ARDUINO-JUDGE-DEMO-RUNBOOK.md) | Not yet | | |
 | Permission delegation | Out of the hackathon build; status on our Testnet unverified | Not checked | | |
 | XRPL credential on verified supplier accounts (attestation only) | Stretch (ADR 0004 test plan) | Not yet | | |
