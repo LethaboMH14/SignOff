@@ -1,0 +1,75 @@
+# 0004: Ledger features to test after the Ripple workshop
+
+- **Status:** Proposed as a **test plan**, 10 November 2026. Accepted by the reviewer only as a plan, not as proven ledger guarantees. Nothing below may be claimed until the Testnet evidence listed under each item exists.
+- **Affects:** [BUILD-BRIEF.md](../../BUILD-BRIEF.md) "XRPL spike", [TRUST.md](../TRUST.md), [ENGINEERING.md](../ENGINEERING.md).
+- **Sources:** [WORKSHOP.md](../WORKSHOP.md); review on pull request 2; [CFO and fraud research](../CFO-AGENTIC-FRAUD-SECURITY-RESEARCH-2026-11-10.md), sections 2 and 7.
+
+## Context
+
+The track is "an AI agent that moves money for a real business, with the XRP Ledger enforcing the rules". In SignOff the ledger is intended to enforce one rule: a payment needs signatures from both the agent and Warden. Everything else is Warden or a person. The workshop named several live XRPL features. Review showed that some of the first version of this record overstated what those features guarantee.
+
+None of these items may delay the core: a real two-signature RLUSD payment on Testnet, a changed-payee hold, and a lowered-limit hold.
+
+## Items to test
+
+### 1. Signer list and every signing path (core, not optional)
+
+The claim "no single key can pay" is only true if no usable key reaches the quorum alone, including any recovery key, master key or regular key. Proposed configuration, to be tested:
+
+| Signer | Weight |
+|---|---|
+| Agent | 1 |
+| Warden | 2 |
+| Operator recovery | 1 |
+| **Quorum** | **3** |
+
+Master key disabled, no regular key. Intended outcomes:
+
+| Signing path | Total | Expected |
+|---|---|---|
+| Any one key alone | 1 or 2 | Rejected |
+| Agent + Warden | 3 | Normal payment path |
+| Warden + Recovery | 3 | Rotation path (replace a lost or stolen agent key) |
+| Agent + Recovery | 2 | Rejected: Warden cannot be bypassed |
+
+Consequence to state openly: if the Warden key is lost, nobody can move what is in the spending account. That is acceptable only because the account holds a small working balance; reserves sit elsewhere.
+
+**Evidence required:** a transaction hash or result code for every row.
+
+### 2. Trust line limit (exposure control, not a loss cap)
+
+An RLUSD trust line limit ordinarily restricts how much the account accepts from others. The account's own actions can take the balance above it, the limit can be changed by a signed transaction, and it does not cover XRP. **It is not a cap on what the account can hold, spend or lose.**
+
+Use it only as one layer, alongside: a small pre-funded spending balance, a separate reserve the payment keys cannot reach, Warden's per-payment, per-supplier and daily limits, Warden refusing `TrustSet` and every non-payment transaction, and exposure computed from the actual spendable balance.
+
+**Evidence required:** observed behaviour at, above and after changing the limit.
+
+### 3. Credentials (attestation, stretch)
+
+A credential is a public statement by its issuer about an account. It does not prove the supplier's identity, bank-account ownership or control of the key, and the ledger does not stop the signers paying an account without one.
+
+If used, it is issued only after the off-ledger checks in [TRUST.md](../TRUST.md), and Warden checks issuer, subject, type, acceptance, expiry and revocation against the current ledger immediately before signing. Risks to document: wrong issuance, a stolen supplier key, a gap between revocation and the next check, and credential metadata being public.
+
+**Evidence required:** issue, accept, check, expire and delete on Testnet. Until then, stretch only.
+
+### 4. Simulation (preflight, not settlement)
+
+`simulate` previews a transaction against the current ledger. The ledger can change before submission and simulation moves no money.
+
+Warden binds its decision to the exact final transaction fields and policy version, signs only those bytes, stores the sequence, hash and expiry before submitting, then shows "paid" only after a **validated** transaction with the expected delivered amount.
+
+**Evidence required:** tests for state changes between simulate and submit, timeouts, restarts, retries and duplicate submissions.
+
+### 5. Permission delegation (out of the critical path)
+
+The workshop on 5 November described it as not yet live. The reviewer reports that `PermissionDelegationV1_1` activated on mainnet in October 2026; the official amendments page we could read was a September snapshot showing it still in voting. **Its status on our target Testnet is unverified.** It stays out of the hackathon build for schedule reasons. If ever used, avoid delegating any burn-type payment permission until its documented caveats are checked.
+
+**Evidence required:** a `feature` query on the Testnet node and a real test transaction.
+
+### 6. Stretch, only after the delivery gates in ENGINEERING.md
+
+Batch payment of several invoices, token escrow until goods are received (only if the RLUSD issuer allows it on Testnet), and a Privy agent wallet (only if it can sign for an XRPL multi-signed transaction).
+
+## Why
+
+These items move as much as is honestly possible onto the ledger, using features the Ripple judge named, while keeping every claim tied to evidence.
