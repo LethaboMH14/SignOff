@@ -168,3 +168,13 @@ One entry per working session (rule R-19 in [RULES.md](../RULES.md)), newest fir
 - Problems / blockers: the daily chart from the mockups is not built (it is not in the done-when list). The final build's phone check is UNVERIFIED because the built-in browser pane was hidden after the model-call line was added. No accessibility scan has run (D5). The reason texts are drafts. The operator accounts are set up by the team with the operator command; nothing is deployed (D6).
 - Next: the held-invoice view (D2).
 
+
+### 2026-11-11 — Sibusiso with Claude (Haiku 5.5) — D2 held-invoice view
+
+- Done: an invoice opens into its held-invoice view: the state, the failed rule with its catalogue sentence, the next step, the Warden's decision, the payout change (approval disabled, with the reason), the masked enrolled account, and the evidence path move by move with reason words and SHA-256 hashes. The path is the audit export's own selection. Branch `feat/D2-held-invoice`, stacked on `feat/D1-payment-desk`.
+- Changed decisions: D-078.
+- Evidence: T-102 (126 console tests; repository check exit 0: 934 tests). The browser check is not run (T-103).
+- Lenses. Prompt engineering: not applicable; no model is called and the next steps are authored text. Context engineering: the view gets only the Warden fields it shows and only the agent moves for the obligation. Swarm engineering: each move names the actor that made it (intake, screen, extractor, verifier, matcher, warden, signer, submitter, reconciler), and the view does not present a model call as a decision. Graph engineering: the evidence path is a walk through the transition log for one obligation, selected by the export's own function.
+- Problems / blockers: the browser check is not run (the pane was hidden). Payout approval is not available in the console, by design for this version. The next-step texts are drafts. Test IDs T-101 and D-081 belong to feat/S3-watchdog, so this stack continues from T-102 and D-078; the two stacks need renumbering at merge.
+- Next: the limits and pause panel (D3), then the receipt (D4).
+

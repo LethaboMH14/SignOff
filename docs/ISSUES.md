@@ -65,7 +65,7 @@ The build sliced into small, reviewable issues. Each maps to a requirement in [P
 |---|---|---|---|---|---|---|---|
 | D0 | Mockups | Payment desk, held invoice, mobile limits, receipt; reviewed before console code | — | M | | | Approved for build; the owner will rework them (no test) |
 | D1 | Payment desk | List with states and plain reasons; never "paid" before validation | D0, C6 | M | Sibusiso (AI-assisted) | | Review (T-098, T-099; final phone check UNVERIFIED) |
-| D2 | Held-invoice view | Evidence, failed rule, next action | D1 | S | | | Todo |
+| D2 | Held-invoice view | Evidence, failed rule, next action | D1 | S | Sibusiso (AI-assisted) | | Review (T-102; browser check not run, T-103) |
 | D3 | Limits and pause | Change limits (increase needs second approver), pause, resume with authentication | D1, B5, B7 | S | | | Todo |
 | D4 | Receipt | Explorer link, delivered amount, simulated rand payout labelled | D1 | S | | | Todo |
 | D5 | Mobile and accessibility | Works at phone width; labels not colour alone; keyboard usable | D1 | S | | | Todo |

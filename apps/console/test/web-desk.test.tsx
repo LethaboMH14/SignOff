@@ -75,6 +75,7 @@ function deskOf(
       onTogglePause={NO_OP}
       onConfirm={NO_OP_ASYNC}
       onCancelConfirm={NO_OP}
+      onOpen={NO_OP}
     />,
   );
 }
@@ -116,6 +117,7 @@ describe('the desk', () => {
     expect(queue.split('chip-paid').length - 1).toBe(1);
     expect(queue.split('chip-held').length - 1).toBe(1);
     expect(queue).toContain('Model calls: 2 of at most 3');
+    expect(queue).toContain('aria-label="Open invoice aaaaaaaa"');
     expect(markup).toContain('A record needed to check the invoice is missing.');
     expect(markup).toContain('<code>MISSING_EVIDENCE</code>');
     expect(markup).toContain('Amount not recorded');

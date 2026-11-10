@@ -55,6 +55,7 @@ export type PaymentView = z.infer<typeof PaymentView>;
 export const ProposalView = z.object({
   attemptId: z.uuid(),
   decision: z.enum(['ALLOW', 'HOLD', 'REFUSE']),
+  policyVersion: z.string().min(1).max(40),
   evaluatedAt: z.string().min(1).max(40),
   reasons: z.array(z.object({ code: z.string().min(1).max(40), message: z.string().max(300) })),
   payment: PaymentView.nullable(),
@@ -63,6 +64,31 @@ export const ProposalView = z.object({
 export type ProposalView = z.infer<typeof ProposalView>;
 
 export const ProposalList = z.object({ proposals: z.array(ProposalView).max(5000) });
+
+/**
+ * A supplier as the console shows it: the enrolled payee and any payout change. Enrolment and approval names are left
+ * out, and the public key is never sent by the Warden's view at all.
+ */
+export const SupplierView = z.object({
+  supplierId: z.string().min(1).max(40),
+  status: z.enum(['pending', 'active']),
+  payee: z.object({
+    address: z.string().min(1).max(64),
+    destinationTag: z.number().int().nullable(),
+  }),
+  change: z
+    .object({
+      changeId: z.string().min(1).max(80),
+      status: z.enum(['requested', 'confirmed', 'approved']),
+      requestedAt: z.string().min(1).max(40),
+      coolingOffUntil: z.string().max(40).nullable(),
+    })
+    .nullable(),
+});
+
+export type SupplierView = z.infer<typeof SupplierView>;
+
+export const SupplierList = z.object({ suppliers: z.array(SupplierView).max(5000) });
 
 /** The Warden's proposal as the desk's rule takes it: the reason codes and the fields the rule reads. */
 export function proposalRecordOf(view: ProposalView): ProposalRecord {

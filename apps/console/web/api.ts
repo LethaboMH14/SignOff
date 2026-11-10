@@ -1,4 +1,5 @@
 import { type DeskRow, type DisplayState } from '../src/model/desk.js';
+import type { InvoiceDetail } from '../src/server/invoice-view.js';
 
 /**
  * The browser's calls to the console's API. The browser holds no secret: the session is an HttpOnly cookie it cannot
@@ -118,6 +119,11 @@ export function signOut(csrf: string): Promise<unknown> {
 
 export function confirmPassword(password: string, csrf: string): Promise<{ stepUpUntil: string }> {
   return request('POST', '/api/session/step-up', { password }, csrf);
+}
+
+/** The held-invoice view for one invoice, by its correlation id or its attempt id. */
+export function loadInvoice(id: string): Promise<InvoiceDetail> {
+  return request<InvoiceDetail>('GET', `/api/invoices/${encodeURIComponent(id)}`);
 }
 
 export function loadDesk(): Promise<DeskData> {

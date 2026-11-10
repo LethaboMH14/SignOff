@@ -38,6 +38,7 @@ export class FakeWarden implements WardenPort {
     pendingLimitChange: null,
   };
   proposals: unknown = { proposals: [] };
+  suppliers: unknown = { suppliers: [] };
 
   opsOverview(): Promise<unknown> {
     return this.answer('overview', this.overview);
@@ -45,6 +46,21 @@ export class FakeWarden implements WardenPort {
 
   opsProposals(): Promise<unknown> {
     return this.answer('proposals', this.proposals);
+  }
+
+  opsProposal(attemptId: string): Promise<unknown> {
+    const list = (
+      this.proposals as { readonly proposals: readonly { readonly attemptId: string }[] }
+    ).proposals;
+    const found = list.find((item) => item.attemptId === attemptId);
+    if (found === undefined) {
+      return this.answer(`proposal:${attemptId}`, undefined, 404);
+    }
+    return this.answer(`proposal:${attemptId}`, found);
+  }
+
+  opsSuppliers(): Promise<unknown> {
+    return this.answer('suppliers', this.suppliers);
   }
 
   setPaused(paused: boolean): Promise<unknown> {
@@ -61,12 +77,11 @@ export class FakeWarden implements WardenPort {
     return this.answer(`approve:${requestId}`, { approved: true });
   }
 
-  private answer(call: string, body: unknown): Promise<unknown> {
+  private answer(call: string, body: unknown, status: number | null = null): Promise<unknown> {
     this.calls.push(call);
-    if (this.refuseWith !== null) {
-      return Promise.reject(
-        Object.assign(new Error('the Warden refused'), { status: this.refuseWith }),
-      );
+    const refusal = status ?? this.refuseWith;
+    if (refusal !== null) {
+      return Promise.reject(Object.assign(new Error('the Warden refused'), { status: refusal }));
     }
     return Promise.resolve(body);
   }

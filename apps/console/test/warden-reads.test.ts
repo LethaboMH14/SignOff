@@ -50,6 +50,7 @@ describe('the Warden views the console accepts', () => {
         {
           attemptId: ATTEMPT,
           decision: 'ALLOW',
+          policyVersion: '2026-11-10.1',
           evaluatedAt: '2026-11-11T09:00:00.000Z',
           reasons: [],
           unexpectedField: 'do not keep me',

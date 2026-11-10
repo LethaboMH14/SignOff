@@ -56,6 +56,8 @@ export interface DeskViewProps {
   readonly onTogglePause: () => void;
   readonly onConfirm: (password: string) => Promise<void>;
   readonly onCancelConfirm: () => void;
+  /** Opens the held-invoice view for a row. */
+  readonly onOpen: (rowId: string) => void;
 }
 
 function StepUp({
@@ -200,6 +202,18 @@ export function DeskView(props: DeskViewProps) {
                   <p className="row-model">Model calls: {String(row.modelCalls)} of at most 3</p>
                 )}
                 <p className="row-time">Updated {sastOf(row.updatedAt)}</p>
+                <p>
+                  <button
+                    type="button"
+                    className="open"
+                    aria-label={`Open invoice ${row.invoiceRef}`}
+                    onClick={() => {
+                      props.onOpen(row.rowId);
+                    }}
+                  >
+                    Open
+                  </button>
+                </p>
               </li>
             ))}
           </ol>

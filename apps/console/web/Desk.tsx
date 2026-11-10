@@ -5,10 +5,13 @@ import {
   type DeskData,
   confirmPassword,
   loadDesk,
+  loadInvoice,
   type SessionInfo,
   setPaused,
 } from './api.js';
+import type { InvoiceDetail } from '../src/server/invoice-view.js';
 import { DeskView } from './DeskView.js';
+import { InvoiceView } from './InvoiceView.js';
 
 /** How often the desk asks the console for fresh rows. A change also refreshes at once. */
 const REFRESH_MS = 5000;
@@ -29,6 +32,23 @@ export function Desk({ session, onSession }: DeskProps) {
   const [busy, setBusy] = useState(false);
   /** The pause (true) or resume (false) waiting for the password, or null when nothing is waiting. */
   const [wanted, setWanted] = useState<boolean | null>(null);
+  /** The invoice whose held-invoice view is open, and its detail once it has loaded. */
+  const [openId, setOpenId] = useState<string | null>(null);
+  const [detail, setDetail] = useState<InvoiceDetail | null>(null);
+  const [detailError, setDetailError] = useState<string | null>(null);
+
+  const openInvoice = useCallback(async (rowId: string) => {
+    setOpenId(rowId);
+    setDetail(null);
+    setDetailError(null);
+    try {
+      setDetail(await loadInvoice(rowId));
+    } catch (failure) {
+      setDetailError(
+        failure instanceof ApiError ? failure.message : 'The invoice did not load. Try again.',
+      );
+    }
+  }, []);
 
   const refresh = useCallback(async () => {
     try {
@@ -94,6 +114,20 @@ export function Desk({ session, onSession }: DeskProps) {
     [applyPause, onSession, session, wanted],
   );
 
+  if (openId !== null) {
+    return (
+      <InvoiceView
+        detail={detail}
+        error={detailError}
+        onBack={() => {
+          setOpenId(null);
+          setDetail(null);
+          setDetailError(null);
+        }}
+      />
+    );
+  }
+
   return (
     <DeskView
       data={data}
@@ -104,6 +138,9 @@ export function Desk({ session, onSession }: DeskProps) {
       onConfirm={onConfirm}
       onCancelConfirm={() => {
         setWanted(null);
+      }}
+      onOpen={(rowId) => {
+        void openInvoice(rowId);
       }}
     />
   );

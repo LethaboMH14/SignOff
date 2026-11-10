@@ -9,12 +9,16 @@ import { hashPassword, verifyPassword } from './auth/passwords.js';
 import { LoginGuard, type Session, SessionStore } from './auth/sessions.js';
 import { cookieOf, readBody, sendEmpty, sendJson } from './http.js';
 import type { ConsoleMode } from './app.js';
+import { invoiceDetailOf } from './invoice-view.js';
 import {
   latestInvoicesOf,
   OverviewView,
   ProposalList,
+  ProposalView,
   proposalRecordOf,
   readTransitions,
+  SupplierList,
+  type SupplierView,
 } from './warden-reads.js';
 
 /**
@@ -28,11 +32,14 @@ const SESSION_MAX_AGE_SECONDS = 8 * 60 * 60;
 const BODY_LIMIT_BYTES = 4096;
 const REQUEST_ID = /^[0-9a-f-]{36}$/;
 const APPROVE_PATH = /^\/api\/limits\/([0-9a-f-]{36})\/approve$/;
+const INVOICE_PATH = /^\/api\/invoices\/([0-9a-f]{64}|[0-9a-f-]{36})$/;
 
 /** The Warden calls the console makes for one person. Each method returns the Warden's answer, unparsed. */
 export interface WardenPort {
   opsOverview(): Promise<unknown>;
   opsProposals(): Promise<unknown>;
+  opsProposal(attemptId: string): Promise<unknown>;
+  opsSuppliers(): Promise<unknown>;
   setPaused(paused: boolean): Promise<unknown>;
   setLimits(patch: unknown): Promise<unknown>;
   approveLimits(requestId: string): Promise<unknown>;
@@ -481,5 +488,81 @@ export async function handleApi(
     await approveLimit(request, response, ctx, approve[1] ?? '');
     return;
   }
+  const invoice = INVOICE_PATH.exec(pathname);
+  if (invoice !== null && method === 'GET') {
+    await invoiceRead(request, response, ctx, invoice[1] ?? '');
+    return;
+  }
   sendJson(response, 404, { error: 'not found' });
+}
+
+function isStatus(error: unknown, status: number): boolean {
+  return (
+    typeof error === 'object' && error !== null && 'status' in error && error.status === status
+  );
+}
+
+/** The Warden's view of one attempt, or null when the Warden has recorded no decision for it. */
+async function proposalOrNull(warden: WardenPort, attemptId: string): Promise<ProposalView | null> {
+  try {
+    return ProposalView.parse(await warden.opsProposal(attemptId));
+  } catch (error) {
+    if (isStatus(error, 404)) {
+      return null;
+    }
+    throw error;
+  }
+}
+
+/** The held-invoice view. It finds the invoice by its correlation id or its attempt id, and reads nothing it does not show. */
+async function invoiceRead(
+  request: IncomingMessage,
+  response: ServerResponse,
+  ctx: ApiContext,
+  id: string,
+): Promise<void> {
+  const caller = callerOf(request, ctx);
+  if (caller === null) {
+    notSignedIn(response);
+    return;
+  }
+  const warden = ctx.wardenFor(caller.operator);
+  if (warden === null) {
+    sendJson(response, 503, { error: 'this account has no Warden access' });
+    return;
+  }
+  const { records } = readTransitions(ctx.transitionsPath);
+  const correlationId =
+    id.length === 64
+      ? id
+      : (records.find((record) => record.attemptId === id)?.correlationId ?? null);
+  if (correlationId === null || !records.some((record) => record.correlationId === correlationId)) {
+    sendJson(response, 404, { error: 'no such invoice' });
+    return;
+  }
+  try {
+    const attemptId = latestInvoicesOf(records).find(
+      (invoiceRecord) => invoiceRecord.correlationId === correlationId,
+    )?.attemptId;
+    const proposal =
+      attemptId === undefined || attemptId === null
+        ? null
+        : await proposalOrNull(warden, attemptId);
+    const supplierId = proposal?.payment?.supplierId ?? null;
+    const supplier: SupplierView | null =
+      supplierId === null
+        ? null
+        : (SupplierList.parse(await warden.opsSuppliers()).suppliers.find(
+            (candidate) => candidate.supplierId === supplierId,
+          ) ?? null);
+    const detail = invoiceDetailOf({ records, correlationId, proposal, supplier });
+    if (detail === null) {
+      sendJson(response, 404, { error: 'no such invoice' });
+      return;
+    }
+    sendJson(response, 200, detail);
+  } catch (error) {
+    const failure = wardenFailure(error);
+    sendJson(response, failure.status, { error: failure.message });
+  }
 }
