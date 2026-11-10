@@ -403,7 +403,8 @@ export class WardenService {
       const limit = limitVerdict({
         limits: this.state.limits,
         amountMinor: attempt.amountMinor,
-        supplierToday: dailyUsage(this.state.attempts.values(), day, attempt.supplierId) - reservedToday,
+        supplierToday:
+          dailyUsage(this.state.attempts.values(), day, attempt.supplierId) - reservedToday,
         totalToday: dailyUsage(this.state.attempts.values(), day, null) - reservedToday,
       });
       if (limit !== null) {
@@ -901,7 +902,10 @@ export class WardenService {
     }
     const wardenSigned = signAsSigner(this.deps.wardenWallet, prepared as unknown as Transaction);
     const finalBlob = combineSigned([blob, wardenSigned]);
-    assertSignedExactly(finalBlob, [this.deps.config.agentAddress, this.deps.config.wardenAddress]);
+    assertSignedExactly(finalBlob, [
+      this.deps.config.agentAddress,
+      this.deps.config.wardenAddress,
+    ]);
     return finalBlob;
   }
 
