@@ -29,6 +29,6 @@ Read [README.md](README.md), [BUILD-BRIEF.md](BUILD-BRIEF.md), [docs/RULES.md](d
 
 ## Before asking for review
 
-- Type check, lint, tests and build pass locally.
+- `npm run check` passes locally: formatting, lint, types, tests with coverage, and build.
 - No file contains a secret.
 - Documents you touched still agree with the build brief, or the pull request says where and why they differ.

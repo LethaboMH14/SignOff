@@ -151,6 +151,17 @@ The track requires an autonomous transaction on XRPL Testnet or Devnet, limits e
 
 Where documents differ, the build brief takes precedence.
 
+## Developer setup
+
+Requires Node 24 (see `.nvmrc`).
+
+```bash
+npm install    # the one install command: dependencies for every workspace
+npm run check  # formatting, lint, types, tests with coverage, and build
+```
+
+Read [docs/RULES.md](docs/RULES.md) before changing anything. Work starts from an issue in [docs/ISSUES.md](docs/ISSUES.md).
+
 ## Honest limits
 
 - **Regulation is unsettled.** South Africa's cross-border crypto rules are still drafts. The August 2026 draft manual would let only individuals, "at this stage", move crypto assets offshore through authorised providers ([SARB](https://www.resbank.co.za/en/home/publications/publication-detail-pages/media-releases/2026/crypto-assets)). On 21 October 2026 the Minister of Finance said Treasury will take a different approach and publish a revised second draft ([MTBPS speech](https://www.gov.za/news/budget/minister-enoch-godongwana-mtbps-speech)). The buyer in this design sits outside South Africa for that reason. **This is not legal advice and no qualified lawyer has reviewed it.** See [docs/BUSINESS.md](docs/BUSINESS.md#regulation).
