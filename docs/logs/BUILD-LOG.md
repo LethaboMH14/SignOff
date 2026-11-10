@@ -26,6 +26,14 @@ One entry per working session (rule R-19 in [RULES.md](../RULES.md)), newest fir
 
 ---
 
+### 2026-11-10 — Sibusiso with Claude (Haiku 5.5) — F5 log redaction
+
+- Done: F5 (#11) on `feat/F5-log-redaction` in commit `7031e35`: personal-identifier detection with check digits (South African national IDs by date range and Luhn; payment cards by Luhn; email; IBAN; phone); two-layer redaction (text, then structure), with the logger's output limited in depth, width and length; a logger that writes one JSON line per call, validates event names, and never throws; all of it in the Node-only entry point.
+- Changed decisions: D-032 to D-036 in the decision journal.
+- Evidence: T-033 to T-039 in the test log. 44 new tests (209 in total). A mutation test disabled the field-name rule: three tests failed, the original was restored byte for byte, and all 44 passed again (T-036). The clean clone of `7031e35` passed `npm ci`, `npm run check` and the audit gate (T-039).
+- Problems / blockers: (1) Lint flagged variable-index access in the redaction walk and the level lookup; both were restructured with a Map and with `Object.fromEntries` rather than disabled. (2) Our own first draft of the identifier tests used twelve-digit bases where thirteen-digit IDs were needed. The detection failures caught it, and the fixtures were corrected. No product code changed for that. (3) A string spread in a test was flagged and replaced.
+- Next: phase close for Gate 0. It needs the CI result of the first GitHub run, and the phase report.
+
 ### 2026-11-10 — Sibusiso with Claude (Haiku 5.5) — F4 shared schemas
 
 - Done: F4 (#10) on `feat/F4-shared-schemas` in commit `1b353d9`: integer minor-unit money with a strict invoice-text parser; Zod 4 schemas for the invoice extraction, payment proposal, Warden decision and obligation, with the obligation's invariants enforced on every record; deterministic validation of invoice fields; a stable obligation key; two entry points, one platform-neutral and one Node-only.

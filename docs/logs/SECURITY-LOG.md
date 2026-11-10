@@ -17,7 +17,7 @@ Status: `Open` (no control yet), `Designed` (in documents), `Implemented` (in co
 | T-05 | Stolen agent key | Agent service | Ledger requires Warden too | A4 | Designed |
 | T-06 | Stolen Warden key | Warden service | Ledger requires agent too | A4 | Designed |
 | T-07 | Both keys stolen | Both services | Loss bounded by small spending balance; abandon and rebuild | A7 | Designed |
-| T-08 | Seed or key leaked to the repository or logs | Developers, AI tools, logs | Secret scanning, tested pre-commit patterns, log redaction, secret manager | F1 guard test (ignore rules); F3 (scanner, hook, CI scan, deny list; T-013 to T-022); F5 (redaction) | Implemented for the repository; log redaction pending in F5 |
+| T-08 | Seed or key leaked to the repository or logs | Developers, AI tools, logs | Secret scanning, tested pre-commit patterns, log redaction, secret manager | F1 guard test (ignore rules); F3 (scanner, hook, CI scan, deny list; T-013 to T-022); F5 (log redaction; T-033 to T-039) | Implemented for the repository and for logs; provider scanning needs the repository owner (S-005) |
 | T-09 | Duplicate or replayed payment | Retries, restarts, concurrency | Stable obligation identity, atomic reservation, reconcile before retry | F4 (T-028); B2 and A5 pending | Partly implemented: stable obligation key in F4; reservation and reconciliation pending |
 | T-10 | Altered supplier list, purchase order or delivery record | Internal records | Maker-checker, provenance, alerts, fail closed on unapproved changes | B4, B9 | Designed |
 | T-11 | Operator account taken over | Console | Strong authentication, second approver for limit increases and suppliers | D3 | Designed |
@@ -25,11 +25,12 @@ Status: `Open` (no control yet), `Designed` (in documents), `Implemented` (in co
 | T-13 | Malicious or compromised dependency | npm packages; GitHub Actions | Lockfile and exact pins; 7-day cooldown; logged security-fix override; audit gate in CI; Dependabot with cooldown; actions pinned to commit SHAs | F1 (T-007); F2 (T-009 to T-012) | Implemented; first CI run to be linked |
 | T-14 | Ledger state changes between check and sign | Network | Sign exact checked fields; pre-signing read; short expiry | B8, A5 | Designed |
 | T-15 | RLUSD frozen or clawed back by issuer | Issuer | Pre-signing read; hold and alert | B8 | Designed |
-| T-16 | Personal data sent where it should not go | Model API, ledger, logs | Minimal prompt content; hashes only on ledger; redaction | F5, C2 | Designed |
+| T-16 | Personal data sent where it should not go | Model API, ledger, logs | Minimal prompt content; hashes only on ledger; redaction | F5 (T-033 to T-036); C2 pending for prompts | Partly implemented: logs are redacted (F5); prompt boundary pending in C2 |
 | T-17 | Forged goods-received scan | RFID (stretch) | Scan is "tag presented"; receiving approval required | S4 | Designed |
 | T-18 | Arduino bridge misuse | Operator laptop (stretch) | Short-lived pause/status-only token; no resume, no keys | S1, S3 | Designed |
 | T-19 | Secret committed by skipping the hook (`--no-verify`, or hooks not enabled) | Developers | Pre-commit scan; CI scan of tracked files; provider scanning (owner setting) | T-019, T-022 | Implemented; a skipped hook is still caught by CI |
 | T-20 | Secret hidden in a binary, encoded or split form | Binary files; encoded or split secrets | Binary files counted in every report; provider scanning; review | T-016 (binary count) | Accepted limitation, documented in SECURITY.md |
+| T-21 | Secret or personal data leaked through logs: error text, stacks, hostile fields, event names | Logs | Structural and textual redaction; field-name rule; fail-safe logger; validated event names | T-033 to T-039 | Implemented |
 
 ## 2. Check schedule
 
@@ -60,5 +61,6 @@ Findings, incidents and security-relevant changes. Newest at the bottom.
 | S-008 | 2026-11-10 | Dependency | npm 11 held back the install script of esbuild, a dependency of tsx. The scanner works without it, and the script is not approved (D-024). | T-08, T-13 | Recorded | Closed |
 | S-009 | 2026-11-10 | Design finding | The first draft exported Node-only security code from the platform-neutral entry point, which would have blocked browser code from importing the schemas. Split into '.' (neutral) and './node' (Node-only), with a test that enforces the split. | T-12 | Fixed in F4 (D-025) | Closed |
 | S-010 | 2026-11-10 | Finding (test) | A test showed that invoice numbers differing only in spacing or punctuation produced different obligation keys, so a duplicate written that way could pass as a new payable. Fixed by reducing the number to letters and digits (D-026). | T-09 | Fixed in F4 | Closed |
+| S-011 | 2026-11-10 | Change | F5 adds structural and textual redaction and a fail-safe logger. Verified by T-033 to T-039, including a mutation test (T-036). | T-16, T-21 | Recorded | Closed |
 
 **Types:** `Design review`, `Finding`, `Incident`, `Dependency`, `Key rotation`, `Change`. An incident involving a real key or personal data also follows [SECURITY.md](../../SECURITY.md).
