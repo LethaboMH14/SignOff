@@ -11,17 +11,17 @@ Status: `Open` (no control yet), `Designed` (in documents), `Implemented` (in co
 | ID | Threat | Entry point | Control | Verified by | Status |
 |---|---|---|---|---|---|
 | T-01 | Prompt injection in an invoice | PDF text | Invoice text passed as data; no payment tool for the model; holds on instructions | C3 fixtures | Designed |
-| T-02 | Changed bank details (business email compromise) | Invoice, email | Destination only from verified supplier record; changes need supplier key, cooling-off, second approval | B3, B9 tests | Designed |
+| T-02 | Changed bank details (business email compromise) | Invoice, email | Destination only from verified supplier record; changes need supplier key, cooling-off, second approval | F4 (T-025: the proposal schema has no payee field); B3 and B9 tests pending | Partly implemented: F4 removes the payee field from proposals; Warden's verified-record check is pending in B3 |
 | T-03 | Malicious file (malware, oversized, disguised type) | Intake folder or inbox | Accept text PDF only by content check, size limit, no macros or embedded files executed, parse in an isolated process, hash and quarantine anything else | C1 tests | Designed |
 | T-04 | Malicious links in documents | PDF content | Never fetch links found in documents | C1, C3 tests | Designed |
 | T-05 | Stolen agent key | Agent service | Ledger requires Warden too | A4 | Designed |
 | T-06 | Stolen Warden key | Warden service | Ledger requires agent too | A4 | Designed |
 | T-07 | Both keys stolen | Both services | Loss bounded by small spending balance; abandon and rebuild | A7 | Designed |
 | T-08 | Seed or key leaked to the repository or logs | Developers, AI tools, logs | Secret scanning, tested pre-commit patterns, log redaction, secret manager | F1 guard test (ignore rules); F3 (scanner, hook, CI scan, deny list; T-013 to T-022); F5 (redaction) | Implemented for the repository; log redaction pending in F5 |
-| T-09 | Duplicate or replayed payment | Retries, restarts, concurrency | Stable obligation identity, atomic reservation, reconcile before retry | B2, A5 | Designed |
+| T-09 | Duplicate or replayed payment | Retries, restarts, concurrency | Stable obligation identity, atomic reservation, reconcile before retry | F4 (T-028); B2 and A5 pending | Partly implemented: stable obligation key in F4; reservation and reconciliation pending |
 | T-10 | Altered supplier list, purchase order or delivery record | Internal records | Maker-checker, provenance, alerts, fail closed on unapproved changes | B4, B9 | Designed |
 | T-11 | Operator account taken over | Console | Strong authentication, second approver for limit increases and suppliers | D3 | Designed |
-| T-12 | Injection into our own services (SQL, command, header, cross-site) | API inputs | Strict schemas, parameterised queries, no shell from inputs, cross-site checks, authenticated endpoints | B1 tests | Designed |
+| T-12 | Injection into our own services (SQL, command, header, cross-site) | API inputs | Strict schemas, parameterised queries, no shell from inputs, cross-site checks, authenticated endpoints | F3 (no shell; argument arrays); F4 (T-024, T-025 strict schemas); B1 pending | Partly implemented: strict schemas and no-shell process use; endpoint and query controls pending in B1 |
 | T-13 | Malicious or compromised dependency | npm packages; GitHub Actions | Lockfile and exact pins; 7-day cooldown; logged security-fix override; audit gate in CI; Dependabot with cooldown; actions pinned to commit SHAs | F1 (T-007); F2 (T-009 to T-012) | Implemented; first CI run to be linked |
 | T-14 | Ledger state changes between check and sign | Network | Sign exact checked fields; pre-signing read; short expiry | B8, A5 | Designed |
 | T-15 | RLUSD frozen or clawed back by issuer | Issuer | Pre-signing read; hold and alert | B8 | Designed |
@@ -58,5 +58,7 @@ Findings, incidents and security-relevant changes. Newest at the bottom.
 | S-006 | 2026-11-10 | Design review | CI runs on public pull requests execute code from forks. Mitigated by a read-only token, no secrets and no `pull_request_target` (D-018). | T-08, T-13 | Control accepted; revisit when secrets are added | Closed in design |
 | S-007 | 2026-11-10 | Finding | The pre-commit check refused a commit containing a literal password in a test sample. The sample is now assembled at run time, as every other sample secret is. | T-08 | Fixed in F3 | Closed |
 | S-008 | 2026-11-10 | Dependency | npm 11 held back the install script of esbuild, a dependency of tsx. The scanner works without it, and the script is not approved (D-024). | T-08, T-13 | Recorded | Closed |
+| S-009 | 2026-11-10 | Design finding | The first draft exported Node-only security code from the platform-neutral entry point, which would have blocked browser code from importing the schemas. Split into '.' (neutral) and './node' (Node-only), with a test that enforces the split. | T-12 | Fixed in F4 (D-025) | Closed |
+| S-010 | 2026-11-10 | Finding (test) | A test showed that invoice numbers differing only in spacing or punctuation produced different obligation keys, so a duplicate written that way could pass as a new payable. Fixed by reducing the number to letters and digits (D-026). | T-09 | Fixed in F4 | Closed |
 
 **Types:** `Design review`, `Finding`, `Incident`, `Dependency`, `Key rotation`, `Change`. An incident involving a real key or personal data also follows [SECURITY.md](../../SECURITY.md).
