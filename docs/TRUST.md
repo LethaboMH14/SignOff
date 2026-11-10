@@ -23,7 +23,7 @@ If Warden is wrong or compromised, the ledger still stops the agent alone, but i
 | Pause stops new payments | Warden refuses to co-sign | Yes | Yes | No |
 | Maximum loss if both keys are stolen | Balance held in the spending account | n/a | n/a | n/a |
 
-The last row is why the spending account holds only a working balance. Reserves stay in a separate account that neither key controls.
+The last row is why the spending account holds only a working balance. [ADR 0004](decisions/0004-workshop-adjustments.md) proposes making that cap a ledger rule through the RLUSD trust line limit, and marking verified supplier accounts with an XRPL credential. A credential makes verification publicly checkable, but the refusal to pay an account without one would still be a Warden check. Reserves stay in a separate account that neither key controls.
 
 ## Who holds which key
 

@@ -57,7 +57,7 @@ Each case records the expected result and the actual result code or transaction 
 
 ## Security checks
 
-- Secret scanning and push protection on the repository.
+- Secret scanning and push protection on the repository, plus a local pre-commit check that refuses anything shaped like an XRPL seed (they start with `s`). The Ripple workshop singled out AI tools leaking seeds into public repositories.
 - Dependency audit on every pull request; Dependabot enabled.
 - Keys only in a secret manager, never in the repository, logs, model context or ledger memos.
 - Invoice content treated as untrusted input everywhere.
@@ -91,7 +91,9 @@ One command that a judge can run to verify the repository's claims: it provision
 
 | Purpose | Tool | Note |
 |---|---|---|
-| Ledger | xrpl.js, Testnet and RLUSD faucets, Testnet explorer | Explorer links are the proof judges can click |
+| Ledger | xrpl.js, Testnet faucet (100 test XRP), RLUSD faucet at tryrlusd.com, Testnet explorer | Explorer links are the proof judges can click. Budget 1 XRP per account plus 0.2 XRP per trust line, signer list and credential |
+| Development help | XRPL MCP server in Claude Code, XRPL AI starter kit | Named in the Ripple workshop |
+| Agent key (option) | Privy agent wallet | Recommended in the workshop; use only if it can sign for an XRPL multi-signed transaction |
 | Agent interface | MCP tool for `propose_payment` | Matches the track's wording |
 | Model | Claude Haiku through the Anthropic Messages API, structured outputs | At most three model calls per invoice |
 | Orchestration | LangGraph.js | As in the build brief |
@@ -102,13 +104,13 @@ One command that a judge can run to verify the repository's claims: it provision
 
 ## Order of work
 
-1. Ninety-minute Testnet check: two-signature RLUSD payment validates; one signature fails. Record the hashes.
+1. Ninety-minute Testnet check: two-signature RLUSD payment validates; each key alone fails; a payment above the trust line limit fails; a credential can be issued, accepted, checked and deleted; simulate returns the expected result. Record the hashes.
 2. Warden rules with unit tests.
 3. Agent loop on fixture invoices.
 4. Console: payment desk, hold view, limits, receipt.
 5. Attack suite and judge check.
 6. Deployment, video, submission a day early.
-7. *Stretch:* permission delegation, supplier record signed with an additional quantum-safe signature, wallet-based operator approval.
+7. *Stretch:* batch payment of several invoices, token escrow until goods are received, Privy agent wallet, wallet-based operator approval. Permission delegation is dropped for the hackathon (Devnet only).
 
 ## Keeping claims honest
 

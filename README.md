@@ -101,7 +101,9 @@ This positioning was accepted by the team on 10 November 2026 ([ADR 0001](docs/d
 | Rand conversion and payout to a supplier's bank | | | Yes | |
 | Bank account verification (AVS) | | | Yes | |
 | Accounting system links (Xero, Sage) | | | Yes | |
-| Permission delegation | Optional, after Testnet check | Not yet | | |
+| Permission delegation | Dropped for the hackathon: not live on Testnet | | | |
+| XRPL credential on verified supplier accounts | Proposed (ADR 0004) | Not yet | | |
+| Trust line limit capping the spending balance | Proposed (ADR 0004) | Not yet | | |
 | Customer problem, pricing, willingness to pay | | | | No |
 | Savings or fraud prevented | | | | None claimed |
 
@@ -130,6 +132,7 @@ The track requires an autonomous transaction on XRPL Testnet or Devnet, limits e
 | [docs/BUSINESS.md](docs/BUSINESS.md) | Customer, savings, revenue, feasibility, competitors, regulation |
 | [docs/ENGINEERING.md](docs/ENGINEERING.md) | Repository layout, review process, tests, security, release checks |
 | [docs/HACKATHON.md](docs/HACKATHON.md) | Event facts, rubric, deadlines, what is unknown |
+| [docs/WORKSHOP.md](docs/WORKSHOP.md) | Notes from the Ripple track workshop and what they change |
 | [docs/decisions/](docs/decisions/) | Decision records |
 | [docs/RESEARCH.md](docs/RESEARCH.md) | Source index |
 | [docs/CLAUDE-PLAN.md](docs/CLAUDE-PLAN.md) | Historical plan from 5 November, kept for reference |

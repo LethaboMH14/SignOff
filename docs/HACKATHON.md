@@ -58,9 +58,16 @@ Copied from the dashboard.
 | Technical UX | Nothing to score | A deployed, working flow; a real Testnet payment; tests and checks visible in the repository |
 | Business/Market Fit | Narrative only | A named South African problem with sourced figures, one recorded customer conversation, local integrations shown and labelled |
 
+## From the Ripple workshop (5 November)
+
+- A Ripple senior developer advocate who presented will judge on the ground.
+- The winner is fast-tracked to an interview for Ripple's UDAX accelerator in Cape Town, January 2027.
+- Build on the XRPL Layer 1. The EVM sidechain is out of scope.
+- Full notes: [WORKSHOP.md](WORKSHOP.md).
+
 ## What we could not find
 
-- **Judges.** Not published on the event site, the dashboard or in search results.
+- **Judges.** Not published. One is known from the workshop (above); the rest are not.
 - **Past winners.** A search snippet of W3Node's impact report mentions about 50 projects and four track winners in the previous edition; the report would not load and no winner is named anywhere we found.
 - **Participant guide.** Listed on the dashboard as locked.
 - **Track prize.** The historical plan records US$2,500 and an accelerator fast track for this track; not re-verified.
