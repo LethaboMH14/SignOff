@@ -86,6 +86,21 @@ describe('redactValue: structure', () => {
     });
   });
 
+  it('redacts secrets or personal identifiers used as untrusted property names', () => {
+    const object: Record<string, unknown> = {
+      [`vendor-jane.doe@example.com`]: 'reviewed',
+      [`payment-${SEED}`]: 'pending',
+      reference: 'safe',
+    };
+    const redacted = redactValue(object) as Record<string, unknown>;
+    const output = JSON.stringify(redacted);
+    expect(output).not.toContain('jane.doe@example.com');
+    expect(output).not.toContain(SEED);
+    expect(output).toContain('[REDACTED:email]');
+    expect(output).toContain('[REDACTED:xrpl-family-seed]');
+    expect(redacted['reference']).toBe('safe');
+  });
+
   it('walks nested objects and arrays, and redacts text inside string values', () => {
     const redacted = redactValue({
       event: { note: `signed with ${SEED}`, items: [{ token: 'x' }, { status: 'ok' }] },
