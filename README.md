@@ -156,7 +156,7 @@ Where documents differ, the build brief takes precedence.
 Requires Node 24 (see `.nvmrc`).
 
 ```bash
-npm install    # the one install command: dependencies for every workspace
+npm install    # the one install command: dependencies for every workspace, and the pre-commit secret check in a git checkout
 npm run check  # formatting, lint, types, tests with coverage, and build
 ```
 

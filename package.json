@@ -15,6 +15,9 @@
     "minimatch": "11.0.5"
   },
   "scripts": {
+    "prepare": "node scripts/setup-hooks.mjs",
+    "setup:hooks": "node scripts/setup-hooks.mjs",
+    "secrets:scan": "tsx scripts/secret-scan.ts --all",
     "build": "npm run build --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present && tsc --project tsconfig.json",
     "lint": "eslint . --max-warnings=0",
@@ -22,7 +25,7 @@
     "format:check": "prettier --check .",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "check": "npm run format:check && npm run lint && npm run typecheck && npm run test:coverage && npm run build"
+    "check": "npm run format:check && npm run lint && npm run typecheck && npm run secrets:scan && npm run test:coverage && npm run build"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
@@ -32,6 +35,7 @@
     "eslint-plugin-security": "4.2.1",
     "globals": "17.14.0",
     "prettier": "3.9.10",
+    "tsx": "4.23.15",
     "typescript": "6.0.3",
     "typescript-eslint": "8.72.1",
     "vitest": "5.1.0"

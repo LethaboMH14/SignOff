@@ -13,7 +13,7 @@ Read [README.md](README.md), [BUILD-BRIEF.md](BUILD-BRIEF.md), [docs/RULES.md](d
 ## Standards
 
 - **Evidence.** Link every factual claim to a source or mark it unverified. Label simulated outcomes as simulated.
-- **Secrets.** No keys, seeds, tokens, account identifiers or personal data in commits, logs, issues or ledger memos. See [SECURITY.md](SECURITY.md).
+- **Secrets.** No keys, seeds, tokens, account identifiers or personal data in commits, logs, issues or ledger memos. See [SECURITY.md](SECURITY.md). Never bypass the pre-commit check with `--no-verify`. If it flags something real, remove the secret; if it flags something false, fix the pattern and add a test.
 - **Prior work.** Disclose any pre-existing code. Ideas may be reused; code is written here.
 - **Decisions.** A change of direction gets a record in [docs/decisions/](docs/decisions/) marked Proposed until the team agrees.
 - **Tests.** Code changes come with tests. A Warden rule is not done until it has a passing case and a failing case.
