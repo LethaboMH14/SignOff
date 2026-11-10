@@ -382,16 +382,18 @@ describe('the caller side of the Warden', () => {
     expect(key.privateKey.asymmetricKeyType).toBe('ed25519');
   });
 
-  it('combines the Warden signature with the agent signature into one two-signer transaction', async () => {
+  it('returns no Warden signature before final authorization; agent signs only its own half', async () => {
     const h = await harness();
     await activeSupplierOverHttp(h, generateSupplierKey().publicKey);
     const proposed = await h.agent.propose(
       proposalFor(newAttemptId(), STANDARD, h.config, h.clock.now),
     );
-    const combined = coSignAsAgent(h.base.agentWallet, proposed.toCoSign ?? '');
-    const signers = (decode(combined) as { Signers?: unknown[] }).Signers ?? [];
-    expect(signers).toHaveLength(2);
-    expect(hashOfSigned(combined)).toMatch(/^[0-9A-F]{64}$/);
+    const prepared = decode(proposed.toCoSign ?? '') as { Signers?: unknown[] };
+    expect(prepared.Signers).toBeUndefined();
+    const agentOnly = coSignAsAgent(h.base.agentWallet, proposed.toCoSign ?? '');
+    const signers = (decode(agentOnly) as { Signers?: unknown[] }).Signers ?? [];
+    expect(signers).toHaveLength(1);
+    expect(hashOfSigned(agentOnly)).toMatch(/^[0-9A-F]{64}$/);
   });
 
   it('refuses to co-sign something that is not a transaction', () => {
