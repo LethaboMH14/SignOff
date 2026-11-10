@@ -42,6 +42,14 @@ One entry per working session (rule R-19 in [RULES.md](../RULES.md)), newest fir
 - Problems / blockers: the 24-hour window is a proposed rule for review. The service tests were updated for the new return shape of setLimits. Lowerings behave as before.
 - Next: the console (D1), with the live agent map.
 
+### 2026-11-11 — Sibusiso with Claude (Haiku 5.5) — D8 agent map in the console
+
+- Done: an animated map of invoices moving between the agents, in the console. The server streams the agent's transition log over server-sent events on the loopback address. The browser moves a token to each agent as it acts, shows held moves on the hold lane, and shows paid only for a reconciled move. A feed lists the latest moves in words, with the plain reason for each hold. A replay fixture of the labelled set is labelled SIMULATED. Agent change: the evaluation can export each case's moves (`--transitions`), in commit 38b8717. Branch `feat/D8-agent-map`, stacked on `feat/D3W-second-approver`.
+- Changed decisions: D-075.
+- Evidence: T-096 (console and export tests) and T-097 (live check of the stream and the page headers). Dependencies recorded in S-042.
+- Problems / blockers: the replay is simulated, so it has no ledger or paid moves. Those appear only in a live run with the Warden, which has not run. Phone layout and the motion were not checked by eye. The plain texts for reason codes are drafted and need review.
+- Next: the Warden's events on the map, a live run with the Warden, and the payment desk (D1).
+
 ### 2026-11-10 — Sibusiso with Claude (Haiku 5.5) — Gate C issues created and linked
 - Done: created issues #37 to #43 for C1 to C7, titled as in docs/ISSUES.md. Each carries its acceptance criteria, dependencies, status, evidence and branch, with the live runs marked UNVERIFIED where they have not been run. Linked them in the GH column of docs/ISSUES.md.
 - Changed decisions: none.

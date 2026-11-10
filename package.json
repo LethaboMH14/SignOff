@@ -13,6 +13,7 @@
     "packages/xrpl",
     "packages/warden-api",
     "apps/agent",
+    "apps/console",
     "apps/warden"
   ],
   "overrides": {
