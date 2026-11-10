@@ -1,6 +1,6 @@
 # 0002: Ordinary two-signature account as the core
 
-- **Status:** Proposed, 9 November 2026. Awaiting team sign-off.
+- **Status:** Accepted, 10 November 2026, in review of pull request 1. Proposed 9 November 2026.
 - **Affects:** [BUILD-BRIEF.md](../../BUILD-BRIEF.md) "XRPL spike".
 
 ## Context
@@ -33,3 +33,9 @@ Treat permission delegation as a stretch goal, attempted only after the core flo
 ## Check before accepting
 
 Run the ninety-minute Testnet check in the brief. If delegation with a multi-signing delegate works first time with RLUSD, the team may keep it as the core.
+
+## Conditions of acceptance (10 November 2026)
+
+- The priority is a real, verifiable two-signature RLUSD payment on Testnet and Warden rules that are enforced independently of the agent.
+- Delegation is an optional enhancement, attempted only after it is verified directly on Testnet. It is not a prerequisite for the demo.
+- Every document must say precisely which guarantees come from the XRP Ledger and which checks only Warden enforces. See [TRUST.md](../TRUST.md).

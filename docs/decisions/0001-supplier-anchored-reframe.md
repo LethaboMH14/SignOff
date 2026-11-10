@@ -1,11 +1,11 @@
 # 0001: Lead with the South African supplier as first customer
 
-- **Status:** Proposed, 9 November 2026. Awaiting team sign-off.
+- **Status:** Accepted, 10 November 2026, in review of pull request 1. Proposed 9 November 2026.
 - **Affects:** [BUILD-BRIEF.md](../../BUILD-BRIEF.md) "Problem and user", the pitch, the demo story.
 
 ## Context
 
-The build brief frames the user as a Lusaka solar distributor paying a South African supplier. That framing exists because the August 2026 draft manual bars South African resident companies from cross-border crypto transactions.
+The build brief frames the user as a Lusaka solar distributor paying a South African supplier. That framing exists because the August 2026 **draft** manual would, as commentators read it, exclude South African resident companies from cross-border crypto transactions. On 21 October 2026 the Minister of Finance announced a revised second draft. See [BUSINESS.md](../BUSINESS.md#regulation); no lawyer has reviewed this.
 
 Judged against the rubric, the framing is weak on Business/Market Fit: the customer is fictional and outside South Africa, the judges sit in Cape Town, and the criterion asks for "African market problem identification" and "integration with local infrastructure". The underlying problem is large in South Africa; see [PROBLEM.md](../PROBLEM.md).
 
@@ -33,3 +33,11 @@ Keep the payment flow: a buyer outside South Africa pays a South African supplie
 ## If rejected
 
 The Lusaka framing in the build brief stands. The evidence in [PROBLEM.md](../PROBLEM.md) still supports the pitch.
+
+## Conditions of acceptance (10 November 2026)
+
+Accepted as a **go-to-market hypothesis**, not a validated fact.
+
+- The buyer outside South Africa stays the party that initiates and controls payments. The supplier is the distribution and verification entry point.
+- Who buys, who pays and who authorises onboarding must still be validated with real finance leads.
+- A supplier signature counts only once it is linked to an independently verified supplier identity, with a safe change and recovery process. See [TRUST.md](../TRUST.md).

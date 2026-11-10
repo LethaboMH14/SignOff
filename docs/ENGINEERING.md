@@ -62,7 +62,7 @@ Each case records the expected result and the actual result code or transaction 
 - Keys only in a secret manager, never in the repository, logs, model context or ledger memos.
 - Invoice content treated as untrusted input everywhere.
 - Operator actions authenticated; Warden's endpoints reject cross-site and unauthenticated calls.
-- A written threat model in `docs/` before the first payment code is merged.
+- Trust boundaries are in [TRUST.md](TRUST.md). A written threat model extends it before the first payment code is merged.
 - No invoice data or names on the public ledger; hashes only.
 
 ## Before release
@@ -109,3 +109,16 @@ One command that a judge can run to verify the repository's claims: it provision
 5. Attack suite and judge check.
 6. Deployment, video, submission a day early.
 7. *Stretch:* permission delegation, supplier record signed with an additional quantum-safe signature, wallet-based operator approval.
+
+## Keeping claims honest
+
+Every item in the README's "Status of every claim" table moves through four states, and only moves with evidence:
+
+| State | Evidence required |
+|---|---|
+| Planned | Described in a document |
+| Live on Testnet | A transaction hash or test run linked in the README |
+| Simulated | Labelled "simulated" in the console, the README and the video |
+| Validated with customers | A recorded, consenting conversation or written statement |
+
+A pull request that changes a state updates that table in the same change.

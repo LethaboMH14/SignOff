@@ -14,10 +14,10 @@ Thandi is the credit controller at a Cape Town solar wholesaler. Mwila is the fi
 
 | Party | Role | Why they care |
 |---|---|---|
-| South African supplier (proposed first customer) | Publishes signed payout details, invites its buyers | Gets paid sooner; stops losing customers to fraud done in its name |
+| South African supplier (first customer, hypothesis) | Publishes signed payout details, invites its buyers | Gets paid sooner; stops losing customers to fraud done in its name |
 | Buyer outside South Africa | Runs the agent and sets the limits | Pays without the phone check and cannot be redirected |
 
-Leading with the supplier is proposed in [ADR 0001](decisions/0001-supplier-anchored-reframe.md). One wholesaler brings many buyers, which is cheaper than selling to buyers one at a time.
+Leading with the supplier was accepted in [ADR 0001](decisions/0001-supplier-anchored-reframe.md) as a go-to-market hypothesis. The buyer initiates and controls payments; the supplier is the entry point. One wholesaler brings many buyers, which is cheaper than selling to buyers one at a time. Who buys, who pays and who authorises onboarding are not yet validated.
 
 ## How customers save money
 
@@ -75,7 +75,24 @@ We found no product combining a ledger-enforced second signature, supplier-signe
 
 ## Regulation
 
-The August 2026 draft manual from the Reserve Bank and National Treasury says only natural persons may make cross-border crypto transactions and bars resident companies ([Werksmans](https://werksmans.com/south-africas-crypto-crackdown-draft-manual-brings-cross-border-crypto-asset-transactions-under-exchange-control/)). It is a draft. In this design the buyer holding RLUSD sits outside South Africa and the South African supplier receives rand through a licensed partner. No lawyer has reviewed this, and it must be reviewed before any real money moves.
+**This section is a summary of public documents, not a legal conclusion. No qualified lawyer has reviewed it, and it must be reviewed before any real money moves.** Checked 10 November 2026.
+
+South Africa's rules for moving crypto assets across the border are **not settled law**. The sequence so far, from primary sources where we have them:
+
+| Date | Event | Source |
+|---|---|---|
+| 17 April 2026 | Treasury and the Reserve Bank publish **draft** Capital Flow Management Regulations, bringing cross-border crypto into exchange control | Referenced in the [SARB statement](https://www.resbank.co.za/en/home/publications/publication-detail-pages/media-releases/2026/crypto-assets) |
+| 15 May 2026 | Joint media statement after industry pushback | Referenced in the [SARB statement](https://www.resbank.co.za/en/home/publications/publication-detail-pages/media-releases/2026/crypto-assets) |
+| 3 August 2026 | **Draft** Crypto Assets Manual for cross-border activities published for comment until 30 September. It says that "only individuals, at this stage" may move crypto assets offshore through authorised providers, and that it remains subject to refinement. | [SARB, primary](https://www.resbank.co.za/en/home/publications/publication-detail-pages/media-releases/2026/crypto-assets) |
+| 21 October 2026 | In the Medium-Term Budget Policy Statement, the Minister of Finance says Treasury received thousands of comments, needs a different approach, will move away from pre-approvals toward checking transactions for legitimacy and tax compliance, will follow Financial Stability Board recommendations, and will publish a revised second draft | [MTBPS speech, gov.za, primary](https://www.gov.za/news/budget/minister-enoch-godongwana-mtbps-speech) · [Connecting Africa](https://www.connectingafrica.com/fintech/sa-national-treasury-rethinking-crypto-regulation) |
+
+Law-firm commentary on the August draft reads it as excluding resident companies and trusts ([Werksmans](https://werksmans.com/south-africas-crypto-crackdown-draft-manual-brings-cross-border-crypto-asset-transactions-under-exchange-control/), [Baker McKenzie](https://www.bakermckenzie.com/en/insight/publications/2026/08/south-africa-proposed-framework-for-cross-border-crypto-asset-transactions)). The second draft had not been found published as of 10 November 2026.
+
+What this means for the design, as our reading only:
+
+- The buyer that holds RLUSD sits outside South Africa, so the South African supplier never holds crypto. It receives rand through a licensed partner.
+- The rules are moving. A revised draft could make the design easier or harder; the pitch should say so rather than predict it.
+- The buyer's own country's rules (for example Zambia's) have not been reviewed at all.
 
 ## What would raise the Business score fastest
 

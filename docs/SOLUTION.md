@@ -12,17 +12,19 @@ Each part solves a different problem. Keeping them apart makes the pitch honest.
 
 | Problem | What solves it |
 |---|---|
-| A fake "our bank details changed" email | The supplier publishes its payout details once, signed with its own key. Changes need that key and a cooling-off period. |
-| The AI being tricked, or its key being stolen | A second signature the AI does not hold |
-| "Prove your limits are real" | The ledger enforces the two-signature rule in public, instead of a private server promising it |
+| A fake "our bank details changed" email | Warden compares every payment with the supplier's verified payout record. Changes need the supplier's key, a cooling-off period and out-of-band confirmation. |
+| The AI being tricked, or its key being stolen | A second signature the AI does not hold, required by the ledger |
+| "Prove the agent cannot pay alone" | The ledger's signer list is public, so anyone can check that two signatures are required |
 
 Two signatures are not what stops invoice fraud. They are what makes it safe to remove the human click, which is the hackathon track's requirement.
+
+Be precise about the split: **the ledger guarantees only that no single key can pay.** Payee, invoice, duplicate, limit and transaction-type checks are enforced by Warden, a separately deployed service, not by the ledger. The full breakdown is in [TRUST.md](TRUST.md).
 
 ## The components
 
 - **Agent.** Reads the invoice, extracts fields with their source text, matches them to a purchase order and goods-received record, and proposes a payment. It treats invoice content as untrusted. It holds one signing key and can submit nothing alone.
 - **Warden.** A separate service with its own deployment and its own key. It runs fixed rules, with no AI model in the decision. It is the only component that submits to the ledger.
-- **Supplier payout record.** The supplier's payment destination, signed by the supplier. Warden compares every payment against it.
+- **Supplier payout record.** The supplier's payment destination, signed by the supplier after its identity and bank account are verified outside the system. Warden compares every payment against it. Enrolment, changes and recovery are in [TRUST.md](TRUST.md).
 - **Operator console.** Where a finance person sets limits, approves suppliers, pauses the system and reads why something was held.
 - **Ledger.** An XRPL account that requires two signatures. Settlement is in RLUSD on Testnet.
 
@@ -60,7 +62,7 @@ Warden checks every rule. One failure means hold.
 
 ## Simpler options considered
 
-| Option | Stops a tricked AI | Survives one stolen key | Publicly checkable | Effort |
+| Option | Stops a tricked AI | Survives one stolen key | Signature requirement publicly checkable | Effort |
 |---|---|---|---|---|
 | A human approves every payment | Yes | Yes | No | Lowest, but not autonomous |
 | The AI holds the only key, with a small balance cap | No, the loss is only capped | No | Partly | Low |
@@ -68,12 +70,13 @@ Warden checks every rule. One failure means hold.
 | **Two signatures on the account (ordinary multi-signing)** | **Yes** | **Yes** | **Yes** | One extra setup transaction |
 | Two signatures plus permission delegation | Yes | Yes | Yes, and limits transaction types | Highest |
 
-The proposal in [ADR 0002](decisions/0002-plain-multisign-core.md) is to build the fourth option as the core and treat delegation as a stretch goal. Ordinary multi-signing is long established on the ledger. Permission delegation was reported as still disabled in August 2026 and eligible to activate only from 8 October ([Cryptoticker](https://cryptoticker.io/en/xrpl-permission-delegation-activation/)); its status on Testnet has not been checked by us.
+The team accepted the fourth option as the core in [ADR 0002](decisions/0002-plain-multisign-core.md), with delegation as an optional enhancement. Ordinary multi-signing is long established on the ledger. Permission delegation was reported as still disabled in August 2026 and eligible to activate only from 8 October ([Cryptoticker](https://cryptoticker.io/en/xrpl-permission-delegation-activation/)); its status on Testnet has not been checked by us. In the "Stops a tricked AI" column, the stopping is done by Warden's rules; the ledger's part is ensuring the AI cannot pay without Warden.
 
 ## What the design does not protect against
 
-- A stolen operator key.
-- An approved supplier that is itself dishonest or compromised.
+- A stolen operator credential or recovery key.
+- An approved supplier that is itself dishonest or compromised. See the limits of supplier-signed records in [TRUST.md](TRUST.md).
+- A compromised Warden. It cannot pay alone, but it is the only component checking payees and limits.
 - Both the agent and Warden keys stolen together. The loss is then bounded by the spending account's balance, which the operator keeps small and separate from reserves.
 - The RLUSD issuer freezing or clawing back the asset.
 

@@ -1,6 +1,6 @@
 # 0003: No quantum features in the hackathon build
 
-- **Status:** Proposed, 9 November 2026.
+- **Status:** Accepted, 10 November 2026, in review of pull request 1. Proposed 9 November 2026.
 
 ## Context
 
@@ -28,3 +28,7 @@ Build nothing quantum for the hackathon. Keep one sentence for the roadmap: keys
 ## Stretch, only after everything else works
 
 Sign the supplier payout record with both a normal signature and a quantum-safe one. That record lives in our own software, so the ledger does not limit it. The library choice is unverified, and quantum-safe signatures are reported to be roughly 40 times larger.
+
+## Conditions of acceptance (10 November 2026)
+
+Keep the scope on demonstrable finance controls, operator experience and business validation.

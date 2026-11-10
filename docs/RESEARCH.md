@@ -54,3 +54,9 @@ Sources gathered while testing the idea against the judging criteria. Confidence
 **Ledger features**
 - Permission delegation status. [Cryptoticker](https://cryptoticker.io/en/xrpl-permission-delegation-activation/) · [Analytics Insight](https://www.analyticsinsight.net/xrp/how-xrpl-permission-delegation-could-change-crypto-wallet-management)
 - Post-quantum plans. [crypto.news](https://crypto.news/ripple-plans-quantum-resistant-xrp-ledger-by-2028/) · [Quantum Zeitgeist](https://quantumzeitgeist.com/?p=352460)
+
+## Added 10 November 2026
+
+- Draft Crypto Assets Manual, primary statement. [SARB](https://www.resbank.co.za/en/home/publications/publication-detail-pages/media-releases/2026/crypto-assets)
+- Medium-Term Budget Policy Statement, 21 October 2026, crypto section. [gov.za](https://www.gov.za/news/budget/minister-enoch-godongwana-mtbps-speech) · [Parliament](https://www.parliament.gov.za/2026-medium-term-budget-policy-statement-minister-finance-mr-enoch-godongwana)
+- Reporting on the revised approach. [Connecting Africa](https://www.connectingafrica.com/fintech/sa-national-treasury-rethinking-crypto-regulation) · [EWN](https://www.ewn.co.za/2026/10/22/treasury-to-revise-crypto-rule-proposals-after-draft-elicited-thousands-of-comments) · [TechCentral](https://techcentral.co.za/treasury-crypto-rules-rethink-mtbps/287515/)
