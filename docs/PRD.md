@@ -118,9 +118,9 @@ Gate 0 implements none of the functional requirements. It is the foundation they
 
 | Requirement | Status at Gate 0 | Evidence |
 |---|---|---|
-| NFR-1 Hard release blockers on the test set | Test machinery in place: scans, hooks, guard tests, mutation checks. No payment exists to test yet. | T-021, T-030, T-037 |
+| NFR-1 Hard release blockers on the test set | Test machinery in place: scans, hooks, guard tests, mutation checks. No payment exists to test yet. | T-021, T-030, T-037, T-048 |
 | NFR-2 Decision within 60 seconds | Not measured. No decision path exists. | None |
 | NFR-3 Fail closed on every dependency failure | Partly: the scanner refuses unexpected git output; money and invoice validation refuse ambiguity. Warden and the ledger are not built. | T-016, T-023, T-024 |
-| NFR-4 No secrets or personal data in code, logs, prompts or the ledger | Met for the repository and for logs, tested. Prompts and the ledger are not yet built. | T-013 to T-022; T-033 to T-039 |
+| NFR-4 No secrets or personal data in code, logs, prompts or the ledger | Met for the repository and for logs, tested. Prompts and the ledger are not yet built. | T-013 to T-022; T-033 to T-041 |
 | NFR-5 Accessible console | Not started; due in Gate D. | None |
 | NFR-6 Deployed, reachable demo | Not started. | None |

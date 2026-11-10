@@ -157,14 +157,17 @@ function walk(
   const entries: [string, unknown][] = [];
   const keys = Object.keys(value);
   for (const key of keys.slice(0, limits.maxItems)) {
+    // Property names are untrusted data too. A caller can put a token or email in a key,
+    // not just in a value, so sanitize both before constructing the logged record.
+    const safeKey = truncate(redactText(key), limits.maxString);
     if (isSensitiveField(key)) {
-      entries.push([key, '[REDACTED:field]']);
+      entries.push([safeKey, '[REDACTED:field]']);
       continue;
     }
     try {
-      entries.push([key, walk(Reflect.get(value, key), depth + 1, seen, limits)]);
+      entries.push([safeKey, walk(Reflect.get(value, key), depth + 1, seen, limits)]);
     } catch {
-      entries.push([key, '[Unreadable]']);
+      entries.push([safeKey, '[Unreadable]']);
     }
   }
   if (keys.length > limits.maxItems) {

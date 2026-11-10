@@ -1,6 +1,6 @@
 # Work issues
 
-**Gate 0 status (10 November 2026):** F1 to F5 are in review as pull requests #12 to #16, stacked in that order. CI passed on GitHub for F2 to F5 (T-040 to T-043). Gate 0 closes when those pull requests are merged (D-038). Two acceptance points need the repository owner: F2's required checks before merge, and F3's GitHub secret scanning (S-005). The phase report is in [logs/PHASE-REPORTS.md](logs/PHASE-REPORTS.md).
+**Gate 0 status (10 November 2026):** F1 to F5 are merged into main (#12 to #16). The phase-close pull request #17 is based on the F5 branch and needs retargeting to main before it merges. CI passed on GitHub for F2 to F5 (T-043 to T-046 and T-049). Gate 0 closes when its pull requests, the phase close included, are merged (D-038). Two acceptance points need the repository owner: F2's required checks before merge, and F3's GitHub secret scanning (S-005). The phase report is in [logs/PHASE-REPORTS.md](logs/PHASE-REPORTS.md).
 
 The build sliced into small, reviewable issues. Each maps to a requirement in [PRD.md](PRD.md) and a gate in [ENGINEERING.md](ENGINEERING.md#delivery-gates). Rule R-16 in [RULES.md](RULES.md): no work starts without an issue here.
 
@@ -17,11 +17,11 @@ The build sliced into small, reviewable issues. Each maps to a requirement in [P
 
 | ID | Title | Acceptance criteria | Depends | Size | Owner | GH | Status |
 |---|---|---|---|---|---|---|---|
-| F1 | Repository scaffold | Monorepo layout from ENGINEERING.md; TypeScript strict; Node 24; one command to install | — | S | Sibusiso (AI-assisted) | [#7](https://github.com/LethaboMH14/SignOff/issues/7) | Review |
-| F2 | CI pipeline | Type check, lint, unit tests and build run on every pull request and must pass to merge | F1 | S | Sibusiso (AI-assisted) | [#8](https://github.com/LethaboMH14/SignOff/issues/8) | Review |
-| F3 | Secret protection | GitHub secret scanning on; pre-commit check using tested XRPL seed patterns, with a test for true and false positives; `.env` ignored | F1, F2 | S | Sibusiso (AI-assisted) | [#9](https://github.com/LethaboMH14/SignOff/issues/9) | Review |
-| F4 | Shared schemas | Zod schemas for invoice extraction, payment proposal, Warden decision, obligation; amounts as integer minor units | F1 | S | Sibusiso (AI-assisted) | [#10](https://github.com/LethaboMH14/SignOff/issues/10) | Review |
-| F5 | Log redaction | Logger that removes seeds, keys, bank details and personal data; test proves it | F3, F4 | S | Sibusiso (AI-assisted) | [#11](https://github.com/LethaboMH14/SignOff/issues/11) | Review |
+| F1 | Repository scaffold | Monorepo layout from ENGINEERING.md; TypeScript strict; Node 24; one command to install | — | S | Sibusiso (AI-assisted) | [#7](https://github.com/LethaboMH14/SignOff/issues/7) | Done (merged in #12) |
+| F2 | CI pipeline | Type check, lint, unit tests and build run on every pull request and must pass to merge | F1 | S | Sibusiso (AI-assisted) | [#8](https://github.com/LethaboMH14/SignOff/issues/8) | Merged (#13); owner settings open (S-005) |
+| F3 | Secret protection | GitHub secret scanning on; pre-commit check using tested XRPL seed patterns, with a test for true and false positives; `.env` ignored | F1, F2 | S | Sibusiso (AI-assisted) | [#9](https://github.com/LethaboMH14/SignOff/issues/9) | Merged (#14); owner settings open (S-005) |
+| F4 | Shared schemas | Zod schemas for invoice extraction, payment proposal, Warden decision, obligation; amounts as integer minor units | F1 | S | Sibusiso (AI-assisted) | [#10](https://github.com/LethaboMH14/SignOff/issues/10) | Done (merged in #15) |
+| F5 | Log redaction | Logger that removes seeds, keys, bank details and personal data; test proves it | F3, F4 | S | Sibusiso (AI-assisted) | [#11](https://github.com/LethaboMH14/SignOff/issues/11) | Done (merged in #16) |
 
 ## Gate A: ledger proof
 

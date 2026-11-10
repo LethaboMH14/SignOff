@@ -41,7 +41,7 @@ Warden lives in the same repository but deploys as its own service with its own 
 | Guard tests | Vitest | Strictness flags, the Node 24 pin, exact installs, the workspace list, the secret-file ignore rules and the platform-neutral entry point stay as specified |
 | Security unit tests | Vitest | The seed checksum, the secret patterns, the scanner and the redaction behave correctly, including the cases that must not match |
 
-**Gate 0 tooling as built:** Vitest 5.1.0 with v8 coverage (90% of statements, functions and lines; 85% of branches). TypeScript 6.0.3 with every strict flag. ESLint 10 with typescript-eslint strict and stylistic type-checked rules and eslint-plugin-security. Prettier for code. `npm run check` runs every check, including the secret scan of tracked files. At the close of Gate 0: 209 tests in 17 files.
+**Gate 0 tooling as built:** Vitest 5.1.0 with v8 coverage (90% of statements, functions and lines; 85% of branches). TypeScript 6.0.3 with every strict flag. ESLint 10 with typescript-eslint strict and stylistic type-checked rules and eslint-plugin-security. Prettier for code. `npm run check` runs every check, including the secret scan of tracked files. At the close of Gate 0: 211 tests in 17 files.
 
 ### Attack suite
 
@@ -143,7 +143,7 @@ From the [CFO and fraud research](CFO-AGENTIC-FRAUD-SECURITY-RESEARCH-2026-11-10
 
 | Gate | Must show |
 |---|---|
-| 0. Foundation | Strict TypeScript monorepo with one install command; CI on every pull request; secret protection; shared contracts; log redaction. Built and tested (T-001 to T-043). Closes when its pull requests merge (D-038), with the repository settings in S-005 in place |
+| 0. Foundation | Strict TypeScript monorepo with one install command; CI on every pull request; secret protection; shared contracts; log redaction. Built and tested (T-001 to T-049). Closes when its pull requests merge (D-038), with the repository settings in S-005 in place |
 | A. Ledger proof | RLUSD trust lines; signer list as in [TRUST.md](TRUST.md); a validated two-signature payment; each key alone rejected; Agent + Warden the only accepted path; a signer change refused without two approvals; rebuild from reserve tested; hashes recorded |
 | B. Warden controls | Authenticated proposals, verified payee, three-way match, duplicate lock, limits, pause; no failed hard control ever leads to a signature |
 | C. Reliability and evidence | Real PDF extraction with source spans, labelled test set, single-prompt baseline, decision log |

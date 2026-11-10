@@ -26,13 +26,29 @@ One entry per working session (rule R-19 in [RULES.md](../RULES.md)), newest fir
 
 ---
 
+### 2026-11-10 — Sibusiso with Claude (Haiku 5.5) — merge of the F5 review into the phase close
+
+- Done: merged `feat/F5-log-redaction` (head `3812f4b`, with the independent review fixes) into `docs/phase-close-gate-0` to clear the conflicts on the phase-close pull request. The conflicts were only in BUILD-LOG and TEST-LOG; the code merged without conflicts. Renumbered the phase-close IDs, which had collided with the review's: TEST-LOG T-040 to T-044 became T-043 to T-047, and SECURITY-LOG S-012 became S-014. Removed a stray blank line in the review's security rows so they render in the event table. Re-ran the full check on the merged tree (T-048).
+- Changed decisions: none.
+- Evidence: T-047 (the phase-close check before the merge), T-048 (the check on the merged tree), T-049 (CI on the current F5 head). Security log: S-014 (CI) and S-015 (an open finding on obligation identity).
+- Problems / blockers: S-015 must be fixed before any multi-buyer use. Best-effort logs are not a durable audit trail; Gates B and C must build that.
+- Next: retarget the phase-close pull request to main, because its base branch has merged as #16. The remaining items are in PHASE-REPORTS.md.
+
+### 2026-11-10 — independent code review — F5 log redaction
+
+- Done: reviewed the latest stacked F5 implementation and its prerequisite CI and scanner contracts. Repaired two paths missing from the original tests: unredacted service value in a failing-sink fallback and sensitive tokens/PII embedded in JSON property names. Added regression tests, re-ran GitHub CI successfully on exact head `0eba60f` (run #42835936809).
+- Changed decisions: none; the corrections enforce the existing no-secret-in-logs design.
+- Evidence: T-040 to T-042; security findings S-012 and S-013.
+- Problems / blockers: best-effort operational logging is not a durable financial audit store; Gate B and C still must build the independent evidence trail. F4 obligation IDs are not buyer-scoped yet; this must be corrected before multi-buyer payment use.
+- Next: review and merge the dependency stack in order with checks, then validate GitHub CI on main. Actual Warden and Testnet functionality remain unimplemented.
+
 ### Phase close: Gate 0 — 2026-11-10
 
-- Gate criteria met: F1 (T-001 to T-008); F4 (T-023 to T-032); F5 (T-033 to T-039); F2's checks run on every pull request and passed on GitHub (T-040). F3's pre-commit check and its true and false positive tests are met (T-013 to T-019). Not met: F2's "must pass to merge" and F3's GitHub secret scanning need repository settings only the owner can change (S-005). The full acceptance table is in [PHASE-REPORTS.md](PHASE-REPORTS.md).
-- Not met / carried over: the repository settings in S-005; the merge of #5 and #6 (against main), then #12 to #16 in order, each retargeted to main after its base merges; then "Phase close: Gate 0". Gate 0 closes on merge (D-038).
-- Documents updated: README (banner, logs row); ENGINEERING (layout, tests, Gate 0 row); PRD (section 10); ISSUES (status note); RULES (R-24 and its checklist row); CONTRIBUTING (phase-report link); COMPLIANCE (personal-information row); DECISION-JOURNAL (D-037, D-038); TEST-LOG (T-040 to T-044); SECURITY-LOG (T-13 status, S-012); PHASE-REPORTS (new). No change: BUILD-BRIEF (Gate 0 uses the stack it proposes), TRUST, SOLUTION, SERVICE-LEVELS, AGENT-RELIABILITY, HACKATHON, decision records 0001 to 0005, PROBLEM, BUSINESS, WORKSHOP.
+- Gate criteria met: F1 (T-001 to T-008); F4 (T-023 to T-032); F5 (T-033 to T-041, including the two review fixes, T-040 and T-041); F2's checks run on every pull request and passed on GitHub (T-043). F3's pre-commit check and its true and false positive tests are met (T-013 to T-019). Not met: F2's "must pass to merge" and F3's GitHub secret scanning need repository settings only the owner can change (S-005). The full acceptance table is in [PHASE-REPORTS.md](PHASE-REPORTS.md).
+- Not met / carried over: the repository settings in S-005; the review's open finding that obligation IDs are not scoped to the buyer (S-015); the retarget of the phase-close pull request to main, then its merge. #5 (escaped backticks) is still open against main. Gate 0 closes when its pull requests are merged, this one included (D-038).
+- Documents updated: README (banner, logs row); ENGINEERING (layout, tests, Gate 0 row); PRD (section 10); ISSUES (status note and statuses); RULES (R-24 and its checklist row); CONTRIBUTING (phase-report link); COMPLIANCE (personal-information row); DECISION-JOURNAL (D-037, D-038); TEST-LOG (T-043 to T-049); SECURITY-LOG (T-08, T-09, T-13, T-16, T-21 rows; S-014, S-015); PHASE-REPORTS (new). No change: BUILD-BRIEF (Gate 0 uses the stack it proposes), TRUST, SOLUTION, SERVICE-LEVELS, AGENT-RELIABILITY, HACKATHON, decision records 0001 to 0005, PROBLEM, BUSINESS, WORKSHOP.
 - README status table updated: no. No product claim changed; the banner changed. Whether Gate 0 belongs in the table is a decision for the team (R-18).
-- Reviewed by: pending, the other team member (Lethabo).
+- Reviewed by: F5 was reviewed independently by Lethabo (the review entry above). This phase report is pending review by the other team member.
 
 ### 2026-11-10 — Sibusiso with Claude (Haiku 5.5) — F5 log redaction
 
