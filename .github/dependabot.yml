@@ -1,0 +1,22 @@
+# Weekly update proposals for npm packages and for the GitHub Actions pinned in ci.yml.
+# Every proposal still runs through the same CI checks as any other pull request.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 3
+    groups:
+      development-dependencies:
+        dependency-type: development
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 3
