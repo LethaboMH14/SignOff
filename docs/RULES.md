@@ -38,6 +38,7 @@ Rules are numbered so reviews and logs can cite them ("breaks R-12").
 - **R-21. Gates in order.** Work on a later gate does not merge while an earlier gate is failing ([ENGINEERING.md](ENGINEERING.md#delivery-gates)). Stretch work waits for Gates A and B.
 - **R-22. AI-assisted commits carry a co-author trailer.** AI tools never receive secrets or real personal data.
 - **R-23. Every document is brought up to date at the end of each phase.** A gate is not closed until the phase-close checklist below is done and a phase-close entry is in [logs/BUILD-LOG.md](logs/BUILD-LOG.md).
+- **R-24. Every gate ends with a status report.** The report goes to [logs/PHASE-REPORTS.md](logs/PHASE-REPORTS.md) in the phase-close pull request, and it is given to the user in the session that closes the gate. It covers what was delivered and how each item was evidenced; the numbers (tests, coverage, scans, audits, CI runs); what went wrong and what changed; the documents updated; the decisions and threats changed; what is not done; and the decision needed before the next gate.
 
 ### Phase-close checklist (rule R-23)
 
@@ -57,6 +58,7 @@ At the end of every gate (0, A, B, C, D, E, stretch), one pull request titled `P
 | [HACKATHON.md](HACKATHON.md) | Scoring standing, deadlines |
 | [decisions/](decisions/) | Status of affected records |
 | [logs/](logs/) | Build-log phase close, journal entries, test-log entries, security threat statuses |
+| [logs/PHASE-REPORTS.md](logs/PHASE-REPORTS.md) | A phase report, written in the phase-close pull request and given to the user (R-24) |
 
 Documents not listed (research, workshop notes, problem, business) are updated when their facts change, not every phase.
 
