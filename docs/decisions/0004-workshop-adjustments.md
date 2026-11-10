@@ -14,27 +14,11 @@ None of these items may delay the core: a real two-signature RLUSD payment on Te
 
 ### 1. Signer list and every signing path (core, not optional)
 
-The claim "no single key can pay" is only true if no usable key reaches the quorum alone, including any recovery key, master key or regular key. Proposed configuration, to be tested:
+The claim "no single key can pay" is only true if no usable key reaches the quorum alone, including any master or regular key. Revised after review: an earlier proposal (Agent 1, Warden 2, recovery 1, quorum 3) let Warden plus the recovery key pay without the agent. The recovery signer is removed.
 
-| Signer | Weight |
-|---|---|
-| Agent | 1 |
-| Warden | 2 |
-| Operator recovery | 1 |
-| **Quorum** | **3** |
+Configuration to test: Agent 1, Warden 1, quorum 2; master key disabled; no regular key; no recovery signer. Agent + Warden is the only signing path, for payments and for account changes. Warden refuses account changes unless two people have approved them through the authenticated operator route. Recovery is off-ledger: abandon the account and fund a new one from a separately held reserve. Details in [TRUST.md](../TRUST.md#signer-configuration-and-every-signing-path).
 
-Master key disabled, no regular key. Intended outcomes:
-
-| Signing path | Total | Expected |
-|---|---|---|
-| Any one key alone | 1 or 2 | Rejected |
-| Agent + Warden | 3 | Normal payment path |
-| Warden + Recovery | 3 | Rotation path (replace a lost or stolen agent key) |
-| Agent + Recovery | 2 | Rejected: Warden cannot be bypassed |
-
-Consequence to state openly: if the Warden key is lost, nobody can move what is in the spending account. That is acceptable only because the account holds a small working balance; reserves sit elsewhere.
-
-**Evidence required:** a transaction hash or result code for every row.
+**Evidence required:** results for Agent alone, Warden alone, Agent + Warden; a signer-list change refused by Warden without approvals; a rebuild from the reserve.
 
 ### 2. Trust line limit (exposure control, not a loss cap)
 

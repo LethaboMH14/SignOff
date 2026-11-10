@@ -8,3 +8,4 @@ Each file records one decision: the context, the choice, and what it costs. A re
 | [0002](0002-plain-multisign-core.md) | Ordinary two-signature account as the core; delegation as a stretch goal | Accepted |
 | [0003](0003-no-quantum-in-mvp.md) | No quantum features in the hackathon build | Accepted |
 | [0004](0004-workshop-adjustments.md) | Ledger features to test after the Ripple workshop: signer matrix, trust line as exposure layer, credentials, simulate; delegation out of the critical path | Proposed (test plan) |
+| [0005](0005-arduino-operator-hardware.md) | Warden Switch: Arduino one-way human veto, confirmed guard status, optional RFID (stretch, after Gates A and B) | Accepted as optional design; unbuilt/unverified |

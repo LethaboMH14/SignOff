@@ -63,7 +63,7 @@ flowchart LR
 | Only a plain RLUSD payment; nothing that changes signers or settings | Warden |
 | Operator pause stops new payments | Warden |
 
-Once configured and tested, the ledger stops the agent from paying alone, even if the agent is tricked or its key is stolen. The full signer matrix, including the recovery key, is in [docs/TRUST.md](docs/TRUST.md#signer-configuration-and-every-signing-path). The ledger does **not** check payees, invoices or limits; Warden does, as a separately deployed service. Key holders, supplier enrolment, key rotation, recovery and the limits of supplier-signed records are in [docs/TRUST.md](docs/TRUST.md).
+Once configured and tested, the ledger stops the agent from paying alone, even if the agent is tricked or its key is stolen. The full signer matrix, including why there is no recovery signer, is in [docs/TRUST.md](docs/TRUST.md#signer-configuration-and-every-signing-path). The ledger does **not** check payees, invoices or limits; Warden does, as a separately deployed service. Key holders, supplier enrolment, key rotation, recovery and the limits of supplier-signed records are in [docs/TRUST.md](docs/TRUST.md).
 
 ## The rules a payment can break
 
@@ -101,7 +101,8 @@ This positioning was accepted by the team on 10 November 2026 ([ADR 0001](docs/d
 | Rand conversion and payout to a supplier's bank | | | Yes | |
 | Bank account verification (AVS) | | | Yes | |
 | Accounting system links (Xero, Sage) | | | Yes | |
-| Signer list: every single key and Agent + Recovery rejected | Yes (ADR 0004 test plan) | Not yet | | |
+| Signer list: Agent + Warden the only accepted path; each key alone rejected | Yes (ADR 0004 test plan) | Not yet | | |
+| Arduino Warden Switch: one-way pause, Warden-confirmed status; optional RFID | Stretch ([ADR 0005](docs/decisions/0005-arduino-operator-hardware.md)); [judge runbook](docs/ARDUINO-JUDGE-DEMO-RUNBOOK.md) | Not yet | | |
 | Permission delegation | Out of the hackathon build; status on our Testnet unverified | Not checked | | |
 | XRPL credential on verified supplier accounts (attestation only) | Stretch (ADR 0004 test plan) | Not yet | | |
 | Trust line limit as one exposure layer (not a loss cap) | Yes (ADR 0004 test plan) | Not yet | | |
@@ -130,6 +131,7 @@ The track requires an autonomous transaction on XRPL Testnet or Devnet, limits e
 | [docs/PROBLEM.md](docs/PROBLEM.md) | Problem statement and sourced evidence with confidence ratings |
 | [docs/SOLUTION.md](docs/SOLUTION.md) | Rules, two-signature design, simpler options considered |
 | [docs/AGENT-RELIABILITY.md](docs/AGENT-RELIABILITY.md) | How hallucination is contained and measured |
+| [docs/ARDUINO-JUDGE-DEMO-RUNBOOK.md](docs/ARDUINO-JUDGE-DEMO-RUNBOOK.md) | Optional Warden Switch stage demo, human veto, safety/failure tests; not yet implemented |
 | [docs/SERVICE-LEVELS.md](docs/SERVICE-LEVELS.md) | Service level targets, failure behaviour, fastest reliability measures |
 | [docs/COMPLIANCE.md](docs/COMPLIANCE.md) | Obligations, who carries them, and what the build does (not legal advice) |
 | [docs/CFO-AGENTIC-FRAUD-SECURITY-RESEARCH-2026-11-10.md](docs/CFO-AGENTIC-FRAUD-SECURITY-RESEARCH-2026-11-10.md) | Implementation requirements: CFO controls, fraud threats, tests, delivery gates (research; none implemented) |
@@ -152,7 +154,7 @@ Where documents differ, the build brief takes precedence.
 - **The RLUSD issuer can freeze or claw back the asset.**
 - **The ledger does not check payees or limits.** If Warden is compromised together with the agent key, the loss is bounded only by the spending account's actual balance. A trust line limit does not cap that loss.
 - **Upstream records can be wrong.** A compromised supplier list, purchase order or operator login defeats a perfect agent. See [docs/TRUST.md](docs/TRUST.md#threats-from-upstream-of-the-agent).
-- **A stolen operator credential or recovery key is outside this design's protection.**
+- **A stolen operator login or reserve key is outside this design's protection.** Losing either payment key freezes the small spending balance; recovery means funding a new account.
 - Nothing here is production software. Testnet only, no real funds.
 
 ## Licence

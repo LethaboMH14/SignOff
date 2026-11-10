@@ -12,27 +12,27 @@ A perfect agent can still propose a fraudulent payment if the records it is chec
 
 ## Signer configuration and every signing path
 
+Revised 10 November 2026 after review: an earlier version gave an offline recovery key a weight that let **Warden plus the recovery key** sign payments and account changes without the agent. That is a second way to authorise payments, so the recovery key is removed from the signer list.
+
 Proposed configuration, to be tested on Testnet:
 
 | Signer | Held by | Weight |
 |---|---|---|
 | Agent | Agent service | 1 |
-| Warden | Warden service, separate deployment and identity | 2 |
-| Operator recovery | Offline, operator's custody | 1 |
-| **Quorum** | | **3** |
+| Warden | Warden service, separate deployment and identity | 1 |
+| **Quorum** | | **2** |
 
-The spending account's master key is disabled and it has no regular key.
+The spending account's master key is disabled and it has no regular key. There is no recovery signer on the account.
 
-| Signing path | Weight | Intended result | Purpose |
-|---|---|---|---|
-| Agent alone | 1 | Rejected | |
-| Warden alone | 2 | Rejected | |
-| Recovery alone | 1 | Rejected | |
-| Agent + Warden | 3 | Accepted | Normal payments |
-| Warden + Recovery | 3 | Accepted | Replace a lost or stolen agent key |
-| Agent + Recovery | 2 | Rejected | Warden cannot be bypassed |
+| Signing path | Weight | Intended result |
+|---|---|---|
+| Agent alone | 1 | Rejected |
+| Warden alone | 1 | Rejected |
+| Agent + Warden | 2 | Accepted: the **only** path that can sign anything for this account |
 
-There is **no single-key override**. The consequence: if the Warden key is lost, nothing in the spending account can be moved. That is accepted because the spending account holds only a small working balance; reserves sit in a separate account the payment keys cannot reach.
+Because Agent + Warden is the only path, it also signs any account change, such as replacing a signer. Warden therefore refuses every transaction that is not a plain RLUSD payment, **unless** the change has been approved by two people through the authenticated operator route; those approvals are logged. This is a Warden control, not a ledger rule.
+
+**Recovery is off-ledger.** If either key is lost or suspected stolen, the account is abandoned: pause, move no further funds into it, and fund a new spending account from the reserve. The cost, stated openly: whatever is in the old account is frozen if a key is lost, or at risk if both are stolen. That is why it holds only a small working balance and the reserve is a separate account held by the operator, not by either payment key.
 
 Every row needs a Testnet result code or hash before it is claimed.
 
@@ -40,7 +40,7 @@ Every row needs a Testnet result code or hash before it is claimed.
 
 | Guarantee | Enforced by | Holds if the agent is tricked | Holds if the agent key is stolen | Holds if Warden is compromised |
 |---|---|---|---|---|
-| No payment below quorum | XRP Ledger, if configured as above | Yes | Yes | Yes, alone |
+| No payment without both Agent and Warden signatures | XRP Ledger, if configured as above | Yes | Yes | Yes, alone |
 | Payee matches a verified supplier record | Warden | Yes | Yes | No |
 | Credential on the payee account is current (stretch) | Warden reads the ledger; the ledger only stores the credential | Yes | Yes | No |
 | Invoice matches purchase order and delivery record | Warden | Yes | Yes | No |
@@ -59,7 +59,7 @@ The RLUSD trust line limit is **not** a loss cap: the account's own actions can 
 |---|---|---|---|
 | Agent signing key | Agent service | Sign a proposed payment | Pay alone; read Warden's key or records |
 | Warden signing key | Warden service | Co-sign and submit an eligible payment | Pay alone |
-| Operator recovery key | Offline, operator | With Warden, replace the agent signer | Pay or change signers alone; pair with the agent |
+| Reserve account key | Offline, operator | Fund a new spending account | Sign for the spending account |
 | Operator login | Finance operator | Change limits, approve suppliers, pause | Sign transactions |
 | Credential issuer key (stretch) | Operator's verifier account | Issue and delete supplier credentials | Move money |
 | Supplier key | South African supplier | Sign its own payout record | Move any buyer's money |
@@ -101,11 +101,11 @@ A change signed with an unknown key is refused. A change that arrives by email o
 
 | Lost or stolen | Response |
 |---|---|
-| Agent key | Pause. Warden and the recovery key together replace the agent signer. The stolen key cannot pay alone or with the recovery key. |
-| Warden key (lost) | The spending balance is frozen. Rebuild with a new spending account funded from reserves. |
-| Warden key (stolen) | Pause. It cannot pay alone; a thief would need the agent key too. Move to a new spending account funded from reserves. |
-| Agent and Warden keys | The spending balance is at risk up to its actual size. Pause, abandon the account, fund a new one from reserves. |
-| Recovery key | Cannot pay alone or with the agent. Replace it through a reviewed signer-list change signed by Agent and Warden. |
+| Agent key, lost | Spending balance frozen. Abandon the account; fund a new one from the reserve with new keys. |
+| Agent key, stolen | Pause. It cannot pay alone. Abandon the account and fund a new one; the thief would also need Warden's key. |
+| Warden key, lost or stolen | Same: pause, abandon, fund a new account from the reserve. |
+| Agent and Warden keys | The spending balance is at risk up to its actual size. Pause, abandon, fund a new account. |
+| Reserve key | Outside the payment design's protection. Kept offline and separate from day-to-day credentials. |
 | Supplier key | The supplier re-enrols through the full checks. Payments to it are held until then. |
 | Operator login | Outside the ledger's protection. Mitigated by strong authentication and second-approver rules. |
 

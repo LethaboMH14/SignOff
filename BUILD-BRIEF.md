@@ -38,7 +38,7 @@ TypeScript on Node 24, React and Vite for the console, LangGraph.js for orchestr
 
 Time-box the initial spike to 90 minutes after provisioning Testnet accounts.
 
-**Baseline (accepted, ADR 0002).** Put a signer list on SPEND with Agent and Warden signers and quorum two. Disable SPEND's master key and set no regular key. Keep an offline operator recovery path (see [docs/TRUST.md](docs/TRUST.md)). Verify a validated RLUSD payment with both signatures, rejection with the Agent key alone, rejection with the Warden key alone, and that an operator pause stops Warden from co-signing. Record actual results and transaction hashes.
+**Baseline (accepted, ADR 0002).** Put a signer list on SPEND with Agent and Warden signers and quorum two. Disable SPEND's master key and set no regular key. Add no recovery signer: Agent + Warden is the only signing path. Recovery is off-ledger: abandon the account and fund a new one from a separately held reserve (see [docs/TRUST.md](docs/TRUST.md#signer-configuration-and-every-signing-path)). Verify a validated RLUSD payment with both signatures, rejection with the Agent key alone, rejection with the Warden key alone, and that an operator pause stops Warden from co-signing. Record actual results and transaction hashes.
 
 This baseline does not let the ledger restrict which transaction types the two signers send together. Warden must refuse anything that is not a plain RLUSD payment, and documentation must say this is a Warden check, not a ledger guarantee.
 
