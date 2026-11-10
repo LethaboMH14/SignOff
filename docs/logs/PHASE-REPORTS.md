@@ -35,6 +35,9 @@ The first step, and the decision needed from the user before it starts.
 
 ## Gate 0: foundation, 10 November 2026 (SAST)
 
+> **Review reconciliation (11 November 2026):** PR #5's Markdown rendering correction has now merged into `main`. Gate 0's implementation PRs #12–#16 are merged and their CI evidence is recorded. **The full Gate 0 acceptance checklist is still not complete** until the repository owner enables required CI checks before merge and GitHub secret scanning/push protection (S-005); treat the phase-close merge as an engineering/documentation milestone, not a claim that those repository governance controls are active. The observations below about #5 and #17 being open describe the earlier 10 November drafting snapshot.
+
+
 **Status:** Built and tested. F1 to F5 are merged into main (pull requests #12 to #16). GitHub CI passed for F2 to F5, including the final F5 head. The phase-close pull request, #17, is open but still based on the F5 branch, which has now merged; it needs retargeting to main before it can merge. Pull request #5 (escaped backticks) is open against main and has no review decision. Gate 0 closes when its pull requests are merged, the phase close included (D-038). Two acceptance points still need the repository owner (see below).
 
 This report was checked against git, GitHub and the logs. The full check was run on the merged tree (T-048).
