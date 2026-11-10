@@ -13,10 +13,10 @@ updates:
     # the current typescript-eslint peer range. Treat major migrations as planned
     # compatibility work with explicit review, not routine grouped updates.
     ignore:
-      - dependency-name: "typescript"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "@types/node"
-        update-types: ["version-update:semver-major"]
+      - dependency-name: 'typescript'
+        update-types: ['version-update:semver-major']
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
     groups:
       development-dependencies:
         dependency-type: development
