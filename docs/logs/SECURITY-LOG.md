@@ -22,7 +22,7 @@ Status: `Open` (no control yet), `Designed` (in documents), `Implemented` (in co
 | T-10 | Altered supplier list, purchase order or delivery record | Internal records | Maker-checker, provenance, alerts, fail closed on unapproved changes | B4, B9 | Designed |
 | T-11 | Operator account taken over | Console | Strong authentication, second approver for limit increases and suppliers | D3 | Designed |
 | T-12 | Injection into our own services (SQL, command, header, cross-site) | API inputs | Strict schemas, parameterised queries, no shell from inputs, cross-site checks, authenticated endpoints | B1 tests | Designed |
-| T-13 | Malicious or compromised dependency | npm packages | Lockfile and exact pins, 7-day cooldown, logged security-fix override, audit in CI, Dependabot | F1 (pins, override, audit results in T-007); F2 (CI audit, Dependabot) | Partly implemented: pins, override and cooldown in F1; CI audit and Dependabot in F2 |
+| T-13 | Malicious or compromised dependency | npm packages; GitHub Actions | Lockfile and exact pins; 7-day cooldown; logged security-fix override; audit gate in CI; Dependabot with cooldown; actions pinned to commit SHAs | F1 (T-007); F2 (T-009 to T-012) | Implemented; first CI run to be linked |
 | T-14 | Ledger state changes between check and sign | Network | Sign exact checked fields; pre-signing read; short expiry | B8, A5 | Designed |
 | T-15 | RLUSD frozen or clawed back by issuer | Issuer | Pre-signing read; hold and alert | B8 | Designed |
 | T-16 | Personal data sent where it should not go | Model API, ledger, logs | Minimal prompt content; hashes only on ledger; redaction | F5, C2 | Designed |
@@ -53,5 +53,6 @@ Findings, incidents and security-relevant changes. Newest at the bottom.
 | S-003 | 2026-11-10 | Design review | Trust line limit wrongly described as a loss cap | T-07 | Wording corrected (D-005) | Closed in design |
 | S-004 | 2026-11-10 | Dependency | npm audit reported 10 moderate advisories, all through minimatch (GHSA-g3hv-75wg-m249, ReDoS). npm's suggested fix downgrades ESLint to 9. | T-13 | minimatch overridden to 11.0.5; audit now reports 0; ESLint kept at 10 (D-014) | Closed |
 | S-005 | 2026-11-10 | Governance gap | Branch protection that requires checks before merge, and GitHub secret scanning with push protection, are repository settings. The current account has write access but not admin rights. | T-08, T-13 | Requested from the repository owner in the pull request. The F2 workflow supplies the checks to require. | Open: owner action |
+| S-006 | 2026-11-10 | Design review | CI runs on public pull requests execute code from forks. Mitigated by a read-only token, no secrets and no `pull_request_target` (D-018). | T-08, T-13 | Control accepted; revisit when secrets are added | Closed in design |
 
 **Types:** `Design review`, `Finding`, `Incident`, `Dependency`, `Key rotation`, `Change`. An incident involving a real key or personal data also follows [SECURITY.md](../../SECURITY.md).
