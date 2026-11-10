@@ -411,10 +411,7 @@ export class WardenService {
         throw new WardenError(409, 'the payment no longer passes the current limits');
       }
       const asset = this.assetFor(attempt.currency);
-      if (
-        asset?.ledgerCurrency !== attempt.ledgerCurrency ||
-        asset.issuer !== attempt.issuer
-      ) {
+      if (asset?.ledgerCurrency !== attempt.ledgerCurrency || asset.issuer !== attempt.issuer) {
         throw new WardenError(409, 'the approved payment asset changed');
       }
       const payee = this.supplierOrThrow(attempt.supplierId).payee;
