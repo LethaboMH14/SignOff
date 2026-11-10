@@ -1,62 +1,71 @@
-# 0005: Arduino pause button, status light and goods-received scanner
+# 0005: SignOff Warden Switch — an Arduino finance veto judges can see
 
-- **Status:** Proposed, 10 November 2026. Awaiting team sign-off.
-- **Scope:** Stretch. Built only after delivery Gates A and B in [ENGINEERING.md](../ENGINEERING.md#delivery-gates) pass. Time-boxed to half a day.
-- **Hardware:** the team's existing Arduino Uno R3 starter set.
+- **Status:** Accepted as an optional *design direction*, 10 November 2026; **not built, approved for production use, or demonstrated**.
+- **Scope:** Strict stretch, only after [Engineering Gates A and B](../ENGINEERING.md#delivery-gates) work. Time-box only after the live payment and holds are proven; drop hardware if it threatens submission reliability.
+- **Hardware:** proposed Arduino Uno R3 starter set; confirm available parts before coding. No network credentials or signing keys on the board.
+- **Full runbook, 90-second story, threat model and test matrix:** [ARDUINO-JUDGE-DEMO-RUNBOOK.md](../ARDUINO-JUDGE-DEMO-RUNBOOK.md).
 
-## Context
+## Why this should exist
 
-Review of pull request 3 required a pause route that works when the operator console is down, built and tested. The track asks for human control outside the agent, and the demo happens in a crowded room where a physical control is easy to understand. The team owns an Arduino Uno R3 set.
+The judges should **see a human veto that is outside the AI**. A physical button can be a memorable way to prove that the agent is not in charge of spending money. The effect must be real and verifiable, not a theatrical light cue.
 
-## Decision
+**Judging line:** **“The AI proposes. The Warden decides. The ledger proves.”**
 
-Three small devices, in this order:
+The hardware is **not** the financial control. The independently deployed Warden and the on-ledger two-signature requirement are the control. The device is one operator interface that can **request a new-authorizations pause**, while a laptop console and the independent Warden route remain available.
 
-1. **Physical pause button and light.** Pressing the button pauses Warden; a light shows running or paused.
-2. **Status light.** Green when an invoice is paid (validated on the ledger), amber when held, red when paused.
-3. **Goods-received scanner (only if time remains).** An RFID reader at the "warehouse"; scanning a tagged box creates a goods-received record that Warden uses in its three-way match.
+## Design decision and order
 
-## How it works with an Uno R3
+1. **One-way large red STOP NEW PAYMENTS button.** Pressing requests a Warden pause. Repeated presses never resume. Only authenticated human action through an independent operator route can resume; the action is logged and subjected to the relevant approvals.
+2. **Clear guard-status indication.** Display the Warden-confirmed **ACTIVE**, **PAUSED** or **CONNECTION UNKNOWN** state. Do not claim “paused” when the bridge merely transmitted a request. The device should be labeled so observers understand which is which.
+3. **Separate payment-status indication.** **HELD**, **PENDING / AWAITING WARDEN**, **VALIDATED ON XRPL** or **RECONCILIATION UNKNOWN**, obtained from trusted Warden/reconciler events. Green must refer only to actually validated XRPL settlement, *not* a simulated supplier's bank credit.
+4. **Optional warehouse RFID demonstration, last.** A scanner event is only **TAG PRESENTED**. A separate authenticated receiving officer must approve a goods-received record. Cheap RFID identifiers can be cloned; a scan is not proof of goods quality, delivery or permission to pay.
 
-The Uno R3 has no network connection and no secure key storage. So:
+Use accessible labels/icons alongside LED colors. A compact dark presentation base and legible status placard improve stage impact without requiring new fabrication or unsafe electrical work. Do not compromise the live flow for a decorative enclosure.
 
-```mermaid
+## Trust boundaries
+
+\`\`\`mermaid
 flowchart LR
-    B[Button / RFID reader / LEDs<br/>on the Uno R3] <-->|USB serial| G[Bridge program<br/>on the operator laptop]
-    G -->|authenticated call| W[Warden<br/>pause route, receipts]
-    W -->|status events| G
-```
+  A["STOP button / LEDs on Uno"] <-->|"USB serial: no secrets"| B["Operator laptop bridge"]
+  B -->|"Authenticated pause-only command"| W["Independent Warden"]
+  B -->|"Armed-mode heartbeat"| W
+  W -->|"Confirmed state"| B
+  W -->|"Hold / no new signature"| X["Payment workflow"]
+  R["Validated XRPL reconciler"] -->|"Verified payment state"| B
+\`\`\`
 
-- The Uno only reports button presses and tag reads over USB, and lights LEDs on command. It holds **no credentials and no keys**.
-- A small bridge program on the operator's laptop holds the operator credential, calls Warden's authenticated pause route, posts goods-received events, and listens for status changes to drive the lights.
-- If the bridge or cable fails, nothing is paid by mistake: the pause route and receipts simply don't arrive, and the console's own pause still works.
+- The Uno R3 has no built-in networking or secure key storage. Keep all XRPL, reserve, issuer and operator signing secrets off the device; do not embed long-lived secrets in sketch, serial messages, source or demo logs.
+- The bridge must not have broad finance-admin permissions. Grant a **short-lived narrowly scoped pause/status capability** on an authenticated operator session; **never** grant resume or transaction signing authority to the Arduino bridge.
+- The **hardware guard is optional but explicit**: when Warden is armed to rely on device availability, it requires the bridge heartbeat to stay fresh; missing renewal or unplugged USB makes Warden **fail closed for new co-signatures**. The safety behavior must be implemented on the server and tested before claimed. An unarmed software-only mode is permitted only as a deliberate authenticated configuration—not as an automatic fallback after losing the device.
+- Confirmation of PAUSED must come from Warden, not local button logic. If state is unconfirmed, show **CONNECTION UNKNOWN / STOP NOT CONFIRMED**; Warden's independent controls remain authoritative.
+- **Pause is not blockchain reversal.** It stops *new Warden authorizations*. It cannot claw back a transaction already signed/submitted; those transactions still need reliable reconciliation.
+- The operator console may be closed during the demo. The laptop bridge uses an independently authenticated Warden endpoint. Warden enforces the same policies if the entire laptop goes away.
 
-Parts expected in a typical Uno starter set: push button, LEDs or an RGB LED, resistors, breadboard. Many sets include an RC522 RFID reader with a card and key fob; **check the set**, and skip the scanner if there is none.
+## The judge-visible demonstration
 
-## Security limits to state openly
+After a real validated Testnet payment is shown, stage a fictional changed-bank-details invoice → Warden **HELD**. Then queue a *new* clean invoice that is still awaiting authorization and invite a judge to press **STOP**. Show the **Warden-confirmed PAUSED event** and prove that the new payment does **not receive a second signature**. Finally show the evidence trail with the validated transaction hash and held proposal reason. If implemented and rehearsed, disconnect the armed bridge to demonstrate server-side fail-closed behavior. Do not fake this test if the guard is not built.
 
-- **Pause:** the button is only as trustworthy as the bridge's credential. The bridge authenticates as an operator; its pause calls are logged like any other.
-- **Goods received:** a cheap RFID tag can be copied. A scan is evidence that a tag was presented, not proof that the goods arrived in good condition. Warden records the source ("scanner, device ID, time") and the record still carries the receiving role's approval, so a scan alone cannot create a payable. This is a demonstration of provenance, not a production control.
-- **No signing on the device.** The Uno must never hold or use an XRPL key. Keys stay in the secret manager ([TRUST.md](../TRUST.md)).
+**Demo script and evidence protocol:** [runbook](../ARDUINO-JUDGE-DEMO-RUNBOOK.md).
 
-## Tests before the demo
+## Acceptance matrix (NOT RUN until evidence exists)
 
 | Test | Expected |
 |---|---|
-| Press button with the console stopped | Warden reports paused; next proposal held; event logged |
-| Press again to resume (or resume from console) | Running; logged with the operator identity |
-| Unplug the Uno mid-run | No change in payments; bridge reports the device lost |
-| Scan a tag for a known delivery | Goods-received record created with source and time; still needs the receiving role's approval |
-| Scan an unknown tag | Ignored and logged |
-| Payment validated, held, paused | Green, amber, red light respectively |
+| Press button with console closed | Warden logs a PAUSE event; new eligible proposal is HELD |
+| Press twice | System remains PAUSED; hardware never resumes |
+| Authenticated operator resumes | Server checks authorization; logs operator and reason |
+| Lose USB/bridge while hardware guard armed | New signatures blocked by server watchdog after lease expiry |
+| Disconnect hardware while unarmed | Software-only Warden controls remain active; explicit mode shown |
+| Press after a payment has already been submitted | No new signature; submitted payment still reconciled, not “cancelled” |
+| Changed supplier payout detail | Hold; status reflects real Warden reason |
+| Warden/network acknowledgement unavailable | Unknown/failed indicator; no false green or paused ACK |
+| Validated Testnet payment | Payment indicator updates only after real validated ledger result with correct amount |
+| Scan duplicate, unknown or cloned RFID | No independent authority to mark delivery/pay; receiving approval required |
 
-## Why
+Each *executed* test needs trace, commit, timestamp, policy, expected, actual and ledger hash where relevant. **Until tested, all rows are proposed**.
 
-- It satisfies the reviewer's requirement for a pause route independent of the console, with a test that is visible to the judges.
-- It makes "human control outside the agent" physical and easy to explain to non-technical people.
-- The scanner ties a payment to a physical event, which supports the "real business" story.
+## Decision and costs
 
-## Costs
+**Accept the memorable hardware concept, not an untested security guarantee.** The stage effect is worth pursuing only if the payment control system already works. The ROI is a vivid, judge-understandable proof of “human authority outside an AI agent”; the cost is a new bridge, serial connection and failure mode. An honestly labeled software demo is preferable to an unreliable physical prop.
 
-- Half a day, only after the core works.
-- A new demo dependency (cable, laptop port). The console pause and the recorded video remain the fallback.
+**No promise of a hackathon win:** judges decide. We optimize for a memorable demonstration supported by actual technical evidence.
