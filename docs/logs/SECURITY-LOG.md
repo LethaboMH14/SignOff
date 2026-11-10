@@ -17,7 +17,7 @@ Status: `Open` (no control yet), `Designed` (in documents), `Implemented` (in co
 | T-05 | Stolen agent key | Agent service | Ledger requires Warden too | A4 | Designed |
 | T-06 | Stolen Warden key | Warden service | Ledger requires agent too | A4 | Designed |
 | T-07 | Both keys stolen | Both services | Loss bounded by small spending balance; abandon and rebuild | A7 | Designed |
-| T-08 | Seed or key leaked to the repository or logs | Developers, AI tools, logs | Secret scanning, tested pre-commit patterns, log redaction, secret manager | F1 guard test (ignore rules); F3 (scanner); F5 (redaction) | Partly implemented: ignore rules in F1; scanner and redaction pending |
+| T-08 | Seed or key leaked to the repository or logs | Developers, AI tools, logs | Secret scanning, tested pre-commit patterns, log redaction, secret manager | F1 guard test (ignore rules); F3 (scanner, hook, CI scan, deny list; T-013 to T-022); F5 (redaction) | Implemented for the repository; log redaction pending in F5 |
 | T-09 | Duplicate or replayed payment | Retries, restarts, concurrency | Stable obligation identity, atomic reservation, reconcile before retry | B2, A5 | Designed |
 | T-10 | Altered supplier list, purchase order or delivery record | Internal records | Maker-checker, provenance, alerts, fail closed on unapproved changes | B4, B9 | Designed |
 | T-11 | Operator account taken over | Console | Strong authentication, second approver for limit increases and suppliers | D3 | Designed |
@@ -28,6 +28,8 @@ Status: `Open` (no control yet), `Designed` (in documents), `Implemented` (in co
 | T-16 | Personal data sent where it should not go | Model API, ledger, logs | Minimal prompt content; hashes only on ledger; redaction | F5, C2 | Designed |
 | T-17 | Forged goods-received scan | RFID (stretch) | Scan is "tag presented"; receiving approval required | S4 | Designed |
 | T-18 | Arduino bridge misuse | Operator laptop (stretch) | Short-lived pause/status-only token; no resume, no keys | S1, S3 | Designed |
+| T-19 | Secret committed by skipping the hook (`--no-verify`, or hooks not enabled) | Developers | Pre-commit scan; CI scan of tracked files; provider scanning (owner setting) | T-019, T-022 | Implemented; a skipped hook is still caught by CI |
+| T-20 | Secret hidden in a binary, encoded or split form | Binary files; encoded or split secrets | Binary files counted in every report; provider scanning; review | T-016 (binary count) | Accepted limitation, documented in SECURITY.md |
 
 ## 2. Check schedule
 
@@ -54,5 +56,7 @@ Findings, incidents and security-relevant changes. Newest at the bottom.
 | S-004 | 2026-11-10 | Dependency | npm audit reported 10 moderate advisories, all through minimatch (GHSA-g3hv-75wg-m249, ReDoS). npm's suggested fix downgrades ESLint to 9. | T-13 | minimatch overridden to 11.0.5; audit now reports 0; ESLint kept at 10 (D-014) | Closed |
 | S-005 | 2026-11-10 | Governance gap | Branch protection that requires checks before merge, and GitHub secret scanning with push protection, are repository settings. The current account has write access but not admin rights. | T-08, T-13 | Requested from the repository owner in the pull request. The F2 workflow supplies the checks to require. | Open: owner action |
 | S-006 | 2026-11-10 | Design review | CI runs on public pull requests execute code from forks. Mitigated by a read-only token, no secrets and no `pull_request_target` (D-018). | T-08, T-13 | Control accepted; revisit when secrets are added | Closed in design |
+| S-007 | 2026-11-10 | Finding | The pre-commit check refused a commit containing a literal password in a test sample. The sample is now assembled at run time, as every other sample secret is. | T-08 | Fixed in F3 | Closed |
+| S-008 | 2026-11-10 | Dependency | npm 11 held back the install script of esbuild, a dependency of tsx. The scanner works without it, and the script is not approved (D-024). | T-08, T-13 | Recorded | Closed |
 
 **Types:** `Design review`, `Finding`, `Incident`, `Dependency`, `Key rotation`, `Change`. An incident involving a real key or personal data also follows [SECURITY.md](../../SECURITY.md).
