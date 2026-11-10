@@ -235,7 +235,7 @@ describe('the Warden over HTTP', () => {
     ).toBe(404);
   });
 
-  it('reports a co-signature for an unknown attempt as 404, and one signed by the agent alone as 422', async () => {
+  it('reports an unknown attempt as 404, and an unauthorized signer as 422', async () => {
     const h = await harness();
     await activeSupplierOverHttp(h, generateSupplierKey().publicKey);
     await expect(h.agent.coSign(newAttemptId(), 'AABB')).rejects.toMatchObject({ status: 404 });
@@ -243,8 +243,13 @@ describe('the Warden over HTTP', () => {
     const proposed = await h.agent.propose(proposalFor(attemptId, STANDARD, h.config, h.clock.now));
     const fields: Record<string, unknown> = { ...decode(proposed.toCoSign ?? '') };
     delete fields['Signers'];
-    const agentOnly = signAsSigner(h.base.agentWallet, fields as unknown as SubmittableTransaction);
-    await expect(h.agent.coSign(attemptId, agentOnly)).rejects.toMatchObject({ status: 422 });
+    const unexpectedSigner = signAsSigner(
+      Wallet.generate(),
+      fields as unknown as SubmittableTransaction,
+    );
+    await expect(h.agent.coSign(attemptId, unexpectedSigner)).rejects.toMatchObject({
+      status: 422,
+    });
   });
 
   it('turns an unexpected failure into a 500 that reveals nothing, and reports it to the operator', async () => {
