@@ -1,0 +1,12 @@
+#!/bin/sh
+# Pre-commit secret check (rule R-12). It scans the staged content, not the working copy.
+# Enabled by "npm install" in a git checkout, or by "npm run setup:hooks".
+# Do not bypass it with --no-verify: CI runs the same scan on every pull request.
+set -eu
+
+if [ ! -f node_modules/tsx/dist/cli.mjs ]; then
+  echo "pre-commit: dependencies are not installed. Run 'npm install' first. No commit was made." >&2
+  exit 1
+fi
+
+exec node node_modules/tsx/dist/cli.mjs scripts/secret-scan.ts --staged
