@@ -112,10 +112,10 @@ Every invoice moves through named states, and every transition is recorded with 
 
 `RECEIVED → EXTRACTED → NEEDS_EVIDENCE / REVIEW / HELD → AUTHORIZED → SUBMITTED → VALIDATED → RECONCILED`, or `FAILED`.
 
-- **A stable obligation identity, separate from the amount.** Each approved payable gets one identifier when first accepted (from the enrolled supplier's ID and the supplier's invoice number, normalised, plus a fingerprint of the document). It does not change if the amount is edited, the invoice is re-sent, or a payment is retried.
+- **A stable obligation identity, separate from the amount and file hash.** Create a buyer-owned immutable obligation ID when a payable is first approved, scoped by the buyer/business unit, enrolled supplier and normalized supplier invoice reference, with PO/contract linkage where present. Store every original and revised document **fingerprint as an evidence version / duplicate-detection alias**, not as a component of the stable obligation ID. An edited PDF changes its hash, not the payable's identity. If a supplier changes the invoice reference, require explicit review and an alias mapping rather than silently creating a new obligation.
 - **Amounts tracked against it:** approved amount, amount reserved, amount settled, amount remaining. Partial payments, credit notes and edits update these figures; they never create a new obligation.
 - **Each payment attempt** has its own attempt identity linked to the obligation, so retries are traceable and at most one attempt per obligation is unresolved at a time.
-- **Near-duplicates are checked too:** the same document fingerprint, or the same supplier with a similar invoice number and amount, is held for a person to review.
+- **Near-duplicates are checked too:** repeated document hashes, similar supplier invoice references, identical orders and suspicious amount changes are held for review across approved and settled obligations, even when invoice identifiers differ. Outstanding balance, partial settlements, credit notes and amendments remain linked to the original obligation.
 - **Atomic reservation:** Warden reserves the amount against the daily limit before signing and releases it only on reconciliation or expiry.
 - **Bound approval:** Warden's decision covers the exact final transaction fields and the policy version. It signs only those bytes.
 - **Persist before submit:** sequence, transaction hash and expiry ledger are stored before submission.
@@ -143,7 +143,7 @@ From the [CFO and fraud research](CFO-AGENTIC-FRAUD-SECURITY-RESEARCH-2026-11-10
 | D. Operations and console | Payment desk, changed-payee hold, lowered-limit hold, validated receipt; never "paid" before validation; safe behaviour on timeout |
 | E. Credible pitch | A consenting finance-lead interview; the README status table complete; no savings or partner claims |
 
-After the gates, and only if verified on Testnet: credentials, batch payments, token escrow, a Privy agent wallet, and permission delegation. Also after the gates, time-boxed to half a day: the Arduino pause button, status light and goods-received scanner ([ADR 0005](decisions/0005-arduino-operator-hardware.md)).
+After the gates, and only if verified on Testnet: credentials, batch payments, token escrow, a Privy agent wallet, and permission delegation. **Optional judge demonstration after Gates A and B:** the Arduino **Warden Switch** (one-way physical pause, confirmed guard state, optional RFID) under [ADR 0005](decisions/0005-arduino-operator-hardware.md) and its [judge runbook](ARDUINO-JUDGE-DEMO-RUNBOOK.md). The server-side watchdog and no-hardware-resume requirement must be implemented and tested before either is demonstrated as a security feature; omit hardware if it endangers the primary working demo.
 
 ## Keeping claims honest
 
