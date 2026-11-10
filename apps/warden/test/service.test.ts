@@ -4,6 +4,7 @@ import { decode, Wallet, type SubmittableTransaction } from 'xrpl';
 import { describe, expect, it } from 'vitest';
 
 import {
+  combineSigned,
   hashOfSigned,
   LSF_DISABLE_MASTER,
   signAsSigner,
@@ -892,16 +893,21 @@ describe('the event log and recovery', () => {
     await activeSupplier(first, base, supplier.publicKey);
     const attemptId = newAttemptId();
     const reply = await first.propose(proposalFor(attemptId, STANDARD, config, clock.now));
+    // Simulate a crash AFTER the Warden's last authorization, when both valid signatures
+    // exist in its private submit journal, but BEFORE the caller receives settlement.
     const agentBlob = coSignAsAgent(base.agentWallet, reply.toCoSign ?? '');
+    const unsigned = decode(reply.toCoSign ?? '') as unknown as SubmittableTransaction;
+    const wardenBlob = signAsSigner(base.wardenWallet, unsigned);
+    const finalBlob = combineSigned([agentBlob, wardenBlob]);
     await log.append({
       type: 'attempt.submitting',
       at: clock.now.toISOString(),
       attemptId,
-      finalBlob: agentBlob,
-      hash: hashOfSigned(agentBlob),
+      finalBlob,
+      hash: hashOfSigned(finalBlob),
     });
     expect(first.attempt(attemptId)?.status).toBe('awaiting');
-    await base.port.submit(agentBlob);
+    await base.port.submit(finalBlob);
     const restarted = await openService(base, config, evidenceFrom([STANDARD]), { clock, log });
     await restarted.recover();
     expect(restarted.attempt(attemptId)?.status).toBe('paid');
