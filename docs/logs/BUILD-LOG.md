@@ -26,6 +26,16 @@ One entry per working session (rule R-19 in [RULES.md](../RULES.md)), newest fir
 
 ---
 
+### 2026-11-10 — Sibusiso with Claude (Haiku 5.5) — Gate B: Warden controls B1 to B9
+
+- Done: Gate B on `feat/gate-b-warden-controls`, stacked on the Gate A branch and not pushed. `apps/warden` holds the decision service for B1 to B9: proposals and co-signature, reservation and duplicates, payee checks, three-way match, limits, the transaction guard, the pause route, the pre-signing ledger read, and supplier enrolment with payout changes. Around it: request authentication, an append-only event log replayed on start, the payment guard, the pre-signing rules, the HTTP surface and the client. The driver `npm run testnet:gate-b` runs the live checks against the Warden as a separate process. `npm run check` passes with 476 tests.
+- Changed decisions: D-049 to D-060 in the decision journal.
+- Evidence: T-069 to T-074 in the test log: 146 Warden tests on a simulated ledger; live Testnet runs of B1 to B7 (20 checks) and B8 (8 checks) with a test-issued token; a restart from the event log; the lockfile change. Security log: T-27 to T-32 added; T-02, T-09, T-11, T-14, T-15, T-16 and T-26 updated; S-024 to S-031.
+- Problems / blockers: (1) B1 depends on A3, and the RLUSD run is still blocked, so every live Gate B row uses a test-issued token (D-058). (2) The GitHub issues for B1 to B9 are not created; R-16 asks for them before work starts, and the owner must approve their creation. (3) A forced stop leaves the Warden's directory lock, which blocks the next start until it is removed by hand; a graceful stop is not built (S-028). (4) Review before the live runs found three defects, each fixed with a regression test: the request-age check could never trigger, co-signature ignored a pause or a pending payout change, and a lapsed reservation blocked its payable (S-024 to S-026). (5) Gate B is not closed. The phase-close pull request (R-23) and review by the other team member are still to do, so the ISSUES status is Review, not Done.
+- Next: decide with the owner whether to push and open the pull request, and whether to create the B1 to B9 issues. Fund the spending account with testnet RLUSD so that A3 can run. Run the Gate B live checks once more from a fresh Warden directory before the phase close, so that the record comes from one run.
+
+---
+
 ### 2026-11-10 — Sibusiso with Claude (Haiku 5.5) — Gate A review: re-runs, reconciliation and the rebuild guard
 
 - Done: reviewed the Gate A payment, reconciliation, drill and rebuild code before merge. Wrote regression tests for the defects found; eleven of the new or changed tests failed on the previous code. Fixed: (1) the journal is read before every send, so a settled payment id is never sent again, an unresolved attempt is resumed with its stored blob, and a new attempt follows only an expired one; (2) reconciliation reads the validated ledger before the lookup and expires only beyond the safety margin; (3) the drills refuse a repeated run, and the failover drill treats only its simulated outage as a primary failure; (4) testnet:rebuild runs only with --confirm. CI on the pull request passed at the start of the review.

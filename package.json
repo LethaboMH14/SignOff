@@ -10,7 +10,8 @@
   },
   "workspaces": [
     "packages/shared",
-    "packages/xrpl"
+    "packages/xrpl",
+    "apps/warden"
   ],
   "overrides": {
     "minimatch": "11.0.5"
@@ -27,6 +28,8 @@
     "testnet:timeout": "tsx scripts/testnet/gate-a.ts timeout",
     "testnet:failover": "tsx scripts/testnet/gate-a.ts failover",
     "testnet:rebuild": "tsx scripts/testnet/gate-a.ts rebuild",
+    "testnet:gate-b": "tsx scripts/testnet/gate-b.ts",
+    "warden:serve": "npm run serve --workspace @signoff/warden",
     "build": "npm run build --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present && tsc --project tsconfig.json",
     "lint": "eslint . --max-warnings=0",

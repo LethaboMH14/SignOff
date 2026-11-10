@@ -54,6 +54,10 @@ interface AccountLinesResponse {
       readonly currency: string;
       readonly balance: string;
       readonly limit: string;
+      /** Set by the holder on its own line. */
+      readonly freeze?: boolean;
+      /** Set by the issuer on the holder's line. */
+      readonly freeze_peer?: boolean;
     }[];
     readonly marker?: unknown;
   };
@@ -207,7 +211,12 @@ export function createXrplPort(client: Client, endpoint: string): LedgerPort {
           (candidate) => candidate.currency === token.currency,
         );
         if (line !== undefined) {
-          return { balance: line.balance, limit: line.limit };
+          return {
+            balance: line.balance,
+            limit: line.limit,
+            frozenByIssuer: line.freeze_peer === true,
+            frozenByHolder: line.freeze === true,
+          };
         }
         marker = response.result.marker;
       } while (marker !== undefined);

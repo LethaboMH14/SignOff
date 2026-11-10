@@ -1,0 +1,19 @@
+{
+  "name": "@signoff/warden",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Warden, the independent second signer. It checks each payment proposal against policy and the ledger, and signs and submits only what passes.",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=24.0.0 <25"
+  },
+  "scripts": {
+    "typecheck": "tsc --project tsconfig.json",
+    "serve": "tsx src/main.ts"
+  },
+  "dependencies": {
+    "xrpl": "5.3.0",
+    "zod": "4.6.7"
+  }
+}

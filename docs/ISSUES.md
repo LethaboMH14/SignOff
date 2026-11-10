@@ -37,15 +37,15 @@ The build sliced into small, reviewable issues. Each maps to a requirement in [P
 
 | ID | Title | Acceptance criteria | Depends | Size | Owner | GH | Status |
 |---|---|---|---|---|---|---|---|
-| B1 | Warden service skeleton | Separate deployment and identity; authenticated proposal endpoint; holds its own key only | F2, A3 | M | | | Todo |
-| B2 | Obligation identity and reservation | Stable identity; atomic reservation; one unresolved attempt per payable; concurrency test | B1 | M | | | Todo |
-| B3 | Verified supplier and destination | Destination only from enrolled supplier record; changed payee held | B1 | S | | | Todo |
-| B4 | Three-way match | Invoice vs purchase order vs goods received, with tolerances; mismatch held | B1 | M | | | Todo |
-| B5 | Limits | Per-payment, per-supplier, daily; lowered limit applies to the next proposal | B2 | S | | | Todo |
-| B6 | Transaction-type guard | Only plain RLUSD payment from the expected issuer; everything else refused unless two approvals | B1 | S | | | Todo |
-| B7 | Pause route | Authenticated pause independent of the console; tested with console stopped | B1 | S | | | Todo |
-| B8 | Pre-signing ledger read | Balance, trust line freeze state and issuer checked before signing; hold on surprise | B1, A5 | S | | | Todo |
-| B9 | Supplier enrolment and change | Enrolment with simulated identity check; changes need current key, cooling-off and second approval | B3 | M | | | Todo |
+| B1 | Warden service skeleton | Separate deployment and identity; authenticated proposal endpoint; holds its own key only | F2, A3 | M | Sibusiso (AI-assisted) | | Review (live with a test-issued token, T-071; RLUSD run blocked by A3) |
+| B2 | Obligation identity and reservation | Stable identity; atomic reservation; one unresolved attempt per payable; concurrency test | B1 | M | Sibusiso (AI-assisted) | | Review (T-069, T-071) |
+| B3 | Verified supplier and destination | Destination only from enrolled supplier record; changed payee held | B1 | S | Sibusiso (AI-assisted) | | Review (T-069, T-071) |
+| B4 | Three-way match | Invoice vs purchase order vs goods received, with tolerances; mismatch held | B1 | M | Sibusiso (AI-assisted) | | Review (T-069, T-071) |
+| B5 | Limits | Per-payment, per-supplier, daily; lowered limit applies to the next proposal | B2 | S | Sibusiso (AI-assisted) | | Review (T-069, T-071) |
+| B6 | Transaction-type guard | Only plain RLUSD payment from the expected issuer; everything else refused unless two approvals | B1 | S | Sibusiso (AI-assisted) | | Review (T-069, T-071) |
+| B7 | Pause route | Authenticated pause independent of the console; tested with console stopped | B1 | S | Sibusiso (AI-assisted) | | Review (T-069, T-071) |
+| B8 | Pre-signing ledger read | Balance, trust line freeze state and issuer checked before signing; hold on surprise | B1, A5 | S | Sibusiso (AI-assisted) | | Review (T-069, T-072) |
+| B9 | Supplier enrolment and change | Enrolment with simulated identity check; changes need current key, cooling-off and second approval | B3 | M | Sibusiso (AI-assisted) | | Review (T-069; enrolment and approval live in T-071) |
 
 ## Gate C: agent reliability and evidence
 

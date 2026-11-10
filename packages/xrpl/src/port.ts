@@ -21,6 +21,10 @@ export interface AccountSnapshot {
 export interface TrustLineSnapshot {
   readonly balance: string;
   readonly limit: string;
+  /** True when the issuer has frozen this line: the holder cannot move the token. */
+  readonly frozenByIssuer: boolean;
+  /** True when the holder has frozen its own line. */
+  readonly frozenByHolder: boolean;
 }
 
 /** The part of a submit response that matters: the engine result and whether it was applied. */

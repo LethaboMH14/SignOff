@@ -95,8 +95,8 @@ This positioning was accepted by the team on 10 November 2026 ([ADR 0001](docs/d
 | Agent run on an invoice file | Yes | Not yet | | |
 | Two-signature RLUSD payment | Yes | Not yet: blocked until testnet RLUSD is funded. The same two-signature path has run with a test-issued token ([TEST-LOG T-053](docs/logs/TEST-LOG.md)) | | |
 | Rejection of a single-key payment | Yes | Live on Testnet: agent alone and Warden alone refused with tefBAD_QUORUM ([TEST-LOG T-054](docs/logs/TEST-LOG.md)) | | |
-| Warden rules, holds and operator limits | Yes | Not yet | | |
-| Supplier enrolment and signed payout record | Yes | Not yet | Identity check simulated | |
+| Warden rules, holds and operator limits | Yes | Live on Testnet with a test-issued token, not RLUSD: refusals and holds for duplicates, payee, receipt and limit, concurrency, pause, lowered limit and a non-payment co-signature ([TEST-LOG T-071](docs/logs/TEST-LOG.md)); frozen line held, then paid ([T-072](docs/logs/TEST-LOG.md)) | | |
+| Supplier enrolment and signed payout record | Yes | Enrolment and two-person approval recorded by the Warden on Testnet ([TEST-LOG T-071](docs/logs/TEST-LOG.md)); signed payout change tested in software only ([T-069](docs/logs/TEST-LOG.md)) | Identity check simulated | |
 | Invoices, suppliers and buyers | | | Fictional | |
 | Rand conversion and payout to a supplier's bank | | | Yes | |
 | Bank account verification (AVS) | | | Yes | |
