@@ -84,6 +84,8 @@ export interface DeskViewProps {
   readonly onCancelConfirm: () => void;
   /** Opens the held-invoice view for a row. */
   readonly onOpen: (rowId: string) => void;
+  /** Opens the receipt for a paid row, by its attempt id. */
+  readonly onReceipt: (attemptId: string) => void;
 }
 
 function StepUp({
@@ -356,6 +358,19 @@ export function DeskView(props: DeskViewProps) {
                 </p>
                 {row.modelCalls === null ? null : (
                   <p className="row-model">Model calls: {String(row.modelCalls)} of at most 3</p>
+                )}
+                {row.displayState !== 'Paid' || row.attemptId === null ? null : (
+                  <p>
+                    <button
+                      type="button"
+                      aria-label={`Open receipt for invoice ${row.invoiceRef}`}
+                      onClick={() => {
+                        props.onReceipt(row.attemptId ?? '');
+                      }}
+                    >
+                      Receipt
+                    </button>
+                  </p>
                 )}
                 <p className="row-time">Updated {sastOf(row.updatedAt)}</p>
                 <p>

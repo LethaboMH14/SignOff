@@ -73,6 +73,14 @@ Then open http://127.0.0.1:4180 and sign in.
 | `SIGNOFF_CONSOLE_TRANSITIONS` | `apps/agent/state/agent-log.jsonl` | The agent's transition log to read. |
 | `SIGNOFF_CONSOLE_PORT` | `4180` | The port. |
 | `SIGNOFF_CONSOLE_HOST` | `127.0.0.1` | Only a loopback address is accepted. |
+| `SIGNOFF_TOKEN_ISSUER` | none | The issuer of the test-issued token. Without it no receipt is confirmed. |
+| `SIGNOFF_RLUSD_ISSUER` | none | Optional. The asset is named RLUSD only when its issuer is the token issuer. |
+| `SIGNOFF_EXPLORER_BASE` | `https://testnet.xrpl.org/transactions/` | The explorer address the receipt links to. |
+| `SIGNOFF_DEMO_RAND_PER_UNIT` | none | A placeholder rate for the SIMULATED rand figure, such as `18.50`. Without it no rand figure is shown. |
+
+## The receipt
+
+A paid payment has a receipt. The desk decides that the payment is paid; the receipt then re-reads the transaction from the ledger. It gives a receipt only when the ledger validated a success that delivered the amount the Warden settled, and it links the explorer only from a full 64-character transaction hash. Anything else is shown as **Not confirmed on the ledger**, with the reason, and no receipt. The rand figure is always labelled SIMULATED and uses the placeholder rate above; no market rate is claimed.
 
 In development, `npm run dev -w @signoff/console` serves the page with hot reload and proxies `/api` to the server.
 

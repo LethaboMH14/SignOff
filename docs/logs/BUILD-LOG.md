@@ -188,3 +188,13 @@ One entry per working session (rule R-19 in [RULES.md](../RULES.md)), newest fir
 - Problems / blockers: the browser check of the form is not run (the pane was hidden). The 24-hour raise window and the 30-second watchdog are proposed settings for review. The Warden suite covers the limit rules (T-095); the console adds the requester check and the confirmation. The function-coverage threshold was met by testing the browser state rules directly (web/actions.ts) and the browser client with a stubbed fetch, not by changing the threshold. Test IDs T-101 and D-081 belong to feat/S3-watchdog; this stack uses T-102 to T-104 and D-078 to D-079, and the two stacks need renumbering at merge.
 - Next: the receipt (D4).
 
+
+### 2026-11-11 — Sibusiso with Claude (Haiku 5.5) — D4 receipt
+
+- Done: a paid payment opens a receipt with the explorer link (a full hash and a fixed base), the amount the ledger delivered, the asset name (decided from configuration), and a rand figure only as a SIMULATED placeholder. The receipt re-reads the transaction from the ledger; any doubt is shown as Not confirmed on the ledger, with its reason, and no receipt. Branch `feat/D4-receipt`, stacked on `feat/D3-limits-pause`.
+- Changed decisions: D-082.
+- Evidence: T-105 (172 console tests; repository check exit 0: 980 tests). The live Testnet receipt is not run (T-106).
+- Lenses. Prompt engineering: not applicable; no model is called. Context engineering: the receipt re-reads the ledger rather than trusting its own record, and it sends the browser only the answer it shows. Graph engineering: the receipt is the end of the path, linking the invoice, the attempt, the transaction hash and the reconciliation the desk shows as Paid.
+- Problems / blockers: no live receipt has been checked against Testnet (T-106). No RLUSD payment has run (A3 is blocked, T-059), so receipts are for the test-issued token and are labelled that way. The rand rate is a placeholder from configuration, and no market rate is claimed. The browser check of the receipt is not run (the pane was hidden). Test IDs: T-101 and D-081 belong to feat/S3-watchdog, D-080 to the keys branch; this stack uses T-102 to T-106, D-078 to D-079 and D-082, and the stacks need renumbering at merge.
+- Next: the accessibility and phone check (D5), then the health checks and deployment configuration (D6).
+

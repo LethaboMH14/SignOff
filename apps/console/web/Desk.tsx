@@ -8,6 +8,7 @@ import {
   type LimitValues,
   loadDesk,
   loadInvoice,
+  loadReceipt,
   type PendingAction,
   type SessionInfo,
   setLimits,
@@ -17,6 +18,8 @@ import { type ActionPorts, confirmAndPerform, performAction, type Settled } from
 import type { InvoiceDetail } from '../src/server/invoice-view.js';
 import { DeskView } from './DeskView.js';
 import { InvoiceView } from './InvoiceView.js';
+import type { ReceiptView as ReceiptData } from '../src/server/receipt.js';
+import { ReceiptView } from './ReceiptView.js';
 
 /** How often the desk asks the console for fresh rows. A change also refreshes at once. */
 const REFRESH_MS = 5000;
@@ -52,6 +55,10 @@ export function Desk({ session, onSession }: DeskProps) {
   const [openId, setOpenId] = useState<string | null>(null);
   const [detail, setDetail] = useState<InvoiceDetail | null>(null);
   const [detailError, setDetailError] = useState<string | null>(null);
+  /** The payment whose receipt is open, and the receipt once the console has answered. */
+  const [receiptId, setReceiptId] = useState<string | null>(null);
+  const [receipt, setReceipt] = useState<ReceiptData | null>(null);
+  const [receiptError, setReceiptError] = useState<string | null>(null);
 
   const openInvoice = useCallback(async (rowId: string) => {
     setOpenId(rowId);
@@ -62,6 +69,19 @@ export function Desk({ session, onSession }: DeskProps) {
     } catch (failure) {
       setDetailError(
         failure instanceof ApiError ? failure.message : 'The invoice did not load. Try again.',
+      );
+    }
+  }, []);
+
+  const openReceipt = useCallback(async (attemptId: string) => {
+    setReceiptId(attemptId);
+    setReceipt(null);
+    setReceiptError(null);
+    try {
+      setReceipt(await loadReceipt(attemptId));
+    } catch (failure) {
+      setReceiptError(
+        failure instanceof ApiError ? failure.message : 'The receipt did not load. Try again.',
       );
     }
   }, []);
@@ -140,6 +160,20 @@ export function Desk({ session, onSession }: DeskProps) {
     [pending, session, settle],
   );
 
+  if (receiptId !== null) {
+    return (
+      <ReceiptView
+        receipt={receipt}
+        error={receiptError}
+        onBack={() => {
+          setReceiptId(null);
+          setReceipt(null);
+          setReceiptError(null);
+        }}
+      />
+    );
+  }
+
   if (openId !== null) {
     return (
       <InvoiceView
@@ -169,6 +203,9 @@ export function Desk({ session, onSession }: DeskProps) {
       }}
       onOpen={(rowId) => {
         void openInvoice(rowId);
+      }}
+      onReceipt={(attemptId) => {
+        void openReceipt(attemptId);
       }}
     />
   );

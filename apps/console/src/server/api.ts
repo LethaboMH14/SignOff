@@ -10,6 +10,7 @@ import { LoginGuard, type Session, SessionStore } from './auth/sessions.js';
 import { cookieOf, readBody, sendEmpty, sendJson } from './http.js';
 import type { ConsoleMode } from './app.js';
 import { invoiceDetailOf } from './invoice-view.js';
+import { receiptOf, type ReceiptConfig, type ReceiptLedger } from './receipt.js';
 import {
   ApprovalAnswer,
   latestInvoicesOf,
@@ -35,6 +36,7 @@ const BODY_LIMIT_BYTES = 4096;
 const REQUEST_ID = /^[0-9a-f-]{36}$/;
 const APPROVE_PATH = /^\/api\/limits\/([0-9a-f-]{36})\/approve$/;
 const INVOICE_PATH = /^\/api\/invoices\/([0-9a-f]{64}|[0-9a-f-]{36})$/;
+const RECEIPT_PATH = /^\/api\/receipts\/([0-9a-f-]{36})$/;
 
 /** The Warden calls the console makes for one person. Each method returns the Warden's answer, unparsed. */
 export interface WardenPort {
@@ -60,6 +62,10 @@ export interface ApiContext {
   /** The Warden as this person: their own principal for an operator, the read-only reader for a viewer, or null. */
   wardenFor(operator: Operator): WardenPort | null;
   readonly now: () => Date;
+  /** The ledger a receipt is re-checked against. Null means no receipt can be confirmed. */
+  readonly ledger: ReceiptLedger | null;
+  /** The receipt's settings: the token issuer, the explorer, and the placeholder rate for the SIMULATED rand figure. */
+  readonly receipts: ReceiptConfig;
 }
 
 export interface Caller {
@@ -547,7 +553,69 @@ export async function handleApi(
     await invoiceRead(request, response, ctx, invoice[1] ?? '');
     return;
   }
+  const receipt = RECEIPT_PATH.exec(pathname);
+  if (receipt !== null && method === 'GET') {
+    await receiptRead(request, response, ctx, receipt[1] ?? '');
+    return;
+  }
   sendJson(response, 404, { error: 'not found' });
+}
+
+/**
+ * The receipt for a paid payment. The desk decides whether the payment is paid, and the receipt re-reads the transaction
+ * from the ledger before it shows one.
+ */
+async function receiptRead(
+  request: IncomingMessage,
+  response: ServerResponse,
+  ctx: ApiContext,
+  attemptId: string,
+): Promise<void> {
+  const caller = callerOf(request, ctx);
+  if (caller === null) {
+    notSignedIn(response);
+    return;
+  }
+  const warden = ctx.wardenFor(caller.operator);
+  if (warden === null) {
+    sendJson(response, 503, { error: 'this account has no Warden access' });
+    return;
+  }
+  const { records } = readTransitions(ctx.transitionsPath);
+  const invoice = latestInvoicesOf(records).find((candidate) => candidate.attemptId === attemptId);
+  if (invoice === undefined) {
+    sendJson(response, 404, { error: 'no such payment' });
+    return;
+  }
+  try {
+    const proposal = await proposalOrNull(warden, attemptId);
+    if (proposal === null) {
+      sendJson(response, 404, { error: 'no such payment' });
+      return;
+    }
+    const row = deskRowsOf([invoice], [proposalRecordOf(proposal)])[0];
+    const payment = proposal.payment;
+    const view = await receiptOf({
+      displayState: row?.displayState ?? 'Received',
+      invoiceRef: row?.invoiceRef ?? '',
+      payment:
+        payment === null
+          ? null
+          : {
+              status: payment.status,
+              currency: payment.currency,
+              ledgerCurrency: payment.ledgerCurrency,
+              amountMinor: payment.amountMinor,
+              transactionHash: payment.transactionHash,
+            },
+      ledger: ctx.ledger,
+      config: ctx.receipts,
+    });
+    sendJson(response, 200, view);
+  } catch (error) {
+    const failure = wardenFailure(error);
+    sendJson(response, failure.status, { error: failure.message });
+  }
 }
 
 function isStatus(error: unknown, status: number): boolean {

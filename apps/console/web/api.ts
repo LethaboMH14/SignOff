@@ -1,5 +1,6 @@
 import { type DeskRow, type DisplayState } from '../src/model/desk.js';
 import type { InvoiceDetail } from '../src/server/invoice-view.js';
+import type { ReceiptView } from '../src/server/receipt.js';
 
 /**
  * The browser's calls to the console's API. The browser holds no secret: the session is an HttpOnly cookie it cannot
@@ -141,6 +142,11 @@ export function signOut(csrf: string): Promise<unknown> {
 
 export function confirmPassword(password: string, csrf: string): Promise<{ stepUpUntil: string }> {
   return request('POST', '/api/session/step-up', { password }, csrf);
+}
+
+/** The receipt for a paid payment, by its attempt id. The console re-reads the ledger before it gives one. */
+export function loadReceipt(attemptId: string): Promise<ReceiptView> {
+  return request<ReceiptView>('GET', `/api/receipts/${encodeURIComponent(attemptId)}`);
 }
 
 /** The held-invoice view for one invoice, by its correlation id or its attempt id. */

@@ -67,7 +67,7 @@ The build sliced into small, reviewable issues. Each maps to a requirement in [P
 | D1 | Payment desk | List with states and plain reasons; never "paid" before validation | D0, C6 | M | Sibusiso (AI-assisted) | | Review (T-098, T-099; final phone check UNVERIFIED) |
 | D2 | Held-invoice view | Evidence, failed rule, next action | D1 | S | Sibusiso (AI-assisted) | | Review (T-102; browser check not run, T-103) |
 | D3 | Limits and pause | Change limits (increase needs second approver), pause, resume with authentication | D1, B5, B7, D3W | S | Sibusiso (AI-assisted) | | Review (T-104; browser check not run, T-103) |
-| D4 | Receipt | Explorer link, delivered amount, simulated rand payout labelled | D1 | S | | | Todo |
+| D4 | Receipt | Explorer link, delivered amount, simulated rand payout labelled | D1 | S | Sibusiso (AI-assisted) | | Review (T-105; live Testnet receipt not run, T-106) |
 | D5 | Mobile and accessibility | Works at phone width; labels not colour alone; keyboard usable | D1 | S | | | Todo |
 | D6 | Deployment and health checks | Console, agent and Warden deployed separately; health endpoints; synthetic Testnet check | B1, D1 | M | | | Todo |
 | D1W | Warden operator read routes (proposed) | Read-only views for the console: overview, proposals (holds and payments) and suppliers; operator role only; allowlisted fields; reads write nothing | B1, C6 | M | Sibusiso (AI-assisted) | | Review (T-089; ID proposed, for review) |

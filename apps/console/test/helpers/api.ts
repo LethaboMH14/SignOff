@@ -1,6 +1,8 @@
 import { randomBytes } from 'node:crypto';
 
+import type { LedgerLookup } from '../../../../packages/xrpl/src/reconcile.js';
 import { type ApiContext, type WardenPort } from '../../src/server/api.js';
+import { TESTNET_EXPLORER, type ReceiptLedger } from '../../src/server/receipt.js';
 import { type Operator, operatorStoreOf } from '../../src/server/auth/operators.js';
 import { hashPassword } from '../../src/server/auth/passwords.js';
 import { LoginGuard, SessionStore } from '../../src/server/auth/sessions.js';
@@ -146,9 +148,26 @@ export class FakeWarden implements WardenPort {
   }
 }
 
+/** The test token's issuer. A placeholder address: it is compared, never sent anywhere. */
+export const TOKEN_ISSUER = 'rTokenIssuerForTests0000000';
+
+/** A ledger stand-in for receipts. It answers with what a test sets, or fails when set to an error. */
+export class FakeLedger implements ReceiptLedger {
+  answer: LedgerLookup | Error = { status: 'not-validated' };
+  readonly hashes: string[] = [];
+
+  lookup(hash: string): Promise<LedgerLookup> {
+    this.hashes.push(hash);
+    return this.answer instanceof Error
+      ? Promise.reject(this.answer)
+      : Promise.resolve(this.answer);
+  }
+}
+
 export interface Harness {
   readonly ctx: ApiContext;
   readonly warden: FakeWarden;
+  readonly ledger: FakeLedger;
   /** The origins a page may come from. A test adds the address of its server here once it is listening. */
   readonly origins: Set<string>;
   advance(ms: number): void;
@@ -187,6 +206,7 @@ export async function harnessOf(transitionsPath: string): Promise<Harness> {
   ]);
   let clockMs = START_MS;
   const warden = new FakeWarden();
+  const ledger = new FakeLedger();
   const origins = new Set<string>();
   const ctx: ApiContext = {
     operators,
@@ -198,10 +218,18 @@ export async function harnessOf(transitionsPath: string): Promise<Harness> {
     mode: 'simulated',
     wardenFor: () => warden,
     now: () => new Date(clockMs),
+    ledger,
+    receipts: {
+      tokenIssuer: TOKEN_ISSUER,
+      rlusdIssuer: null,
+      explorerBase: TESTNET_EXPLORER,
+      demoRandPerUnit: '18.50',
+    },
   };
   return {
     ctx,
     warden,
+    ledger,
     origins,
     advance: (ms) => {
       clockMs += ms;
