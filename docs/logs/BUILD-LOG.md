@@ -26,6 +26,14 @@ One entry per working session (rule R-19 in [RULES.md](../RULES.md)), newest fir
 
 ---
 
+### 2026-11-10 — Sibusiso with Claude (Haiku 5.5) — Gate B issues created and linked
+
+- Done: after the owner approved it, created the GitHub issues for B1 to B9: [#28](https://github.com/LethaboMH14/SignOff/issues/28) to [#36](https://github.com/LethaboMH14/SignOff/issues/36), with the title, acceptance criteria, dependencies, status, evidence and pull request link for each. Linked each issue in the GH column of `docs/ISSUES.md`. Updated the pull request body, which had said the issues were not yet created.
+- Changed decisions: none.
+- Evidence: the nine issue links above; the GH column in `docs/ISSUES.md`. No test run: documents and issue creation only.
+- Problems / blockers: the first attempt to create the issues from inline text was refused by the shell before it ran any command, so nothing was created by it; the issues were created from prepared files. R-16 asks for an issue before a branch, and this branch was created first; the order is recorded in D-049.
+- Next: the owner decides the two readings flagged in the issues: the B2 concurrency reading against BUILD-BRIEF.md, and the B6 reading (D-053). Push this change to the pull request branch.
+
 ### 2026-11-10 — Sibusiso with Claude (Haiku 5.5) — Gate B: Warden controls B1 to B9
 
 - Done: Gate B on `feat/gate-b-warden-controls`, stacked on the Gate A branch and not pushed. `apps/warden` holds the decision service for B1 to B9: proposals and co-signature, reservation and duplicates, payee checks, three-way match, limits, the transaction guard, the pause route, the pre-signing ledger read, and supplier enrolment with payout changes. Around it: request authentication, an append-only event log replayed on start, the payment guard, the pre-signing rules, the HTTP surface and the client. The driver `npm run testnet:gate-b` runs the live checks against the Warden as a separate process. `npm run check` passes with 476 tests.
