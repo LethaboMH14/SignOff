@@ -1,19 +1,23 @@
 // Gate A command line. Testnet only: every endpoint is checked against the allow-list before a socket
 // opens, and the local registry, journal and lock live outside the repository. Output contains roles,
 // result codes, counts and transaction hashes only; no addresses and no seeds.
-// Usage: npm run testnet:<provision|signers|pay|rejections|timeout|failover|rebuild>
+// Usage: npm run testnet:<provision|signers|pay|pay-rlusd|rejections|timeout|failover|rebuild>
 import { randomUUID } from 'node:crypto';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Wallet } from 'xrpl';
 import {
+  compareDecimal,
   configureSigners,
   connectTestnetPort,
+  deliveredBalance,
   demonstrateRejections,
   failoverDrill,
   provisionTestnet,
   rebuildFromReserve,
   requireAccount,
+  rlusdAmount,
+  RLUSD_TESTNET,
   sendTwoSignatureTransfer,
   testnetEndpoints,
   testTokenAmount,
@@ -56,12 +60,43 @@ async function tokenTransfer(deps: Deps, paymentId: string, value: string): Prom
   };
 }
 
+/**
+ * A testnet RLUSD transfer from the spending account to the supplier. Before anything is sent, it checks
+ * that the spending account holds the amount and that the supplier has an RLUSD trust line, so a missing
+ * balance is refused here rather than by the ledger.
+ */
+async function rlusdTransfer(deps: Deps, paymentId: string, value: string): Promise<Transfer> {
+  const registry = must(await deps.registry.read(), 'no registry; run the provision step first');
+  const from = requireAccount(registry, 'spending');
+  const to = requireAccount(registry, 'supplier');
+  const amount = rlusdAmount(value);
+  const held = await deliveredBalance(deps.port, from, amount);
+  if (compareDecimal(held, value) < 0) {
+    throw new Error(
+      `the spending account holds ${held} testnet RLUSD and this payment needs ${value}; fund it first (TEST-LOG T-059). Nothing was sent.`,
+    );
+  }
+  const line = await deps.port.trustLine(to.address, {
+    currency: RLUSD_TESTNET.currency,
+    issuer: RLUSD_TESTNET.issuer,
+  });
+  if (!line) {
+    throw new Error('the supplier has no testnet RLUSD trust line. Nothing was sent.');
+  }
+  return { paymentId, from, to, amount };
+}
+
 const RUNNERS: ReadonlyMap<string, Runner> = new Map<string, Runner>([
   ['provision', (deps) => provisionTestnet(deps)],
   ['signers', (deps) => configureSigners(deps)],
   [
     'pay',
     async (deps) => sendTwoSignatureTransfer(deps, await tokenTransfer(deps, 'pay.proof', '10')),
+  ],
+  [
+    'pay-rlusd',
+    async (deps) =>
+      sendTwoSignatureTransfer(deps, await rlusdTransfer(deps, 'pay-rlusd.proof', '10')),
   ],
   [
     'rejections',

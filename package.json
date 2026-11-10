@@ -22,6 +22,7 @@
     "testnet:provision": "tsx scripts/testnet/gate-a.ts provision",
     "testnet:signers": "tsx scripts/testnet/gate-a.ts signers",
     "testnet:pay": "tsx scripts/testnet/gate-a.ts pay",
+    "testnet:pay-rlusd": "tsx scripts/testnet/gate-a.ts pay-rlusd",
     "testnet:rejections": "tsx scripts/testnet/gate-a.ts rejections",
     "testnet:timeout": "tsx scripts/testnet/gate-a.ts timeout",
     "testnet:failover": "tsx scripts/testnet/gate-a.ts failover",
