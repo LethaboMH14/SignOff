@@ -47,7 +47,7 @@ A real quote shows the value appears in the document. It does **not** show the d
 ## 4. Cross-checks the model cannot influence
 
 - Amount matches the purchase order and goods-received record.
-- Supplier matches an enrolled, credentialed supplier.
+- Supplier matches a verified, enrolled supplier (mandatory). An XRPL credential on the supplier's account is optional and only required if a separate policy says so.
 - Invoice number has not been paid before.
 
 All of these records are held by Warden and are the source of authority. No model output or score can override a failed check against them.

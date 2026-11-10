@@ -112,12 +112,16 @@ Every invoice moves through named states, and every transition is recorded with 
 
 `RECEIVED → EXTRACTED → NEEDS_EVIDENCE / REVIEW / HELD → AUTHORIZED → SUBMITTED → VALIDATED → RECONCILED`, or `FAILED`.
 
-- **One idempotency identity per payment:** supplier plus invoice number plus amount. A second attempt with the same identity is refused while the first is unresolved.
+- **A stable obligation identity, separate from the amount.** Each approved payable gets one identifier when first accepted (from the enrolled supplier's ID and the supplier's invoice number, normalised, plus a fingerprint of the document). It does not change if the amount is edited, the invoice is re-sent, or a payment is retried.
+- **Amounts tracked against it:** approved amount, amount reserved, amount settled, amount remaining. Partial payments, credit notes and edits update these figures; they never create a new obligation.
+- **Each payment attempt** has its own attempt identity linked to the obligation, so retries are traceable and at most one attempt per obligation is unresolved at a time.
+- **Near-duplicates are checked too:** the same document fingerprint, or the same supplier with a similar invoice number and amount, is held for a person to review.
 - **Atomic reservation:** Warden reserves the amount against the daily limit before signing and releases it only on reconciliation or expiry.
 - **Bound approval:** Warden's decision covers the exact final transaction fields and the policy version. It signs only those bytes.
 - **Persist before submit:** sequence, transaction hash and expiry ledger are stored before submission.
 - **Reconcile before retry or "paid":** only a validated transaction with the expected delivered amount moves an invoice to `VALIDATED`. A timeout leads to reconciliation, never a blind resubmission.
 - **Fail closed:** if Warden cannot read the ledger, its records or its policy, it refuses.
+- **Independent pause route:** an authenticated pause endpoint on Warden that does not depend on the console, tested by pausing with the console stopped.
 
 ## Evidence for each test
 
@@ -133,7 +137,7 @@ From the [CFO and fraud research](CFO-AGENTIC-FRAUD-SECURITY-RESEARCH-2026-11-10
 
 | Gate | Must show |
 |---|---|
-| A. Ledger proof | RLUSD trust lines; signer list as in [TRUST.md](TRUST.md); a validated two-signature payment; every single-key and Agent + Recovery path rejected; recovery path tested; hashes recorded |
+| A. Ledger proof | RLUSD trust lines; signer list as in [TRUST.md](TRUST.md); a validated two-signature payment; each key alone rejected; Agent + Warden the only accepted path; a signer change refused without two approvals; rebuild from reserve tested; hashes recorded |
 | B. Warden controls | Authenticated proposals, verified payee, three-way match, duplicate lock, limits, pause; no failed hard control ever leads to a signature |
 | C. Reliability and evidence | Real PDF extraction with source spans, labelled test set, single-prompt baseline, decision log |
 | D. Operations and console | Payment desk, changed-payee hold, lowered-limit hold, validated receipt; never "paid" before validation; safe behaviour on timeout |

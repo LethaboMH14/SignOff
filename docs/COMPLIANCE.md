@@ -1,12 +1,12 @@
 # Compliance plan
 
-**Not legal advice. No qualified lawyer has reviewed this.** It lists the obligations we have found, who would carry each one, and what the hackathon build does about it. The hackathon build runs on XRPL Testnet with no real money, so none of these obligations are triggered by the demo itself; the point is to design so a real pilot could meet them.
+**Not legal advice. No qualified lawyer has reviewed this.** It lists the obligations we have found, who would carry each one, and what the hackathon build does about it. The hackathon demo uses fictional data and no real funds on XRPL Testnet. That does not by itself show that no rule applies: processing real personal information, the way the business is run, and each operator's legal status can all create obligations. Whether and how these rules apply must be assessed with counsel. The point here is to design so a real pilot could meet them.
 
 Checked 10 November 2026. Regulation is described in [BUSINESS.md](BUSINESS.md#regulation).
 
 ## Who carries which obligation
 
-SignOff is planned as software, not a money service. The parties that hold or move value carry most obligations.
+SignOff is planned as software, not a money service. The table shows where obligations are **expected** to sit. This is an assumption, not a conclusion: co-signing, custody-like control and acting on a buyer's behalf may create obligations for SignOff itself, and need independent regulatory analysis.
 
 | Party | Role | Main obligations |
 |---|---|---|
@@ -40,7 +40,7 @@ Whether SignOff's co-signing makes it a regulated party is an **open legal quest
 | No single party can move funds | Multi-signing | Core; to be tested ([ADR 0004](decisions/0004-workshop-adjustments.md)) |
 | Public evidence that a supplier account was verified | Credentials | Stretch; attestation only |
 | Only verified parties can hold a token | Trust line authorisation, set by an issuer | Not ours to set for RLUSD; noted |
-| Stop unexpected incoming funds | Deposit authorisation on an account | Possible on the spending account so it accepts top-ups only from the reserve; unverified, stretch |
+| Accept top-ups only from the reserve | **Warden and funding-operator policy**, not a ledger rule | Deposit authorisation on its own does not create a reserve-only allowlist. Treat as a policy until an account control is demonstrated on Testnet |
 
 ## What we will not claim
 
