@@ -127,6 +127,10 @@ The track requires an autonomous transaction on XRPL Testnet or Devnet, limits e
 
 | Read this | For |
 |---|---|
+| [docs/RULES.md](docs/RULES.md) | **The working contract:** rules every change must meet, definition of done, phase-close checklist |
+| [docs/PRD.md](docs/PRD.md) | Product requirements: users, goals, requirements, success measures |
+| [docs/ISSUES.md](docs/ISSUES.md) | The build sliced into issues by gate |
+| [docs/logs/](docs/logs/) | Build log, decision journal, test log, security log |
 | [BUILD-BRIEF.md](BUILD-BRIEF.md) | The agreed build, flow, stack and acceptance tests |
 | [docs/PROBLEM.md](docs/PROBLEM.md) | Problem statement and sourced evidence with confidence ratings |
 | [docs/SOLUTION.md](docs/SOLUTION.md) | Rules, two-signature design, simpler options considered |
