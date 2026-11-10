@@ -2,6 +2,8 @@ import { readFileSync, statSync } from 'node:fs';
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import { basename, extname, resolve, sep } from 'node:path';
 
+import { type ApiContext, callerOf, handleApi } from './api.js';
+import { sendJson, SECURITY_HEADERS } from './http.js';
 import { mapEventOf } from './map-event.js';
 import { SSE_RETRY_LINE, sseEvent } from './sse.js';
 import { TransitionTail } from './transitions-tail.js';
@@ -16,17 +18,9 @@ export interface ConsoleOptions {
   readonly pollMs: number;
   /** The built web app, or null when only the API is served. */
   readonly staticDir: string | null;
+  /** Sign-in, the desk and the changes. Every route except health and the app's own files needs a session. */
+  readonly api: ApiContext;
 }
-
-/** Sent with every response. The page may load only its own script and style, and nothing may frame it. */
-const SECURITY_HEADERS: Readonly<Record<string, string>> = {
-  'content-security-policy':
-    "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'",
-  'x-content-type-options': 'nosniff',
-  'x-frame-options': 'DENY',
-  'referrer-policy': 'no-referrer',
-  'cache-control': 'no-store',
-};
 
 const CONTENT_TYPES: ReadonlyMap<string, string> = new Map<string, string>([
   ['.html', 'text/html; charset=utf-8'],
@@ -35,14 +29,6 @@ const CONTENT_TYPES: ReadonlyMap<string, string> = new Map<string, string>([
   ['.svg', 'image/svg+xml'],
   ['.json', 'application/json; charset=utf-8'],
 ]);
-
-function sendJson(response: ServerResponse, status: number, body: unknown): void {
-  response.writeHead(status, {
-    ...SECURITY_HEADERS,
-    'content-type': 'application/json; charset=utf-8',
-  });
-  response.end(JSON.stringify(body));
-}
 
 /** The file a request names inside the built web app, or null. A path that leaves that folder is never served. */
 function staticFileOf(staticDir: string, pathname: string): string | null {
@@ -123,20 +109,30 @@ function serveStatic(response: ServerResponse, path: string): void {
   response.end(readFileSync(path));
 }
 
-/** The console server. It has two jobs: the event stream and the built web app. It never writes to the agent's log. */
+/** The console server. It serves the sign-in and the desk API, the event stream and the built web app. It never writes to the agent's log. */
 export function createConsoleServer(options: ConsoleOptions): Server {
   return createServer((request, response) => {
+    const pathname = new URL(request.url ?? '/', 'http://localhost').pathname;
+    if (pathname.startsWith('/api/')) {
+      if (pathname === '/api/events' && request.method === 'GET') {
+        if (callerOf(request, options.api) === null) {
+          sendJson(response, 401, { error: 'sign in to continue' });
+          return;
+        }
+        streamEvents(request, response, options);
+        return;
+      }
+      handleApi(request, response, pathname, options.api).catch(() => {
+        if (!response.headersSent) {
+          sendJson(response, 500, { error: 'internal error' });
+        } else {
+          response.end();
+        }
+      });
+      return;
+    }
     if (request.method !== 'GET') {
       sendJson(response, 405, { error: 'method not allowed' });
-      return;
-    }
-    const pathname = new URL(request.url ?? '/', 'http://localhost').pathname;
-    if (pathname === '/api/health') {
-      sendJson(response, 200, { status: 'ok', mode: options.mode });
-      return;
-    }
-    if (pathname === '/api/events') {
-      streamEvents(request, response, options);
       return;
     }
     if (options.staticDir !== null) {

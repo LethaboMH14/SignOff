@@ -158,3 +158,13 @@ One entry per working session (rule R-19 in [RULES.md](../RULES.md)), newest fir
 - Changed decisions: supplier-led positioning and plain multi-signing proposed.
 - Evidence: desk research only.
 - Next: team review of the reframe.
+
+### 2026-11-11 — Sibusiso with Claude (Haiku 5.5) — D1 payment desk and operator sign-in
+
+- Done: the desk shows the Warden state (running or paused, limits, usage, a waiting raised limit) and the invoice queue with state, plain reason and model-call count. Paid appears only when the Warden attempt is paid, the ledger is validated and reconciliation is recorded. Password sign-in with roles, a lockout, sessions, a five-minute step-up before any change, form-token and origin checks on every change, and an operator command. Branch `feat/D1-payment-desk`, stacked on `feat/D1-agent-map`, which carries D1W and D3W.
+- Changed decisions: D-076 (sign-in), D-077 (display rule).
+- Evidence: T-098 (104 console tests; repository check exit 0: 912 tests); T-099 (browser and DOM check).
+- Lenses. Prompt engineering: not applicable; the console calls no model, and reasons come from codes. Context engineering: each Warden view and agent record is reduced to the fields the desk shows, by allowlist. Swarm engineering: the desk shows each invoice's model-call count (at most three) from the agent's evidence record and runs no agent. Graph engineering: the display state is a function of the agent's log and the Warden's attempt, joined by attempt id.
+- Problems / blockers: the daily chart from the mockups is not built (it is not in the done-when list). The final build's phone check is UNVERIFIED because the built-in browser pane was hidden after the model-call line was added. No accessibility scan has run (D5). The reason texts are drafts. The operator accounts are set up by the team with the operator command; nothing is deployed (D6).
+- Next: the held-invoice view (D2).
+

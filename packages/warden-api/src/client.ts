@@ -121,6 +121,23 @@ export class WardenClient {
     );
   }
 
+  /** Read-only operator views. Each request is signed as the caller and changes nothing on the Warden. */
+  opsOverview(): Promise<unknown> {
+    return this.send('GET', '/v1/ops/overview', undefined, true);
+  }
+
+  opsProposals(): Promise<unknown> {
+    return this.send('GET', '/v1/ops/proposals', undefined, true);
+  }
+
+  opsProposal(attemptId: string): Promise<unknown> {
+    return this.send('GET', `/v1/ops/proposals/${encodeURIComponent(attemptId)}`, undefined, true);
+  }
+
+  opsSuppliers(): Promise<unknown> {
+    return this.send('GET', '/v1/ops/suppliers', undefined, true);
+  }
+
   private async send(
     method: 'GET' | 'POST',
     path: string,

@@ -1,0 +1,267 @@
+/* The payment desk. Layout works from 375 px wide upward: no fixed widths, long text wraps, and nothing is hidden by
+ * colour. Each state shows its symbol and its words. */
+
+.signin,
+.desk {
+  box-sizing: border-box;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+.signin form {
+  display: grid;
+  gap: 12px;
+  max-width: 360px;
+}
+
+.signin label,
+.stepup label {
+  display: grid;
+  gap: 4px;
+  font-weight: 600;
+}
+
+.signin input,
+.stepup input {
+  min-height: 44px;
+  font: inherit;
+  padding: 8px 10px;
+  border: 1px solid #6b7389;
+  border-radius: 6px;
+  min-width: 0;
+}
+
+.desk button,
+.signin button,
+.topbar button,
+.views button,
+.stepup button {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 8px 14px;
+  font: inherit;
+  border-radius: 6px;
+  border: 1px solid #3d4a63;
+  background: #ffffff;
+  color: #1d2433;
+  cursor: pointer;
+}
+
+.desk button[aria-pressed='true'],
+.views button[aria-pressed='true'] {
+  background: #1d2433;
+  color: #ffffff;
+}
+
+.desk button:disabled,
+.signin button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+:focus-visible {
+  outline: 3px solid #1f5fbf;
+  outline-offset: 2px;
+}
+
+.topbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+.topbar h1 {
+  font-size: 1.5rem;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.views {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.who {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.mode-label {
+  font-weight: 600;
+  margin: 0 0 12px;
+  overflow-wrap: anywhere;
+}
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+  list-style: none;
+  padding: 0;
+  margin: 0 0 16px;
+}
+
+.tile {
+  background: #ffffff;
+  border: 1px solid #d8dde6;
+  border-radius: 8px;
+  padding: 12px;
+  min-width: 0;
+}
+
+.tile-number {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.tile-label {
+  margin: 4px 0 0;
+}
+
+.panel {
+  background: #ffffff;
+  border: 1px solid #d8dde6;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+  min-width: 0;
+}
+
+.panel h2 {
+  font-size: 1.1rem;
+  margin: 0 0 8px;
+}
+
+.limits {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 8px;
+  margin: 8px 0 12px;
+}
+
+.limits dt {
+  color: #4f5a6e;
+  font-size: 0.9rem;
+}
+
+.limits dd {
+  margin: 0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.notice {
+  border-left: 4px solid #8a4b00;
+  background: #fff7e8;
+  padding: 8px 12px;
+  margin: 8px 0;
+  overflow-wrap: anywhere;
+}
+
+.stepup {
+  display: grid;
+  gap: 10px;
+  max-width: 360px;
+  padding: 12px;
+  border: 1px dashed #3d4a63;
+  border-radius: 8px;
+  margin-top: 8px;
+}
+
+.stepup .actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+  font-size: 0.9rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.chip-paid {
+  color: #1d6b3a;
+}
+
+.chip-held,
+.chip-needs-a-person,
+.chip-quarantined {
+  color: #8a4b00;
+}
+
+.chip-refused,
+.chip-failed {
+  color: #a01f1f;
+}
+
+.chip-in-progress,
+.chip-received {
+  color: #3d4a63;
+}
+
+.chip-not-confirmed,
+.chip-not-paid {
+  color: #4f5a6e;
+}
+
+.queue {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.row {
+  border: 1px solid #d8dde6;
+  border-radius: 8px;
+  padding: 12px;
+  min-width: 0;
+}
+
+.row p {
+  margin: 4px 0;
+  overflow-wrap: anywhere;
+}
+
+.row-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.row-ref,
+.row-time,
+.counts-line {
+  color: #4f5a6e;
+  font-size: 0.9rem;
+}
+
+.row-amount {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (min-width: 720px) {
+  .queue {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

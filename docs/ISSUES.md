@@ -63,14 +63,14 @@ The build sliced into small, reviewable issues. Each maps to a requirement in [P
 
 | ID | Title | Acceptance criteria | Depends | Size | Owner | GH | Status |
 |---|---|---|---|---|---|---|---|
-| D0 | Mockups | Payment desk, held invoice, mobile limits, receipt; reviewed before console code | — | M | | | Todo |
-| D1 | Payment desk | List with states and plain reasons; never "paid" before validation | D0, C6 | M | | | Todo |
+| D0 | Mockups | Payment desk, held invoice, mobile limits, receipt; reviewed before console code | — | M | | | Approved for build; the owner will rework them (no test) |
+| D1 | Payment desk | List with states and plain reasons; never "paid" before validation | D0, C6 | M | Sibusiso (AI-assisted) | | Review (T-098, T-099; final phone check UNVERIFIED) |
 | D2 | Held-invoice view | Evidence, failed rule, next action | D1 | S | | | Todo |
 | D3 | Limits and pause | Change limits (increase needs second approver), pause, resume with authentication | D1, B5, B7 | S | | | Todo |
 | D4 | Receipt | Explorer link, delivered amount, simulated rand payout labelled | D1 | S | | | Todo |
 | D5 | Mobile and accessibility | Works at phone width; labels not colour alone; keyboard usable | D1 | S | | | Todo |
 | D6 | Deployment and health checks | Console, agent and Warden deployed separately; health endpoints; synthetic Testnet check | B1, D1 | M | | | Todo |
-| D1W | Warden operator read routes (proposed) | Read-only views for the console: overview, proposals (holds and payments) and suppliers; operator role only; allowlisted fields; reads write nothing | B1, C6 | M | Sibusiso (AI-assisted) | | Doing (ID proposed, for review) |
+| D1W | Warden operator read routes (proposed) | Read-only views for the console: overview, proposals (holds and payments) and suppliers; operator role only; allowlisted fields; reads write nothing | B1, C6 | M | Sibusiso (AI-assisted) | | Review (T-089; ID proposed, for review) |
 | D3W | Second operator for limit increases (proposed) | A raise becomes a pending request; a second, different operator approves it; decreases apply at once; a pending request expires after 24 hours (proposed rule) | B5, D1W | S | Sibusiso (AI-assisted) | | Review (T-095; ID proposed, for review) |
 | D7 | Motion: opening animation and transitions (proposed) | Opening sequence at most 1.2 s; transitions 180 to 250 ms; reduced motion turns all motion off; the Paid tick appears only after validation | D1 | S | Sibusiso (AI-assisted) | | Todo (ID proposed, for review) |
 | D8 | Live agent map in the console (proposed) | Animated map of invoices moving between agents, from the agent transition log; read-only; SIMULATED replay of the labelled set; Paid only when reconciled | D1 | M | Sibusiso (AI-assisted) | | Review (ID proposed, for review) |

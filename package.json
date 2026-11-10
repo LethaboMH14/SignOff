@@ -37,6 +37,8 @@
     "agent:export": "tsx apps/agent/src/main.ts export",
     "agent:build-set": "tsx apps/agent/tools/build-labelled-set.ts",
     "warden:serve": "npm run serve --workspace @signoff/warden",
+    "console:serve": "npm run serve --workspace @signoff/console",
+    "console:operator": "tsx apps/console/src/server/operator-cli/main.ts",
     "build": "npm run build --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present && tsc --project tsconfig.json",
     "lint": "eslint . --max-warnings=0",

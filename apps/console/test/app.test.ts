@@ -8,6 +8,14 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { createConsoleServer } from '../src/server/app.js';
+import {
+  type Harness,
+  harnessOf,
+  PASSWORD,
+  OPERATOR_NAME,
+  signIn,
+  VIEWER_NAME,
+} from './helpers/api.js';
 
 const HASH = 'c'.repeat(64);
 
@@ -60,20 +68,24 @@ afterEach(async () => {
 async function start(
   lines: string,
   staticDir: string | null = null,
-): Promise<{ url: string; path: string }> {
+): Promise<{ url: string; path: string; harness: Harness }> {
   const path = join(directory, 'agent-log.jsonl');
   writeFileSync(path, lines);
+  const harness = await harnessOf(path);
   const server = createConsoleServer({
     transitionsPath: path,
     mode: 'simulated',
     pollMs: 20,
     staticDir,
+    api: harness.ctx,
   });
   servers.push(server);
   await new Promise<void>((listening) => {
     server.listen(0, '127.0.0.1', listening);
   });
-  return { url: `http://127.0.0.1:${String((server.address() as AddressInfo).port)}`, path };
+  const url = `http://127.0.0.1:${String((server.address() as AddressInfo).port)}`;
+  harness.origins.add(url);
+  return { url, path, harness };
 }
 
 function withTimeout<T>(work: Promise<T>, ms: number): Promise<T> {
@@ -126,11 +138,11 @@ function connect(url: string, headers: Record<string, string> = {}): Promise<Res
 }
 
 describe('the console server', () => {
-  it('answers the health check with the mode, and nothing that is not a GET', async () => {
+  it('answers the health check with the version and mode, and nothing that is not a GET', async () => {
     const { url } = await start('');
     const health = await fetch(`${url}/api/health`);
     expect(health.status).toBe(200);
-    expect(await health.json()).toEqual({ status: 'ok', mode: 'simulated' });
+    expect(await health.json()).toEqual({ status: 'ok', version: '0.1.0', mode: 'simulated' });
     expect(health.headers.get('content-security-policy')).toContain("default-src 'self'");
     expect(health.headers.get('cache-control')).toBe('no-store');
     const post = await fetch(`${url}/api/health`, { method: 'POST' });
@@ -162,10 +174,19 @@ describe('the console server', () => {
     expect(malformed.status).toBe(404);
   });
 
+  it('refuses the event stream to a caller who has not signed in', async () => {
+    const { url } = await start(`${lineOf(1)}\n`);
+    const response = await fetch(`${url}/api/events`);
+    expect(response.status).toBe(401);
+    expect(await response.json()).toEqual({ error: 'sign in to continue' });
+  });
+
   it('streams the whole log first, then each new line, without the evidence or the reasons', async () => {
-    const { url, path } = await start(`${lineOf(1)}\n`);
+    const { url, path, harness } = await start(`${lineOf(1)}\n`);
+    const session = await signIn(url, OPERATOR_NAME);
+    expect(harness.operatorsByName().operator.username).toBe(OPERATOR_NAME);
     const controller = new AbortController();
-    const response = await fetch(`${url}/api/events`, { signal: controller.signal });
+    const response = await connect(`${url}/api/events`, { cookie: session.cookie });
     expect(response.headers.get('content-type')).toBe('text/event-stream; charset=utf-8');
     expect(response.headers.get('cache-control')).toBe('no-store');
     const body = response.body;
@@ -180,7 +201,10 @@ describe('the console server', () => {
     expect(first).not.toContain('a reason the browser must not see');
     expect(first).not.toContain('obligationKey');
     appendFileSync(path, `${lineOf(2, 'EXTRACTED')}\n`);
-    const second = await connect(`${url}/api/events`, { 'last-event-id': '1' });
+    const second = await connect(`${url}/api/events`, {
+      cookie: session.cookie,
+      'last-event-id': '1',
+    });
     const secondBody = second.body;
     if (secondBody === null) {
       throw new Error('the stream has no body');
@@ -193,7 +217,9 @@ describe('the console server', () => {
 
   it('reports lines that do not match the schema as damaged, and never shows them', async () => {
     const { url } = await start(`not json\n${lineOf(1)}\n`);
-    const response = await connect(`${url}/api/events`);
+    const session = await signIn(url, VIEWER_NAME);
+    expect(session.cookie).not.toBe('');
+    const response = await connect(`${url}/api/events`, { cookie: session.cookie });
     const body = response.body;
     if (body === null) {
       throw new Error('the stream has no body');
@@ -202,5 +228,16 @@ describe('the console server', () => {
     expect(text).toContain('event: damaged');
     expect(text).toContain('"count":1');
     expect(text).toContain('id: 1\n');
+  });
+
+  it('keeps the password out of every answer', async () => {
+    const { url } = await start('');
+    const reply = await fetch(`${url}/api/session`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ username: OPERATOR_NAME, password: PASSWORD }),
+    });
+    expect(reply.status).toBe(200);
+    expect(await reply.text()).not.toContain(PASSWORD);
   });
 });
