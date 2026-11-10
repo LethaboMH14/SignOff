@@ -131,6 +131,35 @@ describe('logger never fails the caller', () => {
     expect(calls).toBe(2);
   });
 
+  it('does not leak a sensitive service name in the emergency fallback record', () => {
+    const sink = new MemorySink();
+    let attempts = 0;
+    const firstWriteFails: LogSink = {
+      write(line) {
+        attempts++;
+        if (attempts === 1) throw new Error('sink unavailable');
+        sink.write(line);
+      },
+    };
+    const logger = createLogger({
+      service: `warden jane.doe@example.com ${SEED}`,
+      sink: firstWriteFails,
+      clock: () => FIXED_TIME,
+    });
+    expect(() => {
+      logger.error('payment.failed');
+    }).not.toThrow();
+    expect(attempts).toBe(2);
+    expect(sink.lines).toHaveLength(1);
+    expect(sink.lines[0]).not.toContain(SEED);
+    expect(sink.lines[0]).not.toContain('jane.doe@example.com');
+    expect(sink.records()[0]).toEqual({
+      level: 'error',
+      service: 'logger',
+      event: 'logger.failed',
+    });
+  });
+
   it('does not throw when the sink keeps failing', () => {
     const broken: LogSink = {
       write() {
