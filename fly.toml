@@ -14,3 +14,6 @@ primary_region = "jnb"
 [[vm]]
   size = "shared-cpu-1x"
   memory = "512mb"
+
+[env]
+  SIGNOFF_CONSOLE_ORIGINS = "https://signoff-console-demo.fly.dev"

@@ -136,12 +136,46 @@ function lazyLedgerOf(): ReceiptLedger {
   };
 }
 
+/**
+ * Extra origins the console accepts, for a public address such as https://console.example.dev. The list is comma
+ * separated and every entry must be an https origin; the loopback origins stay allowed as before.
+ */
+function extraOriginsOf(text: string | undefined): readonly string[] {
+  if (text === undefined || text.trim() === '') {
+    return [];
+  }
+  return text
+    .split(',')
+    .map((item) => item.trim())
+    .filter((item) => item !== '')
+    .map((origin) => {
+      const url = URL.parse(origin);
+      if (
+        url?.protocol !== 'https:' ||
+        url.pathname !== '/' ||
+        url.search !== '' ||
+        url.hash !== '' ||
+        url.username !== '' ||
+        url.password !== ''
+      ) {
+        throw new RangeError(
+          'SIGNOFF_CONSOLE_ORIGINS must list https origins, for example https://console.example.dev',
+        );
+      }
+      return url.origin;
+    });
+}
+
 const api: ApiContext = {
   operators: loadOperators(operatorsPath),
   sessions: new SessionStore(() => Date.now()),
   guard: new LoginGuard(() => Date.now()),
   transitionsPath,
-  allowedOrigins: new Set([`http://127.0.0.1:${String(port)}`, `http://localhost:${String(port)}`]),
+  allowedOrigins: new Set([
+    `http://127.0.0.1:${String(port)}`,
+    `http://localhost:${String(port)}`,
+    ...extraOriginsOf(process.env['SIGNOFF_CONSOLE_ORIGINS']),
+  ]),
   version,
   mode,
   wardenFor,
