@@ -4,7 +4,7 @@ import { sha256Hex } from './canonical.js';
 import type { GoodsReceiptRecord, InvoiceRecord, PurchaseOrderRecord } from './evidence.js';
 import type { PreSigningFacts } from './ledger-read.js';
 import { isUnresolved, type AttemptState, type LimitsState } from './state.js';
-import { compareDecimal } from '../../../packages/xrpl/src/amounts.js';
+import { compareDecimal, normaliseDecimal } from '../../../packages/xrpl/src/amounts.js';
 
 /**
  * The rules, one function each. Every function returns null when the rule passes, or the verdict that the
@@ -127,6 +127,19 @@ export function limitVerdict(input: {
   return null;
 }
 
+/** Exact decimal trust-line capacity check; never use floating point for a money comparison. */
+function exceedsReceivingLimit(balance: string, amount: string, limit: string): boolean {
+  const parts = [balance, amount, limit].map((value) => normaliseDecimal(value).split('.'));
+  const scale = Math.max(...parts.map((part) => (part[1] ?? '').length));
+  const scaled = (part: string[]): bigint =>
+    BigInt((part[0] ?? '0') + (part[1] ?? '').padEnd(scale, '0'));
+  const [current, incoming, maximum] = parts;
+  if (current === undefined || incoming === undefined || maximum === undefined) {
+    throw new Error('the receiving trust-line amount is missing');
+  }
+  return scaled(current) + scaled(incoming) > scaled(maximum);
+}
+
 /** The ledger facts read just before signing, checked against the amount. Any surprise holds the payment. */
 export function preSigningVerdict(facts: PreSigningFacts, amount: string): Verdict | null {
   if (!facts.spendingExists) {
@@ -158,6 +171,13 @@ export function preSigningVerdict(facts: PreSigningFacts, amount: string): Verdi
   }
   if (facts.destinationLine.frozenByIssuer || facts.destinationLine.frozenByHolder) {
     return hold('ACCOUNT_FROZEN', 'the payee trust line is frozen');
+  }
+  try {
+    if (exceedsReceivingLimit(facts.destinationLine.balance, amount, facts.destinationLine.limit)) {
+      return hold('INVARIANT_FAILED', 'the payee trust line has insufficient receiving capacity');
+    }
+  } catch {
+    return hold('INVARIANT_FAILED', 'the payee trust-line amounts cannot be verified');
   }
   return null;
 }
