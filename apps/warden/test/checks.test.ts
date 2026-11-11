@@ -273,7 +273,12 @@ describe('the pre-signing ledger check', () => {
       preSigningVerdict(
         {
           ...CLEAN_FACTS,
-          spendingLine: { balance: '100', limit: '1000', frozenByIssuer: true, frozenByHolder: false },
+          spendingLine: {
+            balance: '100',
+            limit: '1000',
+            frozenByIssuer: true,
+            frozenByHolder: false,
+          },
         },
         '10',
       ),
@@ -282,7 +287,12 @@ describe('the pre-signing ledger check', () => {
       preSigningVerdict(
         {
           ...CLEAN_FACTS,
-          spendingLine: { balance: '100', limit: '1000', frozenByIssuer: false, frozenByHolder: true },
+          spendingLine: {
+            balance: '100',
+            limit: '1000',
+            frozenByIssuer: false,
+            frozenByHolder: true,
+          },
         },
         '10',
       ),
@@ -311,7 +321,12 @@ describe('the pre-signing ledger check', () => {
       preSigningVerdict(
         {
           ...CLEAN_FACTS,
-          destinationLine: { balance: '0', limit: '100', frozenByIssuer: true, frozenByHolder: false },
+          destinationLine: {
+            balance: '0',
+            limit: '100',
+            frozenByIssuer: true,
+            frozenByHolder: false,
+          },
         },
         '10',
       ),
@@ -320,7 +335,12 @@ describe('the pre-signing ledger check', () => {
       preSigningVerdict(
         {
           ...CLEAN_FACTS,
-          destinationLine: { balance: '0', limit: '100', frozenByIssuer: false, frozenByHolder: true },
+          destinationLine: {
+            balance: '0',
+            limit: '100',
+            frozenByIssuer: false,
+            frozenByHolder: true,
+          },
         },
         '10',
       ),
