@@ -7,7 +7,7 @@ Warden, which is not deployed. No keys, no Testnet actions and no payments happe
 
 1. Install the CLI and sign in: `winget install --id Fly-io.flyctl`, then `flyctl auth login` in a new terminal.
 2. Check out the `deploy/fly-console` branch.
-3. In `fly.toml`, change `app = "signoff-console-demo"` to a name nobody else has used.
+3. In `fly.toml`, change `app = "signoff-console-demo"` to a name nobody else has used. Then set `SIGNOFF_CONSOLE_ORIGINS` under `[env]` to `https://<app-name>.fly.dev`; without it the sign-in form is refused.
 4. Create the operator file and the reader secret in a private folder outside the repository. Use a password file for
    each account; never type a password on the command line:
    - `npm run console:operator -- add <name>.operator operator --principal demo-operator --secret-file <private>/operator-secret.txt --password-file <private>/operator-password.txt --file <private>/operators.json`
@@ -24,4 +24,5 @@ Warden, which is not deployed. No keys, no Testnet actions and no payments happe
 - The proxy in `proxy.mjs` is needed because the console listens on loopback only, by design. Do not change that to
   `0.0.0.0` in the console; it refuses that address.
 - `deploy/console/Dockerfile` sets the host to `0.0.0.0`, which the console refuses. This demo does not use it.
+- A trial account stops each machine after five minutes. Add a payment method on Fly to keep the demo running.
 - Stopping and starting: the machine stops when idle and starts on the next request, so the first load can be slow.
