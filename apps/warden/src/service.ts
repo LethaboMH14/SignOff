@@ -495,7 +495,7 @@ export class WardenService {
         supplierDailyMinor > current.supplierDailyMinor ||
         dailyTotalMinor > current.dailyTotalMinor
       ) {
-        throw new WardenError(409, 'raising limits requires independent approval; unavailable in MVP');
+        throw new WardenError(409, 'limit increase requires independent approval');
       }
       const policyVersion = `${sastDay(now)}.${String(current.revision + 1)}`;
       await this.record({
