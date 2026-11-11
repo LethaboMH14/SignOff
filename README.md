@@ -125,7 +125,7 @@ Judges score three areas, taken from the team's BuilderBase dashboard on 9 Novem
 
 | Criterion | Weight | Where the build stands today |
 |---|---|---|
-| Product design | 33% | Mockups approved for build and to be reworked later. The console screens are built and tested in software; the phone layout and motion are not checked in a browser (UNVERIFIED) |
+| Product design | 33% | Mockups approved for build and to be reworked later. The console screens are built and tested in software; the layout was measured at 375, 768 and 1280 px in a browser on the SIMULATED replay with a stub Warden ([TEST-LOG T-128](docs/logs/TEST-LOG.md)); screenshots, motion and the live receipt are UNVERIFIED ([T-129](docs/logs/TEST-LOG.md)) |
 | Technical UX | 34% | Ledger, Warden, agent and console code exists and is tested in software. No real model-to-Warden-to-Testnet trace, RLUSD proof or deployed console yet ([TEST-LOG T-114](docs/logs/TEST-LOG.md)); browser checks are UNVERIFIED |
 | Business/Market Fit | 33% | Narrative and evidence only, no customer validation |
 

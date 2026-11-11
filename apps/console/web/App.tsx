@@ -91,7 +91,9 @@ export function App() {
           </button>
         </p>
       </header>
-      {view === 'desk' ? <Desk session={session} onSession={setSession} /> : <MapView />}
+      <main>
+        {view === 'desk' ? <Desk session={session} onSession={setSession} /> : <MapView />}
+      </main>
     </>
   );
 }

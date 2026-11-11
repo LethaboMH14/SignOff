@@ -314,3 +314,11 @@ One entry per working session (rule R-19 in [RULES.md](../RULES.md)), newest fir
 - Problems / blockers: the live runs are the weak result already logged; no accuracy is claimed. RLUSD (A3) is still not funded.
 - Next: RLUSD payment once funded, then the re-review requests on #27 and #44.
 
+### 2026-11-11 — Sibusiso with Claude — Browser check of the console
+
+- Done: ran the built console against the SIMULATED replay and a stub Warden in the built-in browser, at 375, 768 and 1280 px. Fixed two things it found: the limit inputs were 21 px tall at phone width, and the signed-in screens had no main landmark.
+- Changed decisions: D-091.
+- Evidence: T-128 (what passed) and T-129 (what was not verified).
+- Problems / blockers: the Claude window was hidden, so there are no screenshots and the motion check (T-110) was not possible. The stub Warden is not the real Warden, and there is no ledger.
+- Next: look at the console in a visible window for contrast, focus and motion; run the RLUSD payment once funded.
+

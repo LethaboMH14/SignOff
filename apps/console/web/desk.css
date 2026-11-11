@@ -23,7 +23,8 @@
 }
 
 .signin input,
-.stepup input {
+.stepup input,
+.limits-form input {
   min-height: 44px;
   font: inherit;
   padding: 8px 10px;

@@ -45,7 +45,7 @@ export function MapView() {
         ) : null}
       </div>
 
-      <main className="layout">
+      <div className="layout">
         <section className="panel" aria-labelledby="map-title">
           <h2 id="map-title">Where each invoice is</h2>
           <p className="lede">
@@ -73,7 +73,7 @@ export function MapView() {
           </div>
           <Feed movements={movements} />
         </aside>
-      </main>
+      </div>
     </>
   );
 }
