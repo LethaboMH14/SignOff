@@ -29,8 +29,8 @@ One entry per working session (rule R-19 in [RULES.md](../RULES.md)), newest fir
 ### 2026-11-10 — Sibusiso with Claude (Haiku 5.5) — D1W Warden operator read routes
 
 - Done: added read-only operator routes to the Warden (`/v1/ops/overview`, `/v1/ops/proposals`, `/v1/ops/proposals/{id}`, `/v1/ops/suppliers`), with views in `apps/warden/src/ops-view.ts` and 11 HTTP tests in `apps/warden/test/ops-routes.test.ts`. Branch `feat/D1W-warden-read`, stacked on `feat/D0-mockups`.
-- Changed decisions: D-072 (read routes and allowlisted views).
-- Evidence: T-089 in the test log; `npm run check` exit 0 (57 files, 795 tests).
+- Changed decisions: D-089 (read routes and allowlisted views).
+- Evidence: T-121 in the test log; `npm run check` exit 0 (57 files, 795 tests).
 - Problems / blockers: none in code. Issue IDs D1W, D3W and D7 are proposed and need the reviewer's approval before merge.
 - Next: D3W (second approver for limit increases), then D1 (console).
 
@@ -49,6 +49,14 @@ One entry per working session (rule R-19 in [RULES.md](../RULES.md)), newest fir
 - Evidence: T-096 (console and export tests) and T-097 (live check of the stream and the page headers). Dependencies recorded in S-042.
 - Problems / blockers: the replay is simulated, so it has no ledger or paid moves. Those appear only in a live run with the Warden, which has not run. Phone layout and the motion were not checked by eye. The plain texts for reason codes are drafted and need review.
 - Next: the Warden's events on the map, a live run with the Warden, and the payment desk (D1).
+
+### 2026-11-11 — GitHub integration review — Gate C onto latest Gate B
+
+- Done: reconciled the Gate C invoice-agent implementation and its shared `packages/warden-api` refactor against the latest Gate B branch (merge commit `6913189`). Retained the Warden's final-authorization signature boundary, the Gate B Testnet TST evidence, and the Gate C simulated 30-invoice evaluation. The Git history now contains both branch heads rather than dropping either implementation.
+- Evidence integrity: fixed colliding review IDs without overwriting records — Gate C D-061 to D-071 retained, Gate B boundary note moved to D-072; Gate C S-032 to S-037 retained, Gate B P0 note moved to S-038; Gate C T-076 to T-088 retained, later Gate B regression rows moved to T-089 to T-091.
+- Changed decisions: none accepted as production ready. The RLUSD live transaction (A3), live Agent-to-Warden Testnet run (C7) and live model evaluation (C5) are still unverified. The new feature-branch merge does not constitute Gate B or Gate C release acceptance.
+- CI: not yet verified on the new combined head at the time of this entry. Require exact-head `npm run check` and dependency audit, plus independent review before any merge to main.
+- Next: inspect the resulting GitHub CI for any semantic/type-test regressions and repair; integrate the individually reviewed Gate A5 and Gate B P0/B2/B5/B8 follow-up PRs in dependency order.
 
 ### 2026-11-10 — Sibusiso with Claude (Haiku 5.5) — Gate C issues created and linked
 - Done: created issues #37 to #43 for C1 to C7, titled as in docs/ISSUES.md. Each carries its acceptance criteria, dependencies, status, evidence and branch, with the live runs marked UNVERIFIED where they have not been run. Linked them in the GH column of docs/ISSUES.md.
@@ -95,6 +103,14 @@ One entry per working session (rule R-19 in [RULES.md](../RULES.md)), newest fir
 - Problems / blockers: (1) A3 needs a testnet RLUSD payment, and the spending account holds no testnet RLUSD. The only source found is a faucet that requires a sign-in, so the RLUSD run is BLOCKED until an operator funds the account. A test-issued token ran instead (D-042). (2) The first run of `npm run check` exited 2 at the type check: two test lines set LastLedgerSequence to undefined, which exactOptionalPropertyTypes rejects. The Vitest run had passed, because Vitest does not type-check. Fixed; the rerun passed (T-050). (3) The primary Testnet endpoint did not answer during the first provisioning run; the cause is unknown (S-019). (4) The logger redacted the token code in trust-line events; the field is renamed (S-018). (5) T-051 predates the logging changes in S-018 and S-019; T-060 re-ran provisioning on the final build. (6) The pre-commit check refused the first commit because a test file held a seed-shaped literal; it is generated at run time now (S-021).
 - Next: commit the Gate A work and open a pull request against main. It shares the phase-close files with the phase-close pull request ([LethaboMH14/SignOff#17](https://github.com/LethaboMH14/SignOff/pull/17)), so the logs will conflict when it merges; the size bend is disclosed in D-045. Fund the spending account with testnet RLUSD, then run A3 with `npm run testnet:pay-rlusd`. Create GitHub issues for A1 to A7 as ISSUES.md asks. Write the phase report (R-24) after review and merge.
 
+### 2026-11-10 — Sibusiso with Claude (Haiku 5.5) — merge of the F5 review into the phase close
+
+- Done: merged `feat/F5-log-redaction` (head `3812f4b`, with the independent review fixes) into `docs/phase-close-gate-0` to clear the conflicts on the phase-close pull request. The conflicts were only in BUILD-LOG and TEST-LOG; the code merged without conflicts. Renumbered the phase-close IDs, which had collided with the review's: TEST-LOG T-040 to T-044 became T-043 to T-047, and SECURITY-LOG S-012 became S-014. Removed a stray blank line in the review's security rows so they render in the event table. Re-ran the full check on the merged tree (T-048).
+- Changed decisions: none.
+- Evidence: T-047 (the phase-close check before the merge), T-048 (the check on the merged tree), T-049 (CI on the current F5 head). Security log: S-014 (CI) and S-015 (an open finding on obligation identity).
+- Problems / blockers: S-015 must be fixed before any multi-buyer use. Best-effort logs are not a durable audit trail; Gates B and C must build that.
+- Next: retarget the phase-close pull request to main, because its base branch has merged as #16. The remaining items are in PHASE-REPORTS.md.
+
 ### 2026-11-10 — independent code review — F5 log redaction
 
 - Done: reviewed the latest stacked F5 implementation and its prerequisite CI and scanner contracts. Repaired two paths missing from the original tests: unredacted service value in a failing-sink fallback and sensitive tokens/PII embedded in JSON property names. Added regression tests, re-ran GitHub CI successfully on exact head `0eba60f` (run #42835936809).
@@ -102,6 +118,14 @@ One entry per working session (rule R-19 in [RULES.md](../RULES.md)), newest fir
 - Evidence: T-040 to T-042; security findings S-012 and S-013.
 - Problems / blockers: best-effort operational logging is not a durable financial audit store; Gate B and C still must build the independent evidence trail. F4 obligation IDs are not buyer-scoped yet; this must be corrected before multi-buyer payment use.
 - Next: review and merge the dependency stack in order with checks, then validate GitHub CI on main. Actual Warden and Testnet functionality remain unimplemented.
+
+### Phase close: Gate 0 — 2026-11-10
+
+- Gate criteria met: F1 (T-001 to T-008); F4 (T-023 to T-032); F5 (T-033 to T-041, including the two review fixes, T-040 and T-041); F2's checks run on every pull request and passed on GitHub (T-043). F3's pre-commit check and its true and false positive tests are met (T-013 to T-019). Not met: F2's "must pass to merge" and F3's GitHub secret scanning need repository settings only the owner can change (S-005). The full acceptance table is in [PHASE-REPORTS.md](PHASE-REPORTS.md).
+- Not met / carried over: the repository settings in S-005; the review's open finding that obligation IDs are not scoped to the buyer (S-015); the retarget of the phase-close pull request to main, then its merge. #5 (escaped backticks) is still open against main. Gate 0 closes when its pull requests are merged, this one included (D-038).
+- Documents updated: README (banner, logs row); ENGINEERING (layout, tests, Gate 0 row); PRD (section 10); ISSUES (status note and statuses); RULES (R-24 and its checklist row); CONTRIBUTING (phase-report link); COMPLIANCE (personal-information row); DECISION-JOURNAL (D-037, D-038); TEST-LOG (T-043 to T-049); SECURITY-LOG (T-08, T-09, T-13, T-16, T-21 rows; S-014, S-015); PHASE-REPORTS (new). No change: BUILD-BRIEF (Gate 0 uses the stack it proposes), TRUST, SOLUTION, SERVICE-LEVELS, AGENT-RELIABILITY, HACKATHON, decision records 0001 to 0005, PROBLEM, BUSINESS, WORKSHOP.
+- README status table updated: no. No product claim changed; the banner changed. Whether Gate 0 belongs in the table is a decision for the team (R-18).
+- Reviewed by: F5 was reviewed independently by Lethabo (the review entry above). This phase report is pending review by the other team member.
 
 ### 2026-11-10 — Sibusiso with Claude (Haiku 5.5) — F5 log redaction
 
@@ -257,4 +281,12 @@ One entry per working session (rule R-19 in [RULES.md](../RULES.md)), newest fir
 - Lenses. Prompt engineering: not applicable; no prompt changed. Context engineering: each claim carries the smallest evidence that supports it, so a reader sees the state without opening the logs. Graph engineering: each row links to the log entry that holds its evidence, and the judge check reproduces the simulated rows. Swarm engineering: not applicable.
 - Problems / blockers: the README names feature branches for the live model runs (feat/C5-live-providers) and the watchdog (feat/S3-watchdog). Those branches are not merged, so the README needs updating when they are. Nothing is deployed.
 - Next: npm run check on the final branch, then the Gamma deck of the final state.
+
+### 2026-11-11 — Sibusiso with Claude — Console stack merged with the latest Gate C
+
+- Done: merged origin/feat/gate-c-agent-reliability (28abf3f) into the console stack on feat/integrate-gate-c. The Warden now returns unsigned terms, the agent signs only its half, and the Warden rechecks pause, policy, limits, payee and the ledger before it signs and submits (issue #45). The console read routes, the second approver and health are kept on top.
+- Evidence integrity: our colliding IDs were renumbered because the Gate C ones are already on GitHub: D-072 to D-089, T-089 to T-121, S-038 to S-052. S-051 stays reserved for the watchdog branch.
+- Evidence: T-122.
+- Problems / blockers: the live P0 negative proof (#54), the RLUSD payment (A3) and a live agent-to-Warden run are still not run. Not pushed.
+- Next: review PRs #47 to #54.
 

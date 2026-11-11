@@ -1,6 +1,6 @@
 import { createPublicKey, verify, type KeyObject } from 'node:crypto';
 
-import { decode, isValidClassicAddress, type Wallet } from 'xrpl';
+import { decode, encode, isValidClassicAddress, type Transaction, type Wallet } from 'xrpl';
 import { z } from 'zod';
 
 import { minorToDecimal } from '../../../packages/shared/src/money/minor-units.js';
@@ -14,12 +14,12 @@ import {
 } from '../../../packages/shared/src/schemas/index.js';
 import {
   assertSignedExactly,
+  combineSigned,
   hashOfSigned,
   priorAttemptOf,
   resumeAndReconcile,
   sendAndReconcile,
   signAsSigner,
-  signerAccounts,
   type Decision,
   type JournalSink,
   type LedgerPort,
@@ -176,24 +176,6 @@ function textOf(fields: Record<string, unknown>, key: string): string {
   return value;
 }
 
-/** The signature a given account put on a signed transaction, or null if it did not sign. */
-function signatureOf(blob: string, account: string): string | null {
-  const signers = decodeFields(blob)['Signers'];
-  if (!Array.isArray(signers)) {
-    return null;
-  }
-  for (const entry of signers as unknown[]) {
-    const signer = asRecord(entry)['Signer'];
-    if (signer !== undefined) {
-      const fields = asRecord(signer);
-      if (fields['Account'] === account && typeof fields['TxnSignature'] === 'string') {
-        return fields['TxnSignature'];
-      }
-    }
-  }
-  return null;
-}
-
 function parseEd25519(base64: string): KeyObject {
   let key: KeyObject;
   try {
@@ -333,7 +315,7 @@ export class WardenService {
     return suppliersOf(this.state);
   }
 
-  /** Decides one proposal. An ALLOW reserves the obligation and returns the Warden-signed transaction. */
+  /** Decides one proposal. An ALLOW reserves the obligation and returns only unsigned payment fields. */
   async propose(raw: unknown): Promise<ProposeResult> {
     const parsed = PaymentProposal.safeParse(raw);
     if (!parsed.success) {
@@ -414,8 +396,9 @@ export class WardenService {
   }
 
   /**
-   * Checks the agent's co-signature against the transaction the Warden prepared, then submits and reconciles
-   * it. The check is strict: the same fields, exactly the two signers, and the Warden's own signature as issued.
+   * Verifies the agent-only signature against unsigned prepared terms, rechecks the
+   * current pause, policy, payee, limits and ledger state, then Warden signs
+   * and submits itself. No Warden co-signature leaves before authorization.
    */
   async coSign(attemptId: string, signedBlob: string): Promise<CoSignResult> {
     const submission = await this.exclusive(async () => {
@@ -434,20 +417,63 @@ export class WardenService {
         throw new WardenError(409, 'payments are paused; the attempt waits until they resume');
       }
       this.assertPayeeUnchanged(attempt);
-      const hash = this.verifyCoSignature(attempt, signedBlob);
+      const decision = this.state.decisions.get(attemptId)?.decision;
+      if (decision?.policyVersion !== this.state.limits.policyVersion) {
+        throw new WardenError(409, 'the policy changed after preparation; propose again');
+      }
+      const now = this.deps.now();
+      const day = sastDay(now);
+      const reservedToday = sastDay(new Date(attempt.createdAt)) === day ? attempt.amountMinor : 0;
+      const limit = limitVerdict({
+        limits: this.state.limits,
+        amountMinor: attempt.amountMinor,
+        supplierToday:
+          dailyUsage(this.state.attempts.values(), day, attempt.supplierId) - reservedToday,
+        totalToday: dailyUsage(this.state.attempts.values(), day, null) - reservedToday,
+      });
+      if (limit !== null) {
+        throw new WardenError(409, 'the payment no longer passes the current limits');
+      }
+      const asset = this.assetFor(attempt.currency);
+      if (asset?.ledgerCurrency !== attempt.ledgerCurrency || asset.issuer !== attempt.issuer) {
+        throw new WardenError(409, 'the approved payment asset changed');
+      }
+      const payee = this.supplierOrThrow(attempt.supplierId).payee;
+      let facts: PreSigningFacts;
+      try {
+        facts = await readPreSigning(this.deps.port, {
+          spending: this.deps.config.spendingAddress,
+          destination: payee.address,
+          issuer: asset.issuer,
+          ledgerCurrency: asset.ledgerCurrency,
+          agent: accountRef('agent', this.deps.config.agentAddress, now),
+          warden: accountRef('warden', this.deps.config.wardenAddress, now),
+        });
+      } catch {
+        throw new WardenError(503, 'the ledger could not be read at final authorization');
+      }
+      const pre = preSigningVerdict(
+        facts,
+        minorToDecimal(attempt.amountMinor, CurrencyCode.parse(attempt.currency)),
+      );
+      if (pre !== null) {
+        throw new WardenError(409, 'the ledger no longer permits this payment');
+      }
+      const finalBlob = this.finalizeAgentSignature(attempt, signedBlob);
+      const hash = hashOfSigned(finalBlob);
       await this.record({
         type: 'attempt.submitting',
-        at: this.deps.now().toISOString(),
+        at: now.toISOString(),
         attemptId,
-        finalBlob: signedBlob,
+        finalBlob,
         hash,
       });
-      return { attempt, hash };
+      return { attempt, hash, finalBlob };
     });
     let decision: Decision;
     try {
       decision = await sendAndReconcile(
-        this.planOf(submission.attempt, signedBlob, submission.hash),
+        this.planOf(submission.attempt, submission.finalBlob, submission.hash),
         this.reliable(),
       );
     } catch {
@@ -898,7 +924,8 @@ export class WardenService {
         return stop(refuse('INVARIANT_FAILED', 'the ledger did not set an expiry for the payment'));
       }
       assertWardenPayment(asRecord(prepared), terms);
-      wardenBlob = signAsSigner(this.deps.wardenWallet, prepared);
+      // The proposal must NEVER contain a Warden signature: agent can sign only its own half.
+      wardenBlob = encode(prepared);
       const signedFields = decodeFields(wardenBlob);
       assertWardenPayment(signedFields, terms);
       txFields = canonicalJson(boundFieldsOf(signedFields));
@@ -929,8 +956,8 @@ export class WardenService {
     };
   }
 
-  /** Checks the agent's signed transaction against what the Warden prepared. Throws on any difference. */
-  private verifyCoSignature(attempt: AttemptState, blob: string): string {
+  /** Finalize an agent-only signature; add Warden's signature only after all last-moment checks. */
+  private finalizeAgentSignature(attempt: AttemptState, blob: string): string {
     const signed = decodeFields(blob);
     if (canonicalJson(boundFieldsOf(signed)) !== attempt.txFields) {
       throw new WardenError(422, 'the signed transaction is not the one the Warden prepared');
@@ -954,21 +981,18 @@ export class WardenService {
       throw error;
     }
     try {
-      assertSignedExactly(blob, [this.deps.config.agentAddress, this.deps.config.wardenAddress]);
+      assertSignedExactly(blob, [this.deps.config.agentAddress]);
     } catch {
-      throw new WardenError(
-        422,
-        'the transaction is not signed by exactly the agent and the Warden',
-      );
+      throw new WardenError(422, 'the finalization request must carry only the agent signature');
     }
-    const issued = signatureOf(attempt.wardenBlob, this.deps.config.wardenAddress);
-    if (issued === null || issued !== signatureOf(blob, this.deps.config.wardenAddress)) {
-      throw new WardenError(422, 'the Warden signature does not match the one it issued');
+    const prepared = decodeFields(attempt.wardenBlob);
+    if (canonicalJson(boundFieldsOf(prepared)) !== attempt.txFields) {
+      throw new WardenError(503, 'the stored unsigned transaction has changed');
     }
-    if (!signerAccounts(blob).includes(this.deps.config.agentAddress)) {
-      throw new WardenError(422, 'the transaction is not signed by the agent');
-    }
-    return hashOfSigned(blob);
+    const wardenSigned = signAsSigner(this.deps.wardenWallet, prepared as unknown as Transaction);
+    const finalBlob = combineSigned([blob, wardenSigned]);
+    assertSignedExactly(finalBlob, [this.deps.config.agentAddress, this.deps.config.wardenAddress]);
+    return finalBlob;
   }
 
   private async settleDecision(

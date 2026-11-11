@@ -1,5 +1,7 @@
 # Work issues
 
+**Gate 0 status (10 November 2026):** F1 to F5 are merged into main (#12 to #16). The phase-close pull request #17 is merged. CI passed on GitHub for F2 to F5 (T-043 to T-046 and T-049). Gate 0's code and phase report have merged (D-038); owner-controlled repo protections remain unverified. Two acceptance points need the repository owner: F2's required checks before merge, and F3's GitHub secret scanning (S-005). The phase report is in [logs/PHASE-REPORTS.md](logs/PHASE-REPORTS.md).
+
 The build sliced into small, reviewable issues. Each maps to a requirement in [PRD.md](PRD.md) and a gate in [ENGINEERING.md](ENGINEERING.md#delivery-gates). Rule R-16 in [RULES.md](RULES.md): no work starts without an issue here.
 
 **How to use this file**
@@ -15,11 +17,11 @@ The build sliced into small, reviewable issues. Each maps to a requirement in [P
 
 | ID | Title | Acceptance criteria | Depends | Size | Owner | GH | Status |
 |---|---|---|---|---|---|---|---|
-| F1 | Repository scaffold | Monorepo layout from ENGINEERING.md; TypeScript strict; Node 24; one command to install | — | S | Sibusiso (AI-assisted) | [#7](https://github.com/LethaboMH14/SignOff/issues/7) | Review |
-| F2 | CI pipeline | Type check, lint, unit tests and build run on every pull request and must pass to merge | F1 | S | Sibusiso (AI-assisted) | [#8](https://github.com/LethaboMH14/SignOff/issues/8) | Review |
-| F3 | Secret protection | GitHub secret scanning on; pre-commit check using tested XRPL seed patterns, with a test for true and false positives; `.env` ignored | F1, F2 | S | Sibusiso (AI-assisted) | [#9](https://github.com/LethaboMH14/SignOff/issues/9) | Review |
-| F4 | Shared schemas | Zod schemas for invoice extraction, payment proposal, Warden decision, obligation; amounts as integer minor units | F1 | S | Sibusiso (AI-assisted) | [#10](https://github.com/LethaboMH14/SignOff/issues/10) | Review |
-| F5 | Log redaction | Logger that removes seeds, keys, bank details and personal data; test proves it | F3, F4 | S | Sibusiso (AI-assisted) | [#11](https://github.com/LethaboMH14/SignOff/issues/11) | Review |
+| F1 | Repository scaffold | Monorepo layout from ENGINEERING.md; TypeScript strict; Node 24; one command to install | — | S | Sibusiso (AI-assisted) | [#7](https://github.com/LethaboMH14/SignOff/issues/7) | Done (merged in #12) |
+| F2 | CI pipeline | Type check, lint, unit tests and build run on every pull request and must pass to merge | F1 | S | Sibusiso (AI-assisted) | [#8](https://github.com/LethaboMH14/SignOff/issues/8) | Merged (#13); owner settings open (S-005) |
+| F3 | Secret protection | GitHub secret scanning on; pre-commit check using tested XRPL seed patterns, with a test for true and false positives; `.env` ignored | F1, F2 | S | Sibusiso (AI-assisted) | [#9](https://github.com/LethaboMH14/SignOff/issues/9) | Merged (#14); owner settings open (S-005) |
+| F4 | Shared schemas | Zod schemas for invoice extraction, payment proposal, Warden decision, obligation; amounts as integer minor units | F1 | S | Sibusiso (AI-assisted) | [#10](https://github.com/LethaboMH14/SignOff/issues/10) | Done (merged in #15) |
+| F5 | Log redaction | Logger that removes seeds, keys, bank details and personal data; test proves it | F3, F4 | S | Sibusiso (AI-assisted) | [#11](https://github.com/LethaboMH14/SignOff/issues/11) | Done (merged in #16) |
 
 ## Gate A: ledger proof
 
@@ -70,7 +72,7 @@ The build sliced into small, reviewable issues. Each maps to a requirement in [P
 | D4 | Receipt | Explorer link, delivered amount, simulated rand payout labelled | D1 | S | Sibusiso (AI-assisted) | | Review (T-105; live Testnet receipt not run, T-106) |
 | D5 | Mobile and accessibility | Works at phone width; labels not colour alone; keyboard usable | D1 | S | Sibusiso (AI-assisted) | | Review (T-107; browser layout check UNVERIFIED, T-108) |
 | D6 | Deployment and health checks | Console, agent and Warden deployed separately; health endpoints; synthetic Testnet check | B1, D1 | M | Sibusiso (AI-assisted) | | Review (T-111; live check partly run, T-112; deployment not performed, T-114) |
-| D1W | Warden operator read routes (proposed) | Read-only views for the console: overview, proposals (holds and payments) and suppliers; operator role only; allowlisted fields; reads write nothing | B1, C6 | M | Sibusiso (AI-assisted) | | Review (T-089; ID proposed, for review) |
+| D1W | Warden operator read routes (proposed) | Read-only views for the console: overview, proposals (holds and payments) and suppliers; operator role only; allowlisted fields; reads write nothing | B1, C6 | M | Sibusiso (AI-assisted) | | Review (T-121; ID proposed, for review) |
 | D3W | Second operator for limit increases (proposed) | A raise becomes a pending request; a second, different operator approves it; decreases apply at once; a pending request expires after 24 hours (proposed rule) | B5, D1W | S | Sibusiso (AI-assisted) | | Review (T-095; ID proposed, for review) |
 | D7 | Motion: opening animation and transitions (proposed) | Opening sequence at most 1.2 s; transitions 180 to 250 ms; reduced motion turns all motion off; the Paid tick appears only after validation | D1 | S | Sibusiso (AI-assisted) | | Review (T-109; runtime checks UNVERIFIED, T-110) |
 | D8 | Live agent map in the console (proposed) | Animated map of invoices moving between agents, from the agent transition log; read-only; SIMULATED replay of the labelled set; Paid only when reconciled | D1 | M | Sibusiso (AI-assisted) | | Review (ID proposed, for review) |

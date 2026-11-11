@@ -31,7 +31,7 @@ import type { State } from './states.js';
 
 export const WORKFLOW_VERSION = 'workflow-v1';
 
-/** Signs the Warden's transaction with the agent's key and returns the combined blob. Throws when signing fails. */
+/** Signs the prepared unsigned transaction with the agent key only. Warden adds the final signature later. */
 export interface AgentSigner {
   readonly coSign: (toCoSign: string) => string;
 }
@@ -283,7 +283,7 @@ interface Payable {
   readonly fileSha256: string;
 }
 
-/** Steps 6 to 9: propose to the Warden, co-sign what it returns, submit, and reconcile the outcome. */
+/** Steps 6 to 9: get unsigned Warden terms, agent-sign, request final Warden authorization, reconcile. */
 async function submit(
   payable: Payable,
   deps: PipelineDeps,
@@ -364,7 +364,7 @@ async function submit(
     return finish();
   }
 
-  // 7. Sign. The agent co-signs the exact transaction the Warden built. A signing failure leaves the Warden's attempt
+  // 7. Sign. The agent signs only its own half of Warden's unsigned transaction. A signing failure leaves Warden's attempt
   // open, so it goes to reconciliation rather than being retried.
   let blob: string;
   try {

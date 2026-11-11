@@ -2,7 +2,7 @@ import { randomBytes } from 'node:crypto';
 
 import { decode, type SubmittableTransaction, type Wallet } from 'xrpl';
 
-import { combineSigned, signAsSigner } from '../../xrpl/src/index.js';
+import { signAsSigner } from '../../xrpl/src/index.js';
 
 import type { CoSignResult, HealthResult, ProposeResult } from './contract.js';
 import { signatureFor, signingText } from './signing.js';
@@ -167,13 +167,13 @@ export class WardenClient {
 }
 
 /**
- * The agent's half of the two-signature payment. The agent signs the transaction the Warden returned, with its own
- * key, and combines the two signatures. The fields are not changed, so the Warden can check them.
+ * The agent signs ONLY its own half of the unsigned Warden-prepared transaction.
+ * The Warden adds its signature and submits only after a final policy and ledger check.
  */
-export function coSignAsAgent(agent: Wallet, wardenBlob: string): string {
-  // decode returns a transaction object or throws for input that is not a transaction.
-  const fields: Record<string, unknown> = { ...decode(wardenBlob) };
-  delete fields['Signers'];
-  const agentBlob = signAsSigner(agent, fields as unknown as SubmittableTransaction);
-  return combineSigned([wardenBlob, agentBlob]);
+export function coSignAsAgent(agent: Wallet, preparedBlob: string): string {
+  const fields: Record<string, unknown> = { ...decode(preparedBlob) };
+  if (fields['Signers'] !== undefined || fields['TxnSignature'] !== undefined) {
+    throw new Error('the proposal unexpectedly contains a signature');
+  }
+  return signAsSigner(agent, fields as unknown as SubmittableTransaction);
 }

@@ -4,6 +4,7 @@ import { decode, Wallet, type SubmittableTransaction } from 'xrpl';
 import { describe, expect, it } from 'vitest';
 
 import {
+  combineSigned,
   hashOfSigned,
   LSF_DISABLE_MASTER,
   signAsSigner,
@@ -93,6 +94,61 @@ function signedChange(privateKey: KeyObject, newAddress: string, nonce: string, 
   );
   return { request, signature };
 }
+
+describe('P0 final Warden authorization boundary', () => {
+  it('never releases the Warden signature on an allowed proposal, so direct agent broadcast fails', async () => {
+    const base = await provisionedBase();
+    const config = configFor(base);
+    const clock = newClock();
+    const service = await openService(base, config, evidenceFrom([STANDARD]), { clock });
+    await activeSupplier(service, base, generateSupplierKey().publicKey);
+    const attemptId = newAttemptId();
+    const proposed = await service.propose(proposalFor(attemptId, STANDARD, config, clock.now));
+    expect(proposed.decision.decision).toBe('ALLOW');
+    const unsigned = decode(proposed.toCoSign ?? '') as { Signers?: unknown[] };
+    expect(unsigned.Signers).toBeUndefined();
+    const agentOnly = coSignAsAgent(base.agentWallet, proposed.toCoSign ?? '');
+    const result = await base.port.submit(agentOnly);
+    expect(result.engineResult).toBe('tefBAD_QUORUM');
+    await service.setPaused(true, OPERATOR_A);
+    await expect(service.coSign(attemptId, agentOnly)).rejects.toThrow('paused');
+    expect(service.attempt(attemptId)?.status).toBe('awaiting');
+    expect(balanceOf(base, base.supplierAccount.address)).not.toBe('10');
+  });
+
+  it('refuses to finalize a payment if the policy changed after preparation', async () => {
+    const base = await provisionedBase();
+    const config = configFor(base);
+    const clock = newClock();
+    const service = await openService(base, config, evidenceFrom([STANDARD]), { clock });
+    await activeSupplier(service, base, generateSupplierKey().publicKey);
+    const attemptId = newAttemptId();
+    const proposed = await service.propose(proposalFor(attemptId, STANDARD, config, clock.now));
+    const agentOnly = coSignAsAgent(base.agentWallet, proposed.toCoSign ?? '');
+    await service.setLimits({ perPaymentMinor: 500 }, OPERATOR_A);
+    await expect(service.coSign(attemptId, agentOnly)).rejects.toThrow('policy changed');
+    expect(balanceOf(base, base.supplierAccount.address)).not.toBe('10');
+  });
+
+  it('rechecks a changed ledger freeze state immediately before Warden signs', async () => {
+    const base = await provisionedBase();
+    const config = configFor(base);
+    const clock = newClock();
+    const service = await openService(base, config, evidenceFrom([STANDARD]), { clock });
+    await activeSupplier(service, base, generateSupplierKey().publicKey);
+    const attemptId = newAttemptId();
+    const proposed = await service.propose(proposalFor(attemptId, STANDARD, config, clock.now));
+    const agentOnly = coSignAsAgent(base.agentWallet, proposed.toCoSign ?? '');
+    base.ledger.setLineFrozen(
+      base.spending.address,
+      TEST_TOKEN_CURRENCY,
+      base.issuer.address,
+      true,
+    );
+    await expect(service.coSign(attemptId, agentOnly)).rejects.toThrow('ledger no longer permits');
+    expect(balanceOf(base, base.supplierAccount.address)).not.toBe('10');
+  });
+});
 
 describe('B1 proposals, co-signature and submission', () => {
   it('pays a proposal that passes every rule: the Warden signs, the agent co-signs, the Warden submits', async () => {
@@ -841,16 +897,21 @@ describe('the event log and recovery', () => {
     await activeSupplier(first, base, supplier.publicKey);
     const attemptId = newAttemptId();
     const reply = await first.propose(proposalFor(attemptId, STANDARD, config, clock.now));
+    // Simulate a crash AFTER the Warden's last authorization, when both valid signatures
+    // exist in its private submit journal, but BEFORE the caller receives settlement.
     const agentBlob = coSignAsAgent(base.agentWallet, reply.toCoSign ?? '');
+    const unsigned = decode(reply.toCoSign ?? '') as unknown as SubmittableTransaction;
+    const wardenBlob = signAsSigner(base.wardenWallet, unsigned);
+    const finalBlob = combineSigned([agentBlob, wardenBlob]);
     await log.append({
       type: 'attempt.submitting',
       at: clock.now.toISOString(),
       attemptId,
-      finalBlob: agentBlob,
-      hash: hashOfSigned(agentBlob),
+      finalBlob,
+      hash: hashOfSigned(finalBlob),
     });
     expect(first.attempt(attemptId)?.status).toBe('awaiting');
-    await base.port.submit(agentBlob);
+    await base.port.submit(finalBlob);
     const restarted = await openService(base, config, evidenceFrom([STANDARD]), { clock, log });
     await restarted.recover();
     expect(restarted.attempt(attemptId)?.status).toBe('paid');

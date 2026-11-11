@@ -12,7 +12,7 @@ export interface ProposeResult {
   /** Null only when the proposal did not parse, so there is no attempt to name. */
   readonly attemptId: string | null;
   readonly decision: WardenDecision;
-  /** The Warden-signed transaction the agent must co-sign. Present only for an ALLOW that is still awaiting. */
+  /** Unsigned Warden-prepared transaction; Warden's signature is NEVER sent before final authorization. */
   readonly toCoSign: string | null;
 }
 

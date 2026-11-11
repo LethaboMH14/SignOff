@@ -18,9 +18,9 @@ The immediate delivery order is: (1) real RLUSD Testnet multisign payment and si
 | Claim appearing in PR #2 | Correct interpretation | Required edit / test |
 |---|---|---|
 | “RLUSD trust line limit caps what the account can ever hold/lose” | An XRPL trust-line limit ordinarily restricts how much an account is willing to receive from a counterparty. Its *own actions* can take the balance over the limit. It is **not** a per-day, cumulative outflow, or maximum-loss limit. | Remove “hard loss cap” and “ever hold.” Keep a low pre-funded balance, separate treasury reserve, Warden's per-payment/vendor/day caps, governance of TrustSet and signer-policy changes, and measure actual spendable exposure. Test exact limits, changes and non-payment transactions. |
-| “Permission delegation is not live / Devnet only” | Workshop notes are an historical account, not authoritative current network capability. XRPL's current [known amendments](https://xrpl.org/resources/known-amendments) reference \`PermissionDelegationV1_1\`; a Mainnet activation has been reported in October 2026. **Check the actual target Testnet node and transaction behavior** before declaring availability or absence. | Keep permission delegation outside the MVP critical path *regardless*. Update WORKSHOP, README and ADR 0004 to distinguish “workshop said,” current Mainnet status, target Testnet observation and unverified combinations. |
+| “Permission delegation is not live / Devnet only” | Workshop notes are an historical account, not authoritative current network capability. XRPL's current [known amendments](https://xrpl.org/resources/known-amendments) reference `PermissionDelegationV1_1`; a Mainnet activation has been reported in October 2026. **Check the actual target Testnet node and transaction behavior** before declaring availability or absence. | Keep permission delegation outside the MVP critical path *regardless*. Update WORKSHOP, README and ADR 0004 to distinguish “workshop said,” current Mainnet status, target Testnet observation and unverified combinations. |
 | “XRPL Credential verifies a supplier” | A credential attests that a specified issuer made a statement about a subject. It is not itself an independent KYB, bank-name match or authorization to pay. Without explicit permissioned logic, the ledger does not prohibit a payment to an uncredentialed account. | Independently establish supplier legal identity, payout control, key ownership and operator approval. When used, check credential issuer, subject, type, acceptance, expiry and revocation immediately before signing. Test issuance/acceptance/revocation. |
-| “Simulate before signing means the payment will succeed” | \`simulate\` is a preflight and ledger state may change. It does not settle funds. | Ensure simulation and Warden decision bind to identical transaction fields, sign exact final bytes, persist sequence/ID/expiry, submit, then reconcile a **validated** transaction with expected delivered amount. Handle timeout/restart safely. |
+| “Simulate before signing means the payment will succeed” | `simulate` is a preflight and ledger state may change. It does not settle funds. | Ensure simulation and Warden decision bind to identical transaction fields, sign exact final bytes, persist sequence/ID/expiry, submit, then reconcile a **validated** transaction with expected delivered amount. Handle timeout/restart safely. |
 
 Sources: [XRPL Trust Line Tokens](https://xrpl.org/docs/concepts/tokens/fungible-tokens/trust-line-tokens), [Known Amendments](https://xrpl.org/resources/known-amendments), [Permission Delegation](https://xrpl.org/docs/concepts/accounts/permission-delegation), [Credentials](https://xrpl.org/docs/concepts/decentralized-storage/credentials), [Reliable Transaction Submission](https://xrpl.org/docs/concepts/transactions/reliable-transaction-submission), [XRPL transaction simulation](https://xrpl.org/docs/references/http-websocket-apis/public-api-methods/transaction-methods/simulate).
 
@@ -106,7 +106,7 @@ Threats are rated by **mechanism and remaining control gaps**, not an invented n
 
 ### Directed workflow
 
-\`\`\`mermaid
+```mermaid
 flowchart TD
  A[Invoice arrival: untrusted] --> B[File validation, hash, quarantine]
  B --> C[Structured extraction + source spans]
@@ -126,9 +126,9 @@ flowchart TD
  R -- Unknown or divergent --> Q[RECONCILIATION_EXCEPTION]
  H --> O[Authenticated finance operator desk]
  Q --> O
-\`\`\`
+```
 
-**Graph states:** \`RECEIVED\`, \`QUARANTINED\`, \`EXTRACTED\`, \`EVIDENCE_VERIFIED\`, \`HELD\`, \`WARDEN_ELIGIBLE\`, \`SIGNED\`, \`SUBMITTED\`, \`VALIDATED\`, \`RECONCILED\`, \`FAILED\`, \`RECONCILIATION_EXCEPTION\`. Make \`HELD\` a durable state; a user review does not mutate earlier evidence. Log each transition with policy version, actor/service identity, relevant record hashes, timestamp, reason code, and correlation ID. \`SETTLED_ON_XRPL\` is not \`SUPPLIER_BANK_CREDITED\`: the off-ramp is still simulated.
+**Graph states:** `RECEIVED`, `QUARANTINED`, `EXTRACTED`, `EVIDENCE_VERIFIED`, `HELD`, `WARDEN_ELIGIBLE`, `SIGNED`, `SUBMITTED`, `VALIDATED`, `RECONCILED`, `FAILED`, `RECONCILIATION_EXCEPTION`. Make `HELD` a durable state; a user review does not mutate earlier evidence. Log each transition with policy version, actor/service identity, relevant record hashes, timestamp, reason code, and correlation ID. `SETTLED_ON_XRPL` is not `SUPPLIER_BANK_CREDITED`: the off-ramp is still simulated.
 
 ### Prompt, context, swarm and graph design
 
@@ -139,7 +139,7 @@ flowchart TD
 
 Suggested interfaces (illustrative, not implemented):
 
-\`\`\`ts
+```ts
 type ExtractedField<T> = {
   value: T | null;
   rawQuote: string | null;
@@ -168,7 +168,7 @@ type WardenDecision = {
   reasons: string[];
   txHash?: string;
 };
-\`\`\`
+```
 
 **Financial correctness notes:** use fixed-decimal/issued-token representation; verify issuer, currency, amount, destination, tags and transaction flags; never trust a model-supplied destination. Prevent TOCTOU by evaluating exact final fields and re-checking versions. Persist an atomic spend reservation and invoice idempotency identity before signing; never resubmit with a new payment identity until reconciler has proven the previous attempt cannot settle. Explicitly restrict Warden authorization to approved transaction types and monitored signer-account state.
 
@@ -178,11 +178,11 @@ A single “98% safe” score is dangerous because it confuses different uncerta
 
 | Output | Meaning | Calibration / evidence | Effect |
 |---|---|---|---|
-| \`field_status\` | Whether an invoice field is quoted, parsed and source-located | Exact span test, deterministic parser, labeled examples | Missing/ambiguous required field → hold |
-| \`extraction_quality_estimate\` | Likelihood a field was extracted correctly | Empirical labeled field accuracy by document type; calibrated score if sufficient data | Routing and reviewer attention only |
-| \`business_evidence_status\` | Whether PO, receipt, vendor, change history and policy are authorized and consistent | Deterministic match with record versions and approval provenance | Any hard failure → hold |
-| \`fraud_anomaly_score\` | Statistical unusualness of payment pattern | Historical legitimate/fraud or proxy labeled cases; error and false-positive estimates | Elevated risk → review, not auto-approval |
-| \`settlement_status\` | Whether ledger actually settled the expected token/delivered amount | Validated on-ledger transaction and metadata | Determines real XRPL settlement state |
+| `field_status` | Whether an invoice field is quoted, parsed and source-located | Exact span test, deterministic parser, labeled examples | Missing/ambiguous required field → hold |
+| `extraction_quality_estimate` | Likelihood a field was extracted correctly | Empirical labeled field accuracy by document type; calibrated score if sufficient data | Routing and reviewer attention only |
+| `business_evidence_status` | Whether PO, receipt, vendor, change history and policy are authorized and consistent | Deterministic match with record versions and approval provenance | Any hard failure → hold |
+| `fraud_anomaly_score` | Statistical unusualness of payment pattern | Historical legitimate/fraud or proxy labeled cases; error and false-positive estimates | Elevated risk → review, not auto-approval |
+| `settlement_status` | Whether ledger actually settled the expected token/delivered amount | Validated on-ledger transaction and metadata | Determines real XRPL settlement state |
 
 **Never treat a self-reported model 0.92 as a calibrated 92% probability.** For any probability estimator, evaluate reliability diagrams, expected calibration error (ECE), Brier score and score stability by supplier/document class. For selective automation measure the *risk–coverage curve*: as the system automatically handles more invoices, how many wrongly authorized cases occur and how many legitimate cases are needlessly held? Report field-level precision/recall, exact match, unsupported-field rate, abstention rate, false approvals, false holds, latency, token cost, reviewer effort and validated-payment success.
 
@@ -190,10 +190,10 @@ A single “98% safe” score is dangerous because it confuses different uncerta
 - Freeze a versioned representative dataset containing clean and messy text PDFs, different layouts, line items/currencies, missing fields, credits and amendments; identify supplier and document clusters to prevent train/test leakage.
 - Separate **benign normal**, **benign edge cases**, **hostile input** and **upstream authority compromise**. Include counterfactual paired cases that differ only in payee, receipt, limit or hidden instruction.
 - Test policy/ledger controls independently of LLM outputs using intentionally wrong field values.
-- Report \`n\`, uncertainty intervals and all failures. If 0 bad authorizations occur in 100 independent malicious tests, that does **not** mean zero real-world risk. A rough “rule of three” upper 95% bound is ~3% under independent identical Bernoulli assumptions, which adversarial test suites rarely satisfy.
+- Report `n`, uncertainty intervals and all failures. If 0 bad authorizations occur in 100 independent malicious tests, that does **not** mean zero real-world risk. A rough “rule of three” upper 95% bound is ~3% under independent identical Bernoulli assumptions, which adversarial test suites rarely satisfy.
 - Benchmark single-model baseline vs two-reader approach vs extractor + targeted reviewers under the same invoices, budget and conditions. Do not claim improvement without measured results.
 
-**Illustrative decision policy:** \`ALLOW_CANDIDATE\` only when all required source fields are exact and verified, all mandatory authoritative records pass, no vendor/change/duplicate/payment-limit exception is present, source systems are available, signed policy is current, and empirically set anomaly criteria are satisfied. Then **Warden performs its own checks**; no agent can set the final \`ALLOW\` flag.
+**Illustrative decision policy:** `ALLOW_CANDIDATE` only when all required source fields are exact and verified, all mandatory authoritative records pass, no vendor/change/duplicate/payment-limit exception is present, source systems are available, signed policy is current, and empirically set anomaly criteria are satisfied. Then **Warden performs its own checks**; no agent can set the final `ALLOW` flag.
 
 ## 7. XRPL transaction and recovery validation checklist
 
@@ -202,13 +202,13 @@ The first spike must record source code version, network, ledger index, explorer
 - [ ] Provision test accounts and RLUSD trust lines; verify issuer/address and reserve requirements from target network (do not assume workshop approximations are current).
 - [ ] Configure SPEND signer list with explicit addresses, weights and quorum; confirm intended master, regular and recovery states.
 - [ ] Prove Agent-only failure, Warden-only failure, full intended multisign success; audit any single recovery path that can override quorum.
-- [ ] Construct exact RLUSD payment; verify issuer, token amount, destination, destination tag if required, fees and \`LastLedgerSequence\`.
+- [ ] Construct exact RLUSD payment; verify issuer, token amount, destination, destination tag if required, fees and `LastLedgerSequence`.
 - [ ] Warden signs *only* after fresh vendor, policy, account state and idempotency checks; optional simulation is advisory.
 - [ ] Persist transaction hash/sequence/expiry before submit, reconcile validated result/metadata including delivered amount, and handle timeout without duplicate.
 - [ ] Test approval limit lowered after agent proposed but before Warden signs.
 - [ ] Test pause, account exhaustion, missing trust line, wrong issuer, key rotation and signer-list change detection.
 - [ ] If evaluating XRPL Credentials, independently verify issuer, subject, credential type, acceptance, expiry, deletion and current state on the target network. A credential alone does not enforce a payment allowlist.
-- [ ] Verify \`PermissionDelegationV1_1\` activation on the **specific target network**; demonstrate permitted and rejected transaction types before promoting it. Keep out of MVP until baseline works.
+- [ ] Verify `PermissionDelegationV1_1` activation on the **specific target network**; demonstrate permitted and rejected transaction types before promoting it. Keep out of MVP until baseline works.
 - [ ] Label any bank transfer/FX payout/AVS/ERP as **SIMULATED** until there is a real integrated licensed partner and evidence of beneficiary credit.
 
 Source guidance: [multisigning](https://xrpl.org/docs/concepts/accounts/multi-signing), [multi-signed transaction](https://xrpl.org/docs/tutorials/best-practices/key-management/send-a-multi-signed-transaction), [reliable submission](https://xrpl.org/docs/concepts/transactions/reliable-transaction-submission), [Credentials](https://xrpl.org/docs/concepts/decentralized-storage/credentials), [CredentialAccept](https://xrpl.org/docs/references/protocol/transactions/types/credentialaccept), [known amendments](https://xrpl.org/resources/known-amendments).
@@ -246,13 +246,13 @@ Evidence format for each test: fixture hash; exact expected state; actual state;
 
 **CFO overview:** spendable balance versus protected reserves, payable obligations, amount queued, number/age of holds, exposure by supplier and currency, authorized/settled/off-ramp-pending values, policy status and global pause. This is more decision-relevant than a decorative “AI confidence” number.
 
-**AP payment desk:** supplier, invoice, amount, due date, PO/receipt badges, evidence and exceptions, approval state, payee-change alert, and a verifiable source link for each field. Distinguish \`Proposed\` from \`Signed\` from \`Validated on XRPL\` from \`Credited to bank (simulated/not integrated)\`.
+**AP payment desk:** supplier, invoice, amount, due date, PO/receipt badges, evidence and exceptions, approval state, payee-change alert, and a verifiable source link for each field. Distinguish `Proposed` from `Signed` from `Validated on XRPL` from `Credited to bank (simulated/not integrated)`.
 
 **Fraud hold view:** show what changed, *old trusted destination vs requested untrusted destination* (safely masked), evidence chain, detection code, responsible finance owner, next authenticated action, cooling-off clock and review history. Do not provide a one-click “ignore controls” override.
 
 **Policy desk:** approved roles and limits, two-person changes, staged effective times, test outcome for lower limit, immediate pause and read-only audit of prior versions. Ensure accessibility, mobile summaries and legible status wording.
 
-**Auditor view:** searchable chain \`invoice hash → source quote → PO/receipt version → supplier verification → Warden rule result → final exact tx hash → validated metadata → bank leg simulation status\`; CSV/JSON export with redacted sensitive material.
+**Auditor view:** searchable chain `invoice hash → source quote → PO/receipt version → supplier verification → Warden rule result → final exact tx hash → validated metadata → bank leg simulation status`; CSV/JSON export with redacted sensitive material.
 
 ## 10. Delivery plan: 13 November hackathon versus production
 
@@ -278,13 +278,13 @@ Sources: [SARB draft-crypto statement](https://www.resbank.co.za/en/home/publica
 
 ## 12. Recommended follow-up edits to existing docs
 
-1. **\`docs/decisions/0004-workshop-adjustments.md\`:** mark status **proposed/testable**; replace “trust-line hard loss cap” with qualified holding/exposure constraint; change “not live” delegation to network-status verification; credentials as attestations only; simulation as preflight; reference signer recovery.
-2. **\`docs/WORKSHOP.md\`:** preserve who said what as an **as-of-5-November** source note, then add dated correction for later-known amendment information and what remains unverified on Testnet.
-3. **\`README.md\`:** replace definitive “not live on Testnet,” and “trust-line cap” with accurate qualified phrasing. Link this document as implementation requirements, but do not imply tests are finished.
-4. **\`docs/TRUST.md\`:** extend the table to vendor-master compromise, credential issuer, operator takeover, emergency signer path, verified supplier change and ledger reconciliation, distinguishing ledger/Warden/human guarantees.
-5. **\`docs/AGENT-RELIABILITY.md\`:** explicitly state raw-quote verification and two readers do not make malicious records trustworthy; introduce evidence-status vector, abstention and measured false-approval/false-hold evaluation. Make “zero wrong payments” a **test target** rather than a risk guarantee.
-6. **\`docs/ENGINEERING.md\`:** add a concrete per-test evidence contract, a state-machine contract, one durable idempotency identity, transaction-finalization binding, failure-closed policy, single-signer including recovery matrix, and privacy/redaction checks.
-7. **\`docs/HACKATHON.md\`:** clarify scored pitch claims are a narrative unless backed by commits, valid Testnet transaction hashes and a consenting interview.
+1. **`docs/decisions/0004-workshop-adjustments.md`:** mark status **proposed/testable**; replace “trust-line hard loss cap” with qualified holding/exposure constraint; change “not live” delegation to network-status verification; credentials as attestations only; simulation as preflight; reference signer recovery.
+2. **`docs/WORKSHOP.md`:** preserve who said what as an **as-of-5-November** source note, then add dated correction for later-known amendment information and what remains unverified on Testnet.
+3. **`README.md`:** replace definitive “not live on Testnet,” and “trust-line cap” with accurate qualified phrasing. Link this document as implementation requirements, but do not imply tests are finished.
+4. **`docs/TRUST.md`:** extend the table to vendor-master compromise, credential issuer, operator takeover, emergency signer path, verified supplier change and ledger reconciliation, distinguishing ledger/Warden/human guarantees.
+5. **`docs/AGENT-RELIABILITY.md`:** explicitly state raw-quote verification and two readers do not make malicious records trustworthy; introduce evidence-status vector, abstention and measured false-approval/false-hold evaluation. Make “zero wrong payments” a **test target** rather than a risk guarantee.
+6. **`docs/ENGINEERING.md`:** add a concrete per-test evidence contract, a state-machine contract, one durable idempotency identity, transaction-finalization binding, failure-closed policy, single-signer including recovery matrix, and privacy/redaction checks.
+7. **`docs/HACKATHON.md`:** clarify scored pitch claims are a narrative unless backed by commits, valid Testnet transaction hashes and a consenting interview.
 
 **Scope rule:** This research document adds no running software, no keys and no production security certification. The changes above remain action items until the appropriate owner modifies, tests, reviews and merges the existing files.
 
