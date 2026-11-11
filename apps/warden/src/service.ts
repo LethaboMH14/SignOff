@@ -474,8 +474,9 @@ export class WardenService {
   }
 
   /**
-   * Changes the limits. A lower limit applies to the next proposal, because every decision reads the current
-   * limits. Raising a limit is recorded with its operator; a second approver for increases belongs to Gate D.
+   * Decreasing a limit takes effect immediately. Until two-person authorization for
+   * increases exists, single-operator increases MUST fail closed rather than silently
+   * granting greater spending authority.
    */
   async setLimits(patch: unknown, actorId: string): Promise<string> {
     const parsed = LimitsPatch.safeParse(patch);
@@ -486,14 +487,24 @@ export class WardenService {
       await this.applyDueChanges();
       const now = this.deps.now();
       const current = this.state.limits;
+      const perPaymentMinor = parsed.data.perPaymentMinor ?? current.perPaymentMinor;
+      const supplierDailyMinor = parsed.data.supplierDailyMinor ?? current.supplierDailyMinor;
+      const dailyTotalMinor = parsed.data.dailyTotalMinor ?? current.dailyTotalMinor;
+      if (
+        perPaymentMinor > current.perPaymentMinor ||
+        supplierDailyMinor > current.supplierDailyMinor ||
+        dailyTotalMinor > current.dailyTotalMinor
+      ) {
+        throw new WardenError(409, 'raising limits requires independent approval; unavailable in MVP');
+      }
       const policyVersion = `${sastDay(now)}.${String(current.revision + 1)}`;
       await this.record({
         type: 'policy.limits',
         at: now.toISOString(),
         policyVersion,
-        perPaymentMinor: parsed.data.perPaymentMinor ?? current.perPaymentMinor,
-        supplierDailyMinor: parsed.data.supplierDailyMinor ?? current.supplierDailyMinor,
-        dailyTotalMinor: parsed.data.dailyTotalMinor ?? current.dailyTotalMinor,
+        perPaymentMinor,
+        supplierDailyMinor,
+        dailyTotalMinor,
         changedBy: actorId,
       });
       return policyVersion;
