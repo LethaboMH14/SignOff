@@ -49,7 +49,7 @@ This sequence is a **script for a rehearsal**, not a factual report of a complet
 
 ### Minimal state protocol (concept only)
 
-\`\`\`text
+```text
 Arduino via USB serial:
   PAUSE_REQUEST {event_id}                  # no secrets
   CONNECTED / STATUS_LIGHT_REQUEST          # indication, not an authority
@@ -64,7 +64,7 @@ Warden -> bridge -> Arduino:
   PAYMENT_STATE {HELD|AWAITING|VALIDATED|UNKNOWN, invoice_ref}
 
 Resume: **operator portal only**, not a serial/Arduino command.
-\`\`\`
+```
 
 The sketch is a conceptual boundary specification; do not implement the names above as an unauthenticated endpoint. In production, request signing/identity, replay prevention, CSRF/browser considerations, audit and least privilege need formal review.
 

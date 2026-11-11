@@ -362,8 +362,9 @@ export class WardenService {
   }
 
   /**
-   * Checks the agent's co-signature against the transaction the Warden prepared, then submits and reconciles
-   * it. The check is strict: the same fields, exactly the two signers, and the Warden's own signature as issued.
+   * Verifies the agent-only signature against unsigned prepared terms, rechecks the
+   * current pause, policy, payee, limits and ledger state, then Warden signs
+   * and submits itself. No Warden co-signature leaves before authorization.
    */
   async coSign(attemptId: string, signedBlob: string): Promise<CoSignResult> {
     const submission = await this.exclusive(async () => {
@@ -852,7 +853,7 @@ export class WardenService {
     };
   }
 
-  /** Checks the agent's signed transaction against what the Warden prepared. Throws on any difference. */
+  /** Finalize an agent-only signature; add Warden's signature only after all last-moment checks. */
   private finalizeAgentSignature(attempt: AttemptState, blob: string): string {
     const signed = decodeFields(blob);
     if (canonicalJson(boundFieldsOf(signed)) !== attempt.txFields) {

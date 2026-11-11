@@ -4,7 +4,7 @@
 
 SignOff reads supplier invoices, checks them against purchasing records, and pays the routine ones without a human click. Every payment needs two signatures. The agent holds one. The second belongs to an independent rulebook service, called Warden, that the agent cannot read, edit or talk its way past. If a payment breaks a rule, Warden withholds its signature, and the XRP Ledger will not accept a payment with only one.
 
-> **Status, 10 November 2026: Gate 0 foundation is merged, and its phase close is in review. Gate A is built and tested on the XRP Ledger Testnet and is in review. The RLUSD payment has not run yet.**
+> **Status, 11 November 2026: Gate 0 and incremental Gate A ledger implementation are merged. Gates B (Warden) and C (invoice agent) are implemented on feature branches and are NOT merged; C's model evaluation is SIMULATED. Live Testnet evidence uses test-issued TST, not RLUSD. The required validated RLUSD payment and real agent-to-Warden run remain outstanding.**
 > The repository holds the Gate 0 foundation and the Gate A ledger layer, which runs on the XRP Ledger Testnet only. Payments so far use a test-issued token, not RLUSD. No customer has been interviewed, no partner is integrated, and no mockups exist. See [Status of every claim](#status-of-every-claim) below.
 
 Built for the [Node Engine Hackathon](https://w3node.io/node-engine) at W3Node, Cape Town, in the Agentic Finance track. Submissions close on Friday 13 November 2026 at 23:59 SAST.
@@ -118,7 +118,7 @@ Judges score three areas, taken from the team's BuilderBase dashboard on 9 Novem
 | Criterion | Weight | Where the build stands today |
 |---|---|---|
 | Product design | 33% | Nothing to score: no screens or mockups |
-| Technical UX | 34% | Nothing to score: no code, no deployment |
+| Technical UX | 34% | Ledger, Warden and agent code exists, but no real model-to-Warden-to-Testnet trace, RLUSD proof or deployed console |
 | Business/Market Fit | 33% | Narrative and evidence only, no customer validation |
 
 The track requires an autonomous transaction on XRPL Testnet or Devnet, limits enforced outside the agent's control, and a way for a human operator to change them. See [docs/HACKATHON.md](docs/HACKATHON.md).
@@ -130,7 +130,7 @@ The track requires an autonomous transaction on XRPL Testnet or Devnet, limits e
 | [docs/RULES.md](docs/RULES.md) | **The working contract:** rules every change must meet, definition of done, phase-close checklist |
 | [docs/PRD.md](docs/PRD.md) | Product requirements: users, goals, requirements, success measures |
 | [docs/ISSUES.md](docs/ISSUES.md) | The build sliced into issues by gate |
-| [docs/logs/](docs/logs/) | Build log, decision journal, test log, security log |
+| [docs/logs/](docs/logs/) | Build log, decision journal, test log, security log, phase reports |
 | [BUILD-BRIEF.md](BUILD-BRIEF.md) | The agreed build, flow, stack and acceptance tests |
 | [docs/PROBLEM.md](docs/PROBLEM.md) | Problem statement and sourced evidence with confidence ratings |
 | [docs/SOLUTION.md](docs/SOLUTION.md) | Rules, two-signature design, simpler options considered |
