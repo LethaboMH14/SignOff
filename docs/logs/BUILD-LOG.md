@@ -159,3 +159,10 @@ One entry per working session (rule R-19 in [RULES.md](../RULES.md)), newest fir
 - Problems / blockers: the 30-second window is a proposed setting for review. The Arduino heartbeat (S1) is not connected, so the hardware path is UNVERIFIED.
 - Next: the payment desk (D1) on the console branch.
 
+
+### 2026-11-11 — Lethabo security review — S3 fail-closed correction
+
+- Done: prevent a late heartbeat from erasing the expired watchdog window; record pause immediately after replaying an armed Warden on restart. Added unit and authenticated HTTP regression coverage on PR #58.
+- Evidence: source changes and tests committed for CI; no local `npm run check` result claimed.
+- Blockers: PR #58 is behind its integration target and was unmergeable at review; exact-head CI and an independent timer are not yet verified. Only simulated development is authorised.
+- Next: run exact-head CI, reconcile the stack, and obtain independent review before merging.

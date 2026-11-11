@@ -282,7 +282,17 @@ export class WardenService {
     for (const event of await deps.log.readAll()) {
       state.apply(event);
     }
-    return new WardenService(deps, state);
+    const service = new WardenService(deps, state);
+    if (state.armed && !state.paused) {
+      // A process restart loses the in-memory heartbeat. Fail closed before health or operator reads can say running.
+      await service.record({
+        type: 'pause.set',
+        at: deps.now().toISOString(),
+        paused: true,
+        changedBy: 'watchdog',
+      });
+    }
+    return service;
   }
 
   /** Finishes what a previous run left open: reconciles submitted attempts and expires attempts that lapsed. */
@@ -487,9 +497,11 @@ export class WardenService {
 
   /** A heartbeat from an operator's console. It is not logged each time, so the log stays readable. */
   heartbeat(): Promise<void> {
-    return this.exclusive(() => {
-      this.lastHeartbeatMs = this.deps.now().getTime();
-      return Promise.resolve();
+    return this.exclusive(async () => {
+      const now = this.deps.now();
+      // A late heartbeat must not erase the timeout before the watchdog has recorded a pause.
+      await this.enforceWatchdog(now);
+      this.lastHeartbeatMs = now.getTime();
     });
   }
 

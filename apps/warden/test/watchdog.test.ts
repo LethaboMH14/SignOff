@@ -121,6 +121,20 @@ describe('the watchdog', () => {
     expect((await proposeStandard(h)).decision.decision).toBe('ALLOW');
   });
 
+  it('does not erase an expired window when the first activity is a late heartbeat', async () => {
+    const h = await harness();
+    await h.service.setArmed(true, OPERATOR_A);
+    advance(h, WATCHDOG_WINDOW_MS + 1);
+    await h.service.heartbeat();
+    expect(h.service.health().paused).toBe(true);
+    expect(h.log.events()).toContainEqual(
+      expect.objectContaining({ type: 'pause.set', paused: true, changedBy: 'watchdog' }),
+    );
+    expect((await proposeStandard(h)).decision.decision).toBe('HOLD');
+    await h.service.setPaused(false, OPERATOR_A);
+    expect((await proposeStandard(h)).decision.decision).toBe('ALLOW');
+  });
+
   it('is not resumed by a heartbeat: only an operator resume lets payments through again', async () => {
     const h = await harness();
     await h.service.setArmed(true, OPERATOR_A);
@@ -173,6 +187,10 @@ describe('the watchdog', () => {
       clock: h.clock,
       log: h.log,
     });
+    expect(restarted.health().paused).toBe(true);
+    expect(h.log.events()).toContainEqual(
+      expect.objectContaining({ type: 'pause.set', paused: true, changedBy: 'watchdog' }),
+    );
     const before = await restarted.propose(
       proposalFor(newAttemptId(), STANDARD, h.config, h.clock.now),
     );
@@ -247,5 +265,21 @@ describe('the watchdog over HTTP', () => {
     expect(await signedPost(url, '/v1/control/disarm', OPERATOR_A, OPERATOR_A_SECRET, now())).toBe(
       200,
     );
+  });
+
+  it('records a pause if an authenticated heartbeat arrives after expiry before any proposal', async () => {
+    const h = await harness();
+    const verifier = new RequestVerifier(PRINCIPALS, () => h.clock.now, START.getTime());
+    const url = await listen(createWardenServer(h.service, verifier, () => undefined));
+    const now = (): Date => h.clock.now;
+    expect(await signedPost(url, '/v1/control/arm', OPERATOR_A, OPERATOR_A_SECRET, now())).toBe(
+      200,
+    );
+    advance(h, WATCHDOG_WINDOW_MS + 1);
+    expect(
+      await signedPost(url, '/v1/control/heartbeat', OPERATOR_A, OPERATOR_A_SECRET, now()),
+    ).toBe(200);
+    expect(h.service.health().paused).toBe(true);
+    expect((await proposeStandard(h)).decision.decision).toBe('HOLD');
   });
 });
