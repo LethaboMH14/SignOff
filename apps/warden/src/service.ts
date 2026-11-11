@@ -755,6 +755,15 @@ export class WardenService {
       ) {
         return stop(hold('DUPLICATE', 'this payable already has an unresolved or settled payment'));
       }
+      // The MVP controls one spending account. Allow at most one unresolved
+      // ledger transfer at a time, even when the invoices are different.
+      // Sequence allocation and crash reconciliation must finish before another
+      // payable may acquire the account's sole pending authorization slot.
+      if (isUnresolved(earlier.status)) {
+        return stop(
+          hold('INVARIANT_FAILED', 'another transfer on the spending account is unresolved'),
+        );
+      }
     }
     const purchaseOrder =
       invoice.purchaseOrderId === null
