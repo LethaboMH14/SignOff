@@ -140,7 +140,7 @@ describe('the desk', () => {
 
   it('shows Paid only on the row that is Paid, and the reason words for the held row', () => {
     const markup = deskOf(dataOf());
-    const queue = markup.slice(markup.indexOf('class="queue"'));
+    const queue = markup.slice(markup.indexOf('id="invoice-history"'));
     expect(queue.split('chip-paid').length - 1).toBe(1);
     expect(queue.split('chip-held').length - 1).toBe(1);
     expect(queue).toContain('Model calls: 2 of at most 3');

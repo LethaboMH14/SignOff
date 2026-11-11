@@ -1,277 +1,799 @@
-/* The payment desk. Layout works from 375 px wide upward: no fixed widths, long text wraps, and nothing is hidden by
- * colour. Each state shows its symbol and its words. */
+/*
+ * The operator console's layout: the shell, the logo and header, the three columns of the payment desk, the sign-in page,
+ * the opening sequence and the screen transitions. Layout works from 375 px wide upward: long text wraps, and no page
+ * scrolls sideways. Every state shows its symbol and its words.
+ */
 
-.signin,
-.desk {
-  box-sizing: border-box;
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 16px;
-}
-
-.signin form {
-  display: grid;
-  gap: 12px;
-  max-width: 360px;
-}
-
-.signin label,
-.stepup label {
-  display: grid;
-  gap: 4px;
-  font-weight: 600;
-}
-
-.signin input,
-.stepup input,
-.limits-form input {
-  min-height: 44px;
-  font: inherit;
-  padding: 8px 10px;
-  border: 1px solid #6b7389;
-  border-radius: 6px;
+/* The logo */
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
   min-width: 0;
 }
 
-.desk button,
-.signin button,
-.topbar button,
-.views button,
-.stepup button {
-  min-height: 44px;
-  min-width: 44px;
-  padding: 8px 14px;
-  font: inherit;
-  border-radius: 6px;
-  border: 1px solid #3d4a63;
-  background: #ffffff;
-  color: #1d2433;
-  cursor: pointer;
+.brand-mark {
+  width: 40px;
+  height: 28px;
+  flex: none;
+  overflow: visible;
 }
 
-.desk button[aria-pressed='true'],
-.views button[aria-pressed='true'] {
-  background: #1d2433;
-  color: #ffffff;
+.brand-mark path {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 2.6;
+  stroke-linecap: round;
 }
 
-.desk button:disabled,
-.signin button:disabled {
-  opacity: 0.6;
-  cursor: wait;
+.mark-node {
+  fill: var(--ink);
 }
 
-:focus-visible {
-  outline: 3px solid #1f5fbf;
-  outline-offset: 2px;
+.mark-decides {
+  fill: var(--lime);
+  stroke: var(--ink);
+  stroke-width: 2;
 }
 
-.topbar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  align-items: center;
-  justify-content: space-between;
-  max-width: 1100px;
+.wordmark {
+  font-family: var(--font-logo);
+  font-weight: 800;
+  font-size: 30px;
+  line-height: 1;
+  letter-spacing: -0.01em;
+}
+
+/* The shell and the header */
+.shell {
+  max-width: 1400px;
   margin: 0 auto;
+  background: var(--paper);
+  border-radius: 28px;
   padding: 16px;
+  box-shadow: 0 30px 70px rgba(40, 38, 30, 0.18);
 }
 
-.topbar h1 {
-  font-size: 1.5rem;
-  margin: 0;
-  overflow-wrap: anywhere;
+.site-head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px 16px;
 }
 
 .views {
+  justify-self: center;
+  display: inline-flex;
+  gap: 2px;
+  max-width: 100%;
+  background: var(--ink);
+  border-radius: 999px;
+  padding: 5px;
+}
+
+.views button {
+  background: transparent;
+  color: #e7e7e2;
+  border-color: transparent;
+  padding: 9px 18px;
+}
+
+.views button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.views button[aria-pressed='true'] {
+  background: #fff;
+  color: var(--ink);
+  border-color: #fff;
+  font-weight: 700;
+}
+
+.who {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  justify-self: end;
+  min-width: 0;
+  background: var(--panel);
+  border-radius: 999px;
+  padding: 5px 6px 5px 5px;
+}
+
+.avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--card);
+  display: grid;
+  place-items: center;
+  font-size: 13px;
+  font-weight: 700;
+  flex: none;
+}
+
+.who-text {
+  display: grid;
+  line-height: 1.2;
+  min-width: 0;
+}
+
+.who-text strong {
+  font-size: 13px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.who-role {
+  font-size: 11px;
+  color: var(--ink-3);
+}
+
+.who .quiet {
+  min-height: 44px;
+  padding: 6px 14px;
+  font-size: 13px;
+}
+
+.page-title {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin: 22px 4px 12px;
+}
+
+.mode-label {
+  display: inline-flex;
+  max-width: 100%;
+  background: var(--ink);
+  color: #fff;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 12.5px;
+  font-weight: 600;
+  margin: 0 0 14px;
+  overflow-wrap: anywhere;
+}
+
+.view {
+  min-width: 0;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.loading {
+  padding: 40px 16px;
+  text-align: center;
+  color: var(--ink-2);
+}
+
+.notice {
+  background: #fbe1da;
+  color: var(--coral-ink);
+  border-left: 4px solid var(--coral-ink);
+  padding: 10px 12px;
+  margin-top: 10px;
+  border-radius: 12px;
+  overflow-wrap: anywhere;
+}
+
+/* The payment desk: three columns */
+.desk {
+  min-width: 0;
+}
+
+.desk-grid {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr) 360px;
+  gap: 14px;
+  align-items: start;
+}
+
+.col {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  align-content: start;
+}
+
+.desk .panel {
+  animation: rise 360ms ease-out both;
+}
+
+.panel h2 {
+  margin-bottom: 10px;
+}
+
+.muted {
+  color: var(--ink-3);
+  font-size: 13px;
+}
+
+.hero {
+  background: radial-gradient(ellipse at 50% 40%, #f7f6f1 0%, #ecebe4 60%, #e3e2da 100%);
+}
+
+.agent-flow {
+  display: block;
+  width: 100%;
+  height: 340px;
+}
+
+.hero .lede {
+  font-size: 13.5px;
+  max-width: 70ch;
+}
+
+.featured {
+  display: grid;
+  gap: 12px;
+}
+
+.featured-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.featured h2 {
+  font-size: 22px;
+  letter-spacing: -0.01em;
+  margin-bottom: 6px;
+}
+
+.facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 28px;
+  margin: 0;
+}
+
+.facts div {
+  display: grid;
+  gap: 2px;
+}
+
+.facts dt {
+  font-size: 12px;
+  color: var(--ink-3);
+}
+
+.facts dd {
+  margin: 0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.actions {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
 
-.who {
-  margin: 0;
-  overflow-wrap: anywhere;
+.next-step {
+  margin-top: 8px;
+  color: var(--ink-2);
 }
 
-.mode-label {
-  font-weight: 600;
-  margin: 0 0 12px;
-  overflow-wrap: anywhere;
+/* Links in the cards get a 44 px tap area, without changing how the text looks */
+.col a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
 }
 
+/* Symbols and chips: a symbol and words for every state, with colour as a second signal */
+.symbol {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 18px;
+  font-weight: 800;
+  flex: none;
+  border: 1px solid var(--line);
+  background: var(--card);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font-size: 12.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  background: var(--card);
+  color: var(--ink);
+}
+
+.chip-paid {
+  background: var(--lime);
+  color: var(--lime-ink);
+}
+
+.chip-held,
+.chip-needs-a-person,
+.chip-quarantined {
+  background: var(--coral);
+  color: var(--coral-ink);
+}
+
+.chip-refused,
+.chip-failed {
+  background: var(--ink);
+  color: #fff;
+}
+
+.chip-in-progress,
+.chip-received {
+  background: var(--card);
+  color: var(--ink);
+  border-color: var(--line);
+}
+
+.chip-not-confirmed,
+.chip-not-paid {
+  background: transparent;
+  color: var(--ink-2);
+  border-style: dashed;
+  border-color: var(--ink-3);
+}
+
+.symbol.chip-paid,
+.symbol.chip-held,
+.symbol.chip-needs-a-person,
+.symbol.chip-quarantined,
+.symbol.chip-refused,
+.symbol.chip-failed,
+.symbol.chip-in-progress,
+.symbol.chip-received,
+.symbol.chip-not-confirmed,
+.symbol.chip-not-paid {
+  border-width: 1px;
+}
+
+.tick {
+  display: inline-block;
+  animation: tick-draw 300ms ease-out both;
+}
+
+/* Tiles: the counts by state */
 .tiles {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
   list-style: none;
   padding: 0;
-  margin: 0 0 16px;
+  margin: 0;
 }
 
 .tile {
-  background: #ffffff;
-  border: 1px solid #d8dde6;
-  border-radius: 8px;
-  padding: 12px;
+  background: var(--card);
+  border-radius: 18px;
+  padding: 14px 16px;
   min-width: 0;
+  border-top: 6px solid var(--line);
+}
+
+.tile-paid {
+  border-top-color: var(--lime);
+}
+
+.tile-held,
+.tile-needs-a-person {
+  border-top-color: var(--coral);
 }
 
 .tile-number {
-  font-size: 1.75rem;
-  font-weight: 700;
-  margin: 0;
+  font-size: 34px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
   font-variant-numeric: tabular-nums;
 }
 
 .tile-label {
-  margin: 4px 0 0;
+  margin-top: 6px;
 }
 
-.panel {
-  background: #ffffff;
-  border: 1px solid #d8dde6;
-  border-radius: 8px;
-  padding: 16px;
-  margin-bottom: 16px;
+/* Lists: all invoices, next in the queue, and the history */
+.invoice-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.invoice-list li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  padding: 8px;
+  border-radius: 14px;
+}
+
+.invoice-list li.on {
+  background: var(--card);
+}
+
+.invoice-line {
+  display: grid;
   min-width: 0;
 }
 
-.panel h2 {
-  font-size: 1.1rem;
+.invoice-line b {
+  font-weight: 600;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.invoice-line small {
+  color: var(--ink-3);
+  font-size: 12px;
+}
+
+.next-list {
+  list-style: none;
   margin: 0 0 8px;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.next-list li {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  background: var(--card);
+  border-radius: 14px;
+  padding: 10px 12px;
+  font-size: 14px;
 }
 
 .limits {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 8px;
-  margin: 8px 0 12px;
+  margin: 10px 0 0;
+}
+
+.limits div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .limits dt {
-  color: #4f5a6e;
-  font-size: 0.9rem;
+  color: var(--ink-2);
+  font-size: 13.5px;
 }
 
 .limits dd {
   margin: 0;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
-  overflow-wrap: anywhere;
+  text-align: right;
 }
 
-.notice {
-  border-left: 4px solid #8a4b00;
-  background: #fff7e8;
-  padding: 8px 12px;
-  margin: 8px 0;
-  overflow-wrap: anywhere;
-}
-
-.stepup {
+.history {
+  list-style: none;
+  margin: 0;
+  padding: 0;
   display: grid;
-  gap: 10px;
-  max-width: 360px;
-  padding: 12px;
-  border: 1px dashed #3d4a63;
-  border-radius: 8px;
-  margin-top: 8px;
-}
-
-.stepup .actions {
-  display: flex;
-  flex-wrap: wrap;
   gap: 8px;
 }
 
-.chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 2px 8px;
-  border-radius: 999px;
-  border: 1px solid currentColor;
-  font-size: 0.9rem;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.chip-paid {
-  color: #1d6b3a;
-}
-
-.chip-held,
-.chip-needs-a-person,
-.chip-quarantined {
-  color: #8a4b00;
-}
-
-.chip-refused,
-.chip-failed {
-  color: #a01f1f;
-}
-
-.chip-in-progress,
-.chip-received {
-  color: #3d4a63;
-}
-
-.chip-not-confirmed,
-.chip-not-paid {
-  color: #4f5a6e;
-}
-
-.queue {
-  list-style: none;
-  padding: 0;
-  margin: 0;
+.history li {
   display: grid;
-  gap: 10px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px 10px;
+  align-items: center;
+  background: var(--card);
+  border-radius: 16px;
+  padding: 12px 14px;
 }
 
-.row {
-  border: 1px solid #d8dde6;
-  border-radius: 8px;
-  padding: 12px;
+.history-line {
+  display: grid;
   min-width: 0;
 }
 
-.row p {
-  margin: 4px 0;
+.history-line b {
+  font-weight: 600;
   overflow-wrap: anywhere;
 }
 
-.row-head {
+.history-line small,
+.history-reason {
+  color: var(--ink-3);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.history-state {
+  justify-self: end;
+}
+
+.history-amount {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.history-actions {
+  justify-self: end;
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
+  gap: 6px;
 }
 
-.row-ref,
-.row-time,
+.history-actions button {
+  min-height: 44px;
+  padding: 6px 14px;
+}
+
+.history-reason {
+  grid-column: 1 / -1;
+}
+
 .counts-line {
-  color: #4f5a6e;
-  font-size: 0.9rem;
+  color: var(--ink-2);
+  font-size: 13px;
+  margin-top: 14px;
 }
 
-.row-amount {
+/* Forms: the password sheet, the limits and the sign-in fields */
+.limits-form,
+.stepup {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.stepup {
+  padding: 14px;
+  border-radius: 16px;
+  background: var(--card);
+}
+
+.limits-form label,
+.stepup label,
+.signin-card label {
+  display: grid;
+  gap: 4px;
   font-weight: 600;
-  font-variant-numeric: tabular-nums;
+  font-size: 14px;
 }
 
-@media (min-width: 720px) {
-  .queue {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+input {
+  font: inherit;
+  font-size: 16px;
+  min-height: 44px;
+  min-width: 0;
+  padding: 8px 12px;
+  border: 1px solid var(--ink-3);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--ink);
+}
+
+/* The invoice and receipt views, opened from the desk */
+.invoice,
+.receipt {
+  display: grid;
+  gap: 14px;
+  animation: view-in-forward 200ms ease-out both;
+}
+
+.path {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.move {
+  background: var(--card);
+  border-radius: 14px;
+  padding: 10px 12px;
+}
+
+.row-time {
+  color: var(--ink-3);
+  font-size: 12.5px;
+}
+
+/* The sign-in page */
+.signin-page {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  gap: 28px;
+  align-items: center;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 24px 8px;
+}
+
+.signin-brand {
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+}
+
+.brand-large .wordmark {
+  font-size: 56px;
+}
+
+.brand-large .brand-mark {
+  width: 64px;
+  height: 44px;
+}
+
+.signin-flow {
+  height: 300px;
+}
+
+.lede-large {
+  font-size: 20px;
+  line-height: 1.4;
+  color: var(--ink-2);
+  max-width: 30ch;
+  text-wrap: pretty;
+}
+
+.signin-card {
+  background: var(--card);
+  border-radius: 28px;
+  padding: 28px;
+  box-shadow: 0 24px 60px rgba(40, 38, 30, 0.14);
+  min-width: 0;
+  animation: rise 400ms ease-out both;
+}
+
+.signin-card h1 {
+  font-size: 30px;
+  margin-top: 4px;
+}
+
+.signin-card form {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+/* The opening sequence: the flow draws in, the wordmark appears, and the sequence fades. A click or a key skips it. */
+.intro {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  background: var(--paper);
+  cursor: pointer;
+  animation: intro-out 300ms ease-in 1500ms both;
+}
+
+.intro-stage {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  padding: 16px;
+}
+
+.intro .agent-flow {
+  width: min(86vw, 460px);
+  height: auto;
+  aspect-ratio: 560 / 520;
+}
+
+.intro-word {
+  font-family: var(--font-logo);
+  font-weight: 800;
+  font-size: clamp(40px, 9vw, 64px);
+  letter-spacing: -0.01em;
+  line-height: 1;
+}
+
+.intro-word span {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(12px);
+  animation: letter-in 380ms ease-out forwards;
+}
+
+@keyframes letter-in {
+  to {
+    opacity: 1;
+    transform: none;
   }
 }
 
-/*
- * Motion (D7). Tiles rise in a staggered opening; a screen crossfades with a small slide; the Paid tick is drawn only for a
- * payment the desk shows as paid; the password sheet slides up. Every animation is replaced by its final state for a
- * person who asks for reduced motion.
- */
+@keyframes intro-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+/* The flow: the stations, the track, the tokens and the pulse at the Warden */
+.flow-track {
+  fill: none;
+  stroke: var(--ink);
+  stroke-opacity: 0.25;
+  stroke-width: 3;
+  stroke-dasharray: 2 9;
+  stroke-linecap: round;
+}
+
+.flow-disc {
+  fill: var(--card);
+  stroke: var(--ink);
+  stroke-width: 2.5;
+}
+
+.flow-decides .flow-disc {
+  fill: var(--ink);
+}
+
+.flow-label {
+  font-family: var(--font-body);
+  font-size: 22px;
+  font-weight: 700;
+  fill: var(--ink);
+}
+
+.flow-note {
+  font-family: var(--font-body);
+  font-size: 17px;
+  fill: var(--ink-2);
+}
+
+.flow-token {
+  fill: var(--ink);
+  stroke: var(--lime);
+  stroke-width: 3;
+}
+
+.flow-pulse {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 2;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: flow-ping 2.4s ease-out infinite;
+}
+
+@keyframes flow-ping {
+  from {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.8);
+  }
+}
+
+/* Motion (D7): a card rises a few pixels; a screen slides in 8 pixels within 200 ms; the Paid tick is drawn only for a
+ * paid chip; the password sheet slides up; the tiles rise in turn. Reduced motion replaces every animation by its end state. */
 @keyframes rise {
   from {
     opacity: 0;
@@ -283,10 +805,21 @@
   }
 }
 
-@keyframes screen-in {
+@keyframes view-in-forward {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateX(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes view-in-back {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
   }
   to {
     opacity: 1;
@@ -297,7 +830,7 @@
 @keyframes sheet-up {
   from {
     opacity: 0;
-    transform: translateY(12px);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
@@ -316,10 +849,12 @@
   }
 }
 
-.desk,
-.invoice,
-.receipt {
-  animation: screen-in 200ms ease-out both;
+.view-forward {
+  animation: view-in-forward 200ms ease-out both;
+}
+
+.view-back {
+  animation: view-in-back 200ms ease-out both;
 }
 
 .tiles > li {
@@ -350,11 +885,125 @@
   animation: sheet-up 240ms ease-out both;
 }
 
-.tick {
-  display: inline-block;
-  animation: tick-draw 300ms ease-out both;
+/* Narrower screens: two columns, then one. The invoices become a strip that scrolls inside its own box. */
+@media (max-width: 1099px) {
+  .desk-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .col-left {
+    grid-column: 1 / -1;
+  }
+
+  .col-left .invoice-list {
+    display: flex;
+    overflow-x: auto;
+    gap: 8px;
+    padding-bottom: 4px;
+  }
+
+  .col-left .invoice-list li {
+    flex: 0 0 auto;
+    min-width: 210px;
+  }
 }
 
+@media (max-width: 860px) {
+  .desk-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .col-left {
+    grid-column: auto;
+  }
+
+  .signin-page {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .signin-flow {
+    height: 240px;
+  }
+
+  .brand-large .wordmark {
+    font-size: 44px;
+  }
+}
+
+/* Phones: the navigation becomes a bar at the foot of the screen, and the history stays in one column. */
+@media (max-width: 719px) {
+  body {
+    padding-bottom: 104px;
+  }
+
+  .shell {
+    padding: 12px;
+    border-radius: 22px;
+  }
+
+  .site-head {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .views {
+    position: fixed;
+    justify-self: stretch;
+    left: max(12px, env(safe-area-inset-left, 0px));
+    right: max(12px, env(safe-area-inset-right, 0px));
+    bottom: max(12px, env(safe-area-inset-bottom, 0px));
+    z-index: 20;
+    justify-content: space-between;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
+  }
+
+  .views button {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 10px 8px;
+    font-size: 13.5px;
+  }
+
+  .who-text .who-role {
+    display: none;
+  }
+
+  .wordmark {
+    font-size: 26px;
+  }
+
+  .brand-mark {
+    width: 34px;
+    height: 24px;
+  }
+
+  .page-title {
+    font-size: 22px;
+    margin-top: 14px;
+  }
+
+  .tiles {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .tile-number {
+    font-size: 28px;
+  }
+
+  .agent-flow {
+    height: 300px;
+  }
+
+  .history li {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .history-state,
+  .history-actions {
+    justify-self: start;
+  }
+}
+
+/* A person who asks for reduced motion sees every screen at its end state. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

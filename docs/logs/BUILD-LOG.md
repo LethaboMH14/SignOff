@@ -322,3 +322,12 @@ One entry per working session (rule R-19 in [RULES.md](../RULES.md)), newest fir
 - Problems / blockers: the Claude window was hidden, so there are no screenshots and the motion check (T-110) was not possible. The stub Warden is not the real Warden, and there is no ledger.
 - Next: look at the console in a visible window for contrast, focus and motion; run the RLUSD payment once funded.
 
+### 2026-11-11 — Sibusiso with Claude — Console redesign: layout, flow hero, logo, font, opening
+
+- Done: applied the approved direction to the real console. On a desktop there are three columns: the invoices and the Warden; the featured invoice, the agent flow and the queue, with the count tiles beneath; and the reason, the pause and limits, and the history. On a phone the columns stack, and the navigation becomes a fixed bar at the foot of the screen. The lightbulb (the crown on the implant) is replaced by the animated agent flow. The opening sequence plays on the first load and can be skipped; it does not play under reduced motion. Screens slide between the desk and the map. The logo sits at the top of every signed-in screen.
+- Changed decisions: D-092, D-093 and D-094.
+- Evidence: T-130 to T-133. Dependency: S-056.
+- Problems and blockers: the mockup's audit chat is not carried over (see D-094). The Chrome window could not be resized to a phone width, so the phone layout is measured, not seen. The exact typeface of the attached wordmark is not identified.
+- Not committed. The work sits uncommitted on feat/console-redesign, branched from feat/keys-and-live-evidence.
+- Next: a visual review on a visible window, then a decision on committing.
+

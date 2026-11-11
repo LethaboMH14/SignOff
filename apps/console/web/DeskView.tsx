@@ -1,11 +1,13 @@
 import { type SubmitEvent, useState } from 'react';
 
 import { type DeskData, type LimitValues, type PendingAction } from './api.js';
-import { DISPLAY_STATES, type DisplayState } from '../src/model/desk.js';
+import { DISPLAY_STATES, type DeskRow, type DisplayState } from '../src/model/desk.js';
+import { nextActionOf } from '../src/model/next-action.js';
+import { AgentFlow } from './Brand.js';
 import { CountUp } from './CountUp.js';
-import { StateChip } from './StateChip.js';
+import { slugOf, StateChip, symbolOf } from './StateChip.js';
 
-/** The headline states, in the order the desk reads them. The rest are in the queue and in the count below. */
+/** The headline states, in the order the desk reads them. The rest are in the history and in the count below. */
 export const HEADLINE_STATES: readonly DisplayState[] = [
   'Paid',
   'In progress',
@@ -14,6 +16,9 @@ export const HEADLINE_STATES: readonly DisplayState[] = [
   'Not confirmed',
   'Refused',
 ];
+
+/** The states that need a person to look at them. */
+const ATTENTION: readonly DisplayState[] = ['Held', 'Needs a person'];
 
 /**
  * An amount in minor units, shown with two decimals in the usual international form (1,250.00). The currency comes from
@@ -70,6 +75,28 @@ export function minorOf(text: string): number | null {
   }
   const minor = Math.round(Number(trimmed) * 100);
   return minor > 0 ? minor : null;
+}
+
+/**
+ * The invoice the desk puts in front of the operator: the first one that needs a person, otherwise the first one in the
+ * queue. Nothing here decides a payment; it only chooses what to show first.
+ */
+export function featuredOf(rows: readonly DeskRow[]): DeskRow | null {
+  return rows.find((row) => ATTENTION.includes(row.displayState)) ?? rows[0] ?? null;
+}
+
+/** The invoices that come after the featured one in the queue, at most three. */
+export function nextRowsOf(rows: readonly DeskRow[], featured: DeskRow | null): readonly DeskRow[] {
+  return rows.filter((row) => row !== featured).slice(0, 3);
+}
+
+/** A state's symbol in a circle. It is decoration: the state's words are always printed beside it. */
+function StateSymbol({ state }: { readonly state: DisplayState }) {
+  return (
+    <span className={`symbol chip-${slugOf(state)}`} aria-hidden="true">
+      {symbolOf(state)}
+    </span>
+  );
 }
 
 export interface DeskViewProps {
@@ -134,7 +161,7 @@ function StepUp({
         <button type="submit" disabled={busy}>
           Confirm and continue
         </button>
-        <button type="button" onClick={onCancel}>
+        <button type="button" className="quiet" onClick={onCancel}>
           Cancel
         </button>
       </div>
@@ -235,7 +262,11 @@ function LimitsForm({
   );
 }
 
-/** The payment desk. It only shows what the console API gave it; nothing here decides a payment state. */
+/**
+ * The payment desk, in three columns on a wide screen: the invoices and the Warden on the left; the invoice that needs
+ * a person, the agent flow and the queue in the middle; the reason, the pause and limits, and the history on the right.
+ * It only shows what the console API gave it; nothing here decides a payment state.
+ */
 export function DeskView(props: DeskViewProps) {
   const { data, error, busy, pending } = props;
   if (data === null) {
@@ -245,8 +276,11 @@ export function DeskView(props: DeskViewProps) {
       </section>
     );
   }
-  const { overview } = data;
+  const { overview, rows } = data;
   const raise = overview.pendingLimitChange;
+  const featured = featuredOf(rows);
+  const next = nextRowsOf(rows, featured);
+  const featuredHeld = featured !== null && ATTENTION.includes(featured.displayState);
   return (
     <section className="desk" aria-label="Payment desk">
       {error === null ? null : (
@@ -260,150 +294,286 @@ export function DeskView(props: DeskViewProps) {
           : 'Live run on Testnet. Test-issued token, not RLUSD.'}
       </p>
 
-      <ul className="tiles" aria-label="Counts by state">
-        {HEADLINE_STATES.map((state) => (
-          <li key={state} className="tile">
-            <p className="tile-number">
-              <CountUp value={countOf(data.counts, state)} />
-            </p>
-            <p className="tile-label">
-              <StateChip state={state} />
-            </p>
-          </li>
-        ))}
-      </ul>
-
-      <section className="panel warden" aria-labelledby="warden-title">
-        <h2 id="warden-title">Warden</h2>
-        <p>
-          <strong>{overview.paused ? 'Payments are paused.' : 'Payments are running.'}</strong>{' '}
-          Rules version {overview.policyVersion}. Usage today{' '}
-          {moneyOf(overview.usageToday.totalMinor, null)}.
-        </p>
-        <dl className="limits">
-          <div>
-            <dt>Per payment</dt>
-            <dd>{moneyOf(overview.limits.perPaymentMinor, null)}</dd>
-          </div>
-          <div>
-            <dt>Per supplier, per day</dt>
-            <dd>{moneyOf(overview.limits.supplierDailyMinor, null)}</dd>
-          </div>
-          <div>
-            <dt>Total, per day</dt>
-            <dd>{moneyOf(overview.limits.dailyTotalMinor, null)}</dd>
-          </div>
-        </dl>
-
-        {raise === null ? null : (
-          <section className="notice" aria-labelledby="raise-title">
-            <h3 id="raise-title">A raised limit is waiting</h3>
-            <p>
-              Asked by {raise.requestedBy}. It expires {sastOf(raise.expiresAt)}. Per payment{' '}
-              {moneyOf(raise.perPaymentMinor, null)}; per supplier, per day{' '}
-              {moneyOf(raise.supplierDailyMinor, null)}; total, per day{' '}
-              {moneyOf(raise.dailyTotalMinor, null)}.
-            </p>
-            <p>
-              <button
-                type="button"
-                disabled={busy || !raise.approvalAllowed}
-                aria-describedby="approve-why"
-                onClick={() => {
-                  props.onApprove(raise.requestId);
-                }}
-              >
-                Approve the raised limit
-              </button>
-            </p>
-            <p id="approve-why">{raise.why}</p>
+      <div className="desk-grid">
+        <div className="col col-left">
+          <section className="panel" aria-labelledby="invoices-title">
+            <h2 id="invoices-title">All invoices</h2>
+            {rows.length === 0 ? (
+              <p className="muted">Nothing has been proposed or held yet.</p>
+            ) : (
+              <ul className="invoice-list">
+                {rows.map((row) => (
+                  <li key={row.rowId} className={row === featured ? 'on' : undefined}>
+                    <StateSymbol state={row.displayState} />
+                    <span className="invoice-line">
+                      <b>Invoice {row.invoiceRef}</b>
+                      <small>
+                        {row.displayState} · {sastOf(row.updatedAt)}
+                      </small>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </section>
-        )}
 
-        <p>
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => {
-              props.onTogglePause();
-            }}
-          >
-            {overview.paused ? 'Resume payments' : 'Pause new payments'}
-          </button>
-        </p>
+          <section className="panel" aria-labelledby="warden-title">
+            <h2 id="warden-title">Warden</h2>
+            <p className="muted">
+              Rules version {overview.policyVersion}. Usage today{' '}
+              {moneyOf(overview.usageToday.totalMinor, null)}.
+            </p>
+            <dl className="limits">
+              <div>
+                <dt>Per payment</dt>
+                <dd>{moneyOf(overview.limits.perPaymentMinor, null)}</dd>
+              </div>
+              <div>
+                <dt>Per supplier, per day</dt>
+                <dd>{moneyOf(overview.limits.supplierDailyMinor, null)}</dd>
+              </div>
+              <div>
+                <dt>Total, per day</dt>
+                <dd>{moneyOf(overview.limits.dailyTotalMinor, null)}</dd>
+              </div>
+            </dl>
+          </section>
+        </div>
 
-        <LimitsForm
-          current={overview.limits}
-          busy={busy}
-          onSubmit={(values) => {
-            props.onRequestLimits(values);
-          }}
-        />
-
-        {pending === null ? null : (
-          <StepUp busy={busy} onConfirm={props.onConfirm} onCancel={props.onCancelConfirm} />
-        )}
-      </section>
-
-      <section className="panel queue-panel" aria-labelledby="queue-title">
-        <h2 id="queue-title">Queue</h2>
-        {data.rows.length === 0 ? (
-          <p>Nothing has been proposed or held yet.</p>
-        ) : (
-          <ol className="queue">
-            {data.rows.map((row) => (
-              <li key={row.rowId} className="row">
-                <p className="row-head">
-                  <StateChip state={row.displayState} />
-                  <span className="row-ref">Invoice {row.invoiceRef}</span>
-                </p>
-                <p className="row-amount">
-                  {row.amountMinor === null
-                    ? 'Amount not recorded'
-                    : moneyOf(row.amountMinor, row.currency)}
-                </p>
-                <p className="row-reason">
-                  {row.reasonCode === null ? null : <code>{row.reasonCode}</code>} {row.reason}
-                </p>
-                {row.modelCalls === null ? null : (
-                  <p className="row-model">Model calls: {String(row.modelCalls)} of at most 3</p>
-                )}
-                {row.displayState !== 'Paid' || row.attemptId === null ? null : (
-                  <p>
-                    <button
-                      type="button"
-                      aria-label={`Open receipt for invoice ${row.invoiceRef}`}
-                      onClick={() => {
-                        props.onReceipt(row.attemptId ?? '');
-                      }}
-                    >
-                      Receipt
-                    </button>
-                  </p>
-                )}
-                <p className="row-time">Updated {sastOf(row.updatedAt)}</p>
-                <p>
+        <div className="col col-centre">
+          {featured === null ? (
+            <section className="panel" aria-labelledby="featured-title">
+              <h2 id="featured-title">No invoice yet</h2>
+              <p>The first invoice appears here once the agent proposes it.</p>
+            </section>
+          ) : (
+            <section className="panel featured" aria-labelledby="featured-title">
+              <div className="featured-head">
+                <StateSymbol state={featured.displayState} />
+                <div>
+                  <h2 id="featured-title">Invoice {featured.invoiceRef}</h2>
+                  <StateChip state={featured.displayState} />
+                </div>
+              </div>
+              <dl className="facts">
+                <div>
+                  <dt>Amount</dt>
+                  <dd>
+                    {featured.amountMinor === null
+                      ? 'Amount not recorded'
+                      : moneyOf(featured.amountMinor, featured.currency)}
+                  </dd>
+                </div>
+                <div>
+                  <dt>Updated</dt>
+                  <dd>{sastOf(featured.updatedAt)}</dd>
+                </div>
+              </dl>
+              <div className="actions">
+                <button
+                  type="button"
+                  aria-label={`Open evidence for invoice ${featured.invoiceRef}`}
+                  onClick={() => {
+                    props.onOpen(featured.rowId);
+                  }}
+                >
+                  Open evidence
+                </button>
+                {featured.displayState === 'Paid' && featured.attemptId !== null ? (
                   <button
                     type="button"
-                    className="open"
-                    aria-label={`Open invoice ${row.invoiceRef}`}
+                    aria-label={`Open receipt for invoice ${featured.invoiceRef}`}
                     onClick={() => {
-                      props.onOpen(row.rowId);
+                      props.onReceipt(featured.attemptId ?? '');
                     }}
                   >
-                    Open
+                    Receipt
                   </button>
+                ) : null}
+              </div>
+            </section>
+          )}
+
+          <section className="panel hero" aria-labelledby="flow-title">
+            <h2 id="flow-title">How an invoice moves</h2>
+            <AgentFlow />
+            <p className="lede">
+              An invoice moves from left to right. Warden checks the rules before it adds the second
+              signature. Paid appears only after the ledger validates the payment.
+            </p>
+          </section>
+
+          <section className="panel" aria-labelledby="next-title">
+            <h2 id="next-title">Next in the queue</h2>
+            {next.length === 0 ? (
+              <p className="muted">No other invoices are waiting.</p>
+            ) : (
+              <ul className="next-list">
+                {next.map((row) => (
+                  <li key={row.rowId}>
+                    <span>Invoice {row.invoiceRef}</span>
+                    <StateChip state={row.displayState} />
+                  </li>
+                ))}
+              </ul>
+            )}
+            <p>
+              <a href="#invoice-history">See every invoice</a>
+            </p>
+          </section>
+
+          <ul className="tiles" aria-label="Counts by state">
+            {HEADLINE_STATES.map((state) => (
+              <li key={state} className={`tile tile-${slugOf(state)}`}>
+                <p className="tile-number">
+                  <CountUp value={countOf(data.counts, state)} />
+                </p>
+                <p className="tile-label">
+                  <StateChip state={state} />
                 </p>
               </li>
             ))}
-          </ol>
+          </ul>
+        </div>
+
+        <div className="col col-right">
+          <section className="panel" aria-labelledby="why-title">
+            <h2 id="why-title">{featuredHeld ? 'Why it is held' : 'Status'}</h2>
+            {featured === null ? (
+              <p>Nothing is held.</p>
+            ) : featuredHeld ? (
+              <>
+                <p>
+                  {featured.reasonCode === null ? null : <code>{featured.reasonCode}</code>}{' '}
+                  {featured.reason}
+                </p>
+                {featured.reasonCode === null ? null : (
+                  <p className="next-step">
+                    <b>Next step.</b> {nextActionOf(featured.reasonCode)}
+                  </p>
+                )}
+              </>
+            ) : (
+              <p>{featured.reason}</p>
+            )}
+          </section>
+
+          <section className="panel" aria-labelledby="control-title">
+            <h2 id="control-title">Pause and limits</h2>
+            <p>
+              <strong>{overview.paused ? 'Payments are paused.' : 'Payments are running.'}</strong>
+            </p>
+            {raise === null ? null : (
+              <section className="notice" aria-labelledby="raise-title">
+                <h3 id="raise-title">A raised limit is waiting</h3>
+                <p>
+                  Asked by {raise.requestedBy}. It expires {sastOf(raise.expiresAt)}. Per payment{' '}
+                  {moneyOf(raise.perPaymentMinor, null)}; per supplier, per day{' '}
+                  {moneyOf(raise.supplierDailyMinor, null)}; total, per day{' '}
+                  {moneyOf(raise.dailyTotalMinor, null)}.
+                </p>
+                <p>
+                  <button
+                    type="button"
+                    disabled={busy || !raise.approvalAllowed}
+                    aria-describedby="approve-why"
+                    onClick={() => {
+                      props.onApprove(raise.requestId);
+                    }}
+                  >
+                    Approve the raised limit
+                  </button>
+                </p>
+                <p id="approve-why">{raise.why}</p>
+              </section>
+            )}
+            <p>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => {
+                  props.onTogglePause();
+                }}
+              >
+                {overview.paused ? 'Resume payments' : 'Pause new payments'}
+              </button>
+            </p>
+            <LimitsForm
+              current={overview.limits}
+              busy={busy}
+              onSubmit={(values) => {
+                props.onRequestLimits(values);
+              }}
+            />
+            {pending === null ? null : (
+              <StepUp busy={busy} onConfirm={props.onConfirm} onCancel={props.onCancelConfirm} />
+            )}
+          </section>
+
+          <section className="panel" id="invoice-history" aria-labelledby="history-title">
+            <h2 id="history-title">Invoice history</h2>
+            {rows.length === 0 ? (
+              <p>Nothing has been proposed or held yet.</p>
+            ) : (
+              <ol className="history">
+                {rows.map((row) => (
+                  <li key={row.rowId}>
+                    <span className="history-line">
+                      <b>Invoice {row.invoiceRef}</b>
+                      <small>Updated {sastOf(row.updatedAt)}</small>
+                    </span>
+                    <span className="history-state">
+                      <StateChip state={row.displayState} />
+                    </span>
+                    <span className="history-amount">
+                      {row.amountMinor === null
+                        ? 'Amount not recorded'
+                        : moneyOf(row.amountMinor, row.currency)}
+                    </span>
+                    <span className="history-actions">
+                      <button
+                        type="button"
+                        className="open"
+                        aria-label={`Open invoice ${row.invoiceRef}`}
+                        onClick={() => {
+                          props.onOpen(row.rowId);
+                        }}
+                      >
+                        Open
+                      </button>
+                      {row.displayState !== 'Paid' ||
+                      row.attemptId === null ||
+                      row === featured ? null : (
+                        <button
+                          type="button"
+                          aria-label={`Open receipt for invoice ${row.invoiceRef}`}
+                          onClick={() => {
+                            props.onReceipt(row.attemptId ?? '');
+                          }}
+                        >
+                          Receipt
+                        </button>
+                      )}
+                    </span>
+                    <span className="history-reason">
+                      {row.reasonCode === null ? null : <code>{row.reasonCode}</code>} {row.reason}
+                      {row.modelCalls === null
+                        ? null
+                        : ` · Model calls: ${String(row.modelCalls)} of at most 3`}
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </section>
+        </div>
+      </div>
+
+      <p className="counts-line">
+        {DISPLAY_STATES.map((state) => `${state} ${String(countOf(data.counts, state))}`).join(
+          ' · ',
         )}
-        <p className="counts-line">
-          {DISPLAY_STATES.map((state) => `${state} ${String(countOf(data.counts, state))}`).join(
-            ' · ',
-          )}
-        </p>
-      </section>
+      </p>
     </section>
   );
 }

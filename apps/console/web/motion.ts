@@ -22,6 +22,11 @@ export const SHEET_MS = 240;
 export const OPENING_LIMIT_MS = 1200;
 /** The number of tiles the opening sequence staggers. */
 export const TILES_IN_OPENING = 6;
+/**
+ * The brand's opening on the first load: the flow draws in, the wordmark appears, and the sequence fades. It is a
+ * separate sequence from the desk's own opening, which keeps its limit of OPENING_LIMIT_MS.
+ */
+export const INTRO_MS = 1800;
 
 /** The duration to use: the given one, or zero when the person has asked for reduced motion. */
 export function durationOf(ms: number, reduced: boolean): number {
