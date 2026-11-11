@@ -2,6 +2,8 @@ import { createPublicKey, generateKeyPairSync, randomBytes, sign } from 'node:cr
 import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 
+import { WARDEN_VERSION } from '../src/version.js';
+
 import { afterEach, describe, expect, it } from 'vitest';
 import { decode, Wallet, type SubmittableTransaction } from 'xrpl';
 
@@ -158,14 +160,24 @@ describe('the Warden over HTTP', () => {
     const h = await harness();
     const response = await fetch(new URL('/v1/health', h.url));
     expect(response.status).toBe(200);
-    expect(await response.json()).toEqual({ paused: false, policyVersion: h.config.policyVersion });
+    expect(await response.json()).toEqual({
+      paused: false,
+      policyVersion: h.config.policyVersion,
+      version: WARDEN_VERSION,
+      ready: true,
+    });
   });
 
   it('pauses and resumes through its own operator route, with no console or other process running', async () => {
     const h = await harness();
     await activeSupplierOverHttp(h, generateSupplierKey().publicKey);
     expect(await h.operatorA.setPaused(true)).toEqual({ paused: true });
-    expect(await h.agent.health()).toEqual({ paused: true, policyVersion: h.config.policyVersion });
+    expect(await h.agent.health()).toEqual({
+      paused: true,
+      policyVersion: h.config.policyVersion,
+      version: WARDEN_VERSION,
+      ready: true,
+    });
     const held = await h.agent.propose(
       proposalFor(newAttemptId(), STANDARD, h.config, h.clock.now),
     );

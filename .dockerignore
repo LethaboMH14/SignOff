@@ -1,0 +1,19 @@
+# Nothing secret, local or generated enters a container image. Keys, seeds, operator files, logs and state stay outside.
+.env
+.env.*
+**/.env
+**/warden-keys.json
+**/warden-config.json
+**/operators.json
+**/*.seed
+**/*.pem
+**/state/
+**/local/
+**/logs/
+node_modules
+**/node_modules
+**/dist
+.git
+.github
+docs
+scratchpad

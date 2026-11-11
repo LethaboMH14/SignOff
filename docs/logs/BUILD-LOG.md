@@ -218,3 +218,13 @@ One entry per working session (rule R-19 in [RULES.md](../RULES.md)), newest fir
 - Problems / blockers: the opening time is computed (700 ms), not measured; the frame check and the sheet's runtime behaviour are UNVERIFIED (T-110), because the browser pane was hidden. The function-coverage margin is narrow (90.88% against 90%).
 - Next: the health checks and deployment configuration (D6).
 
+
+### 2026-11-11 — Sibusiso with Claude (Haiku 5.5) — D6 health checks and deployment preparation
+
+- Done: the Warden's health answer carries its version and readiness; a read-only synthetic Testnet check (`npm run testnet:synthetic`) reads the validated ledger and, when set up, the spending account and the Warden; Dockerfiles for the Warden and the console, a root .dockerignore, and deploy/README.md. Nothing is deployed. Branch `feat/D6-deploy-health`, stacked on `feat/D7-motion`; the issue body says it is stacked on D5, so the order on this stack is D5, D7, D6.
+- Changed decisions: D-085.
+- Evidence: T-111 (215 Warden and script tests); T-112 (live ledger read OK; account and Warden UNVERIFIED); T-113 and T-114 UNVERIFIED.
+- Lenses. Prompt engineering: not applicable. Context engineering: the health answer and the synthetic check see only what they need, and the images see no secrets. Graph engineering: the synthetic check walks the read path of a payment (ledger, account, Warden) without submitting one.
+- Problems / blockers: the images are not built; the console-down test is not run as a process test; the account and Warden checks need SIGNOFF_SPENDING_ADDRESS and SIGNOFF_WARDEN_URL; no hosting account or budget is confirmed. Test IDs T-101 and D-081 belong to feat/S3-watchdog, D-080 to the keys branch; this stack uses T-102 to T-114 and D-078 to D-085.
+- Next: the README status table and the judge check script (E2 and E3), then the attempt at the Testnet credential check (S5).
+

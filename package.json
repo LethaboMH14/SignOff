@@ -32,6 +32,7 @@
     "testnet:failover": "tsx scripts/testnet/gate-a.ts failover",
     "testnet:rebuild": "tsx scripts/testnet/gate-a.ts rebuild",
     "testnet:gate-b": "tsx scripts/testnet/gate-b.ts",
+    "testnet:synthetic": "tsx scripts/testnet/synthetic.ts",
     "agent:eval": "tsx apps/agent/src/main.ts eval",
     "agent:run": "tsx apps/agent/src/main.ts run",
     "agent:export": "tsx apps/agent/src/main.ts export",

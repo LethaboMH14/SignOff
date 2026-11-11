@@ -24,8 +24,10 @@ export interface CoSignResult {
   readonly engineResult: string | null;
 }
 
-/** The Warden's health answer. It reports pause state and the policy version in force. */
+/** The Warden's health answer. It reports pause state, the policy version in force, the Warden's version and readiness. */
 export interface HealthResult {
   readonly paused: boolean;
   readonly policyVersion: string;
+  readonly version: string;
+  readonly ready: boolean;
 }
