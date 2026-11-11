@@ -12,6 +12,8 @@ const LSF_GLOBAL_FREEZE = 0x00400000;
 /** What the Warden reads about one trust line before it signs. */
 export interface TrustFacts {
   readonly balance: string;
+  /** Receiving-limit amount reported by the validated ledger, not an immutable loss cap. */
+  readonly limit: string;
   readonly frozenByIssuer: boolean;
   readonly frozenByHolder: boolean;
 }
@@ -64,6 +66,7 @@ export async function readPreSigning(
         ? null
         : {
             balance: spendingLine.balance,
+            limit: spendingLine.limit,
             frozenByIssuer: spendingLine.frozenByIssuer,
             frozenByHolder: spendingLine.frozenByHolder,
           },
@@ -73,6 +76,7 @@ export async function readPreSigning(
         ? null
         : {
             balance: destinationLine.balance,
+            limit: destinationLine.limit,
             frozenByIssuer: destinationLine.frozenByIssuer,
             frozenByHolder: destinationLine.frozenByHolder,
           },
