@@ -248,3 +248,13 @@ One entry per working session (rule R-19 in [RULES.md](../RULES.md)), newest fir
 - Problems / blockers: an earlier probe found `s.altnet.rippletest.net:51233` timing out from this machine and used `testnet.xrpl-labs.com`; the live run then connected to `s.altnet.rippletest.net:51233` directly. The provisioned supplier accounts are not used. Test IDs T-117, D-087 and S-050 may collide with the keys branch (S-050 is used there); renumber on merge.
 - Next: the README status table (E2).
 
+
+### 2026-11-11 — Sibusiso with Claude (Haiku 5.5) — E2 README status
+
+- Done: the root README banner, status table and hackathon scoring now state the real state of every claim, including the branches that are not merged here. Each row has a state and a link, or an explicit "Not claimed" or "Not built". One honest-limits bullet records the live model runs. Branch `feat/E2-readme-status`, stacked on `feat/S5-testnet-credentials`.
+- Changed decisions: D-088.
+- Evidence: T-119 (72 of 72 relative links resolve; 24 of 24 status rows complete). The live model runs and the S3 watchdog are on other branches and are marked as not merged.
+- Lenses. Prompt engineering: not applicable; no prompt changed. Context engineering: each claim carries the smallest evidence that supports it, so a reader sees the state without opening the logs. Graph engineering: each row links to the log entry that holds its evidence, and the judge check reproduces the simulated rows. Swarm engineering: not applicable.
+- Problems / blockers: the README names feature branches for the live model runs (feat/C5-live-providers) and the watchdog (feat/S3-watchdog). Those branches are not merged, so the README needs updating when they are. Nothing is deployed.
+- Next: npm run check on the final branch, then the Gamma deck of the final state.
+
