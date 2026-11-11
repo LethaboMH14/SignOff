@@ -238,3 +238,13 @@ One entry per working session (rule R-19 in [RULES.md](../RULES.md)), newest fir
 - Problems / blockers: the live result files are not in this branch's history (they are on feat/C5-live-providers and feat/keys-dotenv), so the judge reports them UNVERIFIED here until the owner decides on a merge. The judge check does not run the Testnet payments, which need the operator keys.
 - Next: the README status table (E2), then the Testnet credential attempt (S5).
 
+
+### 2026-11-11 — Sibusiso with Claude (Haiku 5.5) — S5 XRPL credential check
+
+- Done: `npm run testnet:credential` issues, accepts, reads back and deletes one XRPL credential between two test accounts on the Testnet, after it confirms that the Credentials amendment is enabled there. Branch `feat/S5-testnet-credentials`, stacked on `feat/E3-judge-check`.
+- Changed decisions: D-087.
+- Evidence: T-117 (gates); T-118 (the live run, with its three hashes, read back as validated). The lifecycle is proven between test accounts only. Applying it to the provisioned supplier accounts is not done, so that part is UNVERIFIED.
+- Lenses. Prompt engineering: not applicable; no model is called. Context engineering: the credential is read back from the ledger, so the check reports what the ledger holds, not what the script expects. Graph engineering: the run walks the credential through issue, accept, check and delete as a chain of ledger states, and a step that does not pass blocks the steps after it. Swarm engineering: not applicable.
+- Problems / blockers: an earlier probe found `s.altnet.rippletest.net:51233` timing out from this machine and used `testnet.xrpl-labs.com`; the live run then connected to `s.altnet.rippletest.net:51233` directly. The provisioned supplier accounts are not used. Test IDs T-117, D-087 and S-050 may collide with the keys branch (S-050 is used there); renumber on merge.
+- Next: the README status table (E2).
+

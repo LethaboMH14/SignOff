@@ -93,4 +93,4 @@ The build sliced into small, reviewable issues. Each maps to a requirement in [P
 | S2 | Status lights | Green only on validated payment | S1 | S | | | Todo |
 | S3 | Armed-mode heartbeat watchdog | Server-side fail closed on lost heartbeat; tested | S1 | M | | | Todo |
 | S4 | RFID tag presented | Tag event recorded; receiving approval still required | S1 | S | | | Todo |
-| S5 | XRPL credential on suppliers | Issue, accept, check, delete on Testnet ([ADR 0004](decisions/0004-workshop-adjustments.md)) | B3 | M | | | Todo |
+| S5 | XRPL credential on suppliers | Issue, accept, check, delete on Testnet ([ADR 0004](decisions/0004-workshop-adjustments.md)) | B3 | M | Sibusiso (AI-assisted) | | Review (T-117, T-118: lifecycle live on Testnet between two test accounts; not yet on the provisioned supplier accounts) |
