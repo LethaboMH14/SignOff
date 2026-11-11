@@ -501,7 +501,7 @@ describe('B5 limits', () => {
       { dailyTotalMinor: config.initialLimits.dailyTotalMinor + 1 },
     ]) {
       await expect(service.setLimits(patch, OPERATOR_A)).rejects.toThrow(
-        'raising limits requires independent approval',
+        'limit increase requires independent approval',
       );
     }
     expect(service.currentLimits().policyVersion).toBe(version);
