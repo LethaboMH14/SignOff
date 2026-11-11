@@ -286,7 +286,7 @@ One entry per working session (rule R-19 in [RULES.md](../RULES.md)), newest fir
 
 - Done: merged origin/feat/gate-c-agent-reliability (28abf3f) into the console stack on feat/integrate-gate-c. The Warden now returns unsigned terms, the agent signs only its half, and the Warden rechecks pause, policy, limits, payee and the ledger before it signs and submits (issue #45). The console read routes, the second approver and health are kept on top.
 - Evidence integrity: our colliding IDs were renumbered because the Gate C ones are already on GitHub: D-072 to D-089, T-089 to T-121, S-038 to S-052. S-051 stays reserved for the watchdog branch.
-- Evidence: T-122.
+- Evidence: T-122, T-123, T-124.
 - Problems / blockers: the live P0 negative proof (#54), the RLUSD payment (A3) and a live agent-to-Warden run are still not run. Not pushed.
 - Next: review PRs #47 to #54.
 
