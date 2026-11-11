@@ -13,9 +13,13 @@ Warden, which is not deployed. No keys, no Testnet actions and no payments happe
    - `npm run console:operator -- add <name>.operator operator --principal demo-operator --secret-file <private>/operator-secret.txt --password-file <private>/operator-password.txt --file <private>/operators.json`
    - `npm run console:operator -- add <name>.viewer viewer --password-file <private>/viewer-password.txt --file <private>/operators.json`
    - Make the operator and reader secrets with 32 random bytes in base64 each.
-5. Create the app and set its secrets. The values come from the private folder, and they are never committed:
+5. Create the app and import its secrets **from a private file through standard input**, not as command-line values:
    - `flyctl apps create <app-name> --org personal`
-   - `flyctl secrets set -a <app-name> SIGNOFF_OPERATORS_B64="$(base64 -w0 <private>/operators.json)" SIGNOFF_READER_SECRET="$(cat <private>/reader-secret.txt)"`
+   - Outside the repository, prepare a private `fly-secrets.env` file (restrict it to the operator's account). It must have two `NAME=VALUE` lines:
+     - `SIGNOFF_OPERATORS_B64`: the single-line base64 encoding of the private `operators.json` file.
+     - `SIGNOFF_READER_SECRET`: the contents of the private `reader-secret.txt` file.
+   - On a Unix shell: `flyctl secrets import -a <app-name> < <private>/fly-secrets.env`. In PowerShell, use `Get-Content -Raw <private>/fly-secrets.env | flyctl secrets import -a <app-name>`.
+   - Do not print the secret file, paste its contents into a terminal command, save it inside the repository, or include it in CI logs. The original `flyctl secrets set NAME="$(cat secret-file)"` form is unsafe because it can expose values in process arguments. Fly's `secrets import` reads `NAME=VALUE` pairs from standard input.
 6. Deploy from the repository root: `flyctl deploy --remote-only -c fly.toml -a <app-name> --yes`, then `flyctl scale count 1 -a <app-name> --yes`.
 7. Check `https://<app-name>.fly.dev/api/health` (it answers `ok`, mode `simulated`), then sign in with the viewer or operator account.
 
