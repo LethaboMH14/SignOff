@@ -92,9 +92,9 @@ const CLEAN_FACTS: PreSigningFacts = {
   regularKeyPresent: false,
   signerListMatches: true,
   issuerGlobalFreeze: false,
-  spendingLine: { balance: '100', frozenByIssuer: false, frozenByHolder: false },
+  spendingLine: { balance: '100', limit: '1000', frozenByIssuer: false, frozenByHolder: false },
   destinationExists: true,
-  destinationLine: { balance: '0', frozenByIssuer: false, frozenByHolder: false },
+  destinationLine: { balance: '0', limit: '100', frozenByIssuer: false, frozenByHolder: false },
 };
 
 describe('day, identity and tolerance helpers', () => {
@@ -273,7 +273,7 @@ describe('the pre-signing ledger check', () => {
       preSigningVerdict(
         {
           ...CLEAN_FACTS,
-          spendingLine: { balance: '100', frozenByIssuer: true, frozenByHolder: false },
+          spendingLine: { balance: '100', limit: '1000', frozenByIssuer: true, frozenByHolder: false },
         },
         '10',
       ),
@@ -282,7 +282,7 @@ describe('the pre-signing ledger check', () => {
       preSigningVerdict(
         {
           ...CLEAN_FACTS,
-          spendingLine: { balance: '100', frozenByIssuer: false, frozenByHolder: true },
+          spendingLine: { balance: '100', limit: '1000', frozenByIssuer: false, frozenByHolder: true },
         },
         '10',
       ),
@@ -311,7 +311,7 @@ describe('the pre-signing ledger check', () => {
       preSigningVerdict(
         {
           ...CLEAN_FACTS,
-          destinationLine: { balance: '0', frozenByIssuer: true, frozenByHolder: false },
+          destinationLine: { balance: '0', limit: '100', frozenByIssuer: true, frozenByHolder: false },
         },
         '10',
       ),
@@ -320,11 +320,57 @@ describe('the pre-signing ledger check', () => {
       preSigningVerdict(
         {
           ...CLEAN_FACTS,
-          destinationLine: { balance: '0', frozenByIssuer: false, frozenByHolder: true },
+          destinationLine: { balance: '0', limit: '100', frozenByIssuer: false, frozenByHolder: true },
         },
         '10',
       ),
     ).toMatchObject({ code: 'ACCOUNT_FROZEN' });
+  });
+});
+
+describe('B8 receiving capacity in issued-token trust lines', () => {
+  const healthyLine = {
+    balance: '95',
+    limit: '100',
+    frozenByIssuer: false,
+    frozenByHolder: false,
+  };
+
+  it('accepts a payment that exactly fills the destination limit', () => {
+    expect(preSigningVerdict({ ...CLEAN_FACTS, destinationLine: healthyLine }, '5')).toBeNull();
+  });
+
+  it('holds an amount over the remaining capacity, including fractional currency amounts', () => {
+    expect(
+      preSigningVerdict({ ...CLEAN_FACTS, destinationLine: healthyLine }, '5.01'),
+    ).toMatchObject({ code: 'INVARIANT_FAILED' });
+    expect(
+      preSigningVerdict(
+        {
+          ...CLEAN_FACTS,
+          destinationLine: { ...healthyLine, balance: '0.1', limit: '0.3' },
+        },
+        '0.200000000000001',
+      ),
+    ).toMatchObject({ code: 'INVARIANT_FAILED' });
+    expect(
+      preSigningVerdict(
+        {
+          ...CLEAN_FACTS,
+          destinationLine: { ...healthyLine, balance: '0.1', limit: '0.3' },
+        },
+        '0.2',
+      ),
+    ).toBeNull();
+  });
+
+  it('fails closed when the receiving-limit metadata cannot be read as a decimal', () => {
+    expect(
+      preSigningVerdict(
+        { ...CLEAN_FACTS, destinationLine: { ...healthyLine, limit: 'not-a-decimal' } },
+        '1',
+      ),
+    ).toMatchObject({ code: 'INVARIANT_FAILED' });
   });
 });
 
