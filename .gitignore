@@ -27,3 +27,8 @@ id_ed25519
 Thumbs.db
 .idea/
 .vscode/
+
+# Clawness — per-machine session state (memory.md and rules/ stay shared)
+.clawness/*
+!.clawness/memory.md
+!.clawness/rules/
