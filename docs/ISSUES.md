@@ -1,6 +1,6 @@
 # Work issues
 
-**Gate 0 status (10 November 2026):** F1 to F5 are merged into main (#12 to #16). The phase-close pull request #17 is based on the F5 branch and needs retargeting to main before it merges. CI passed on GitHub for F2 to F5 (T-043 to T-046 and T-049). Gate 0 closes when its pull requests, the phase close included, are merged (D-038). Two acceptance points need the repository owner: F2's required checks before merge, and F3's GitHub secret scanning (S-005). The phase report is in [logs/PHASE-REPORTS.md](logs/PHASE-REPORTS.md).
+**Gate 0 status (10 November 2026):** F1 to F5 are merged into main (#12 to #16). The phase-close pull request #17 is merged. CI passed on GitHub for F2 to F5 (T-043 to T-046 and T-049). Gate 0's code and phase report have merged (D-038); owner-controlled repo protections remain unverified. Two acceptance points need the repository owner: F2's required checks before merge, and F3's GitHub secret scanning (S-005). The phase report is in [logs/PHASE-REPORTS.md](logs/PHASE-REPORTS.md).
 
 The build sliced into small, reviewable issues. Each maps to a requirement in [PRD.md](PRD.md) and a gate in [ENGINEERING.md](ENGINEERING.md#delivery-gates). Rule R-16 in [RULES.md](RULES.md): no work starts without an issue here.
 
@@ -27,13 +27,13 @@ The build sliced into small, reviewable issues. Each maps to a requirement in [P
 
 | ID | Title | Acceptance criteria | Depends | Size | Owner | GH | Status |
 |---|---|---|---|---|---|---|---|
-| A1 | Testnet provisioning script | One command creates spending, reserve and supplier accounts, funds XRP, opens RLUSD trust lines, records addresses (no seeds) | F1, F3 | M | | | Todo |
-| A2 | Signer list | Agent 1, Warden 1, quorum 2; master key disabled; no regular key; verified by reading the account back | A1 | S | | | Todo |
-| A3 | Two-signature payment | Validated RLUSD payment with expected delivered amount; hash logged | A2 | M | | | Todo |
-| A4 | Single-key rejections | Agent alone and Warden alone rejected; result codes logged | A2 | S | | | Todo |
-| A5 | Reliable submission | Expiry set, persist before submit, reconcile by validated history, no blind resubmit; timeout test | A3 | M | | | Todo |
-| A6 | Node failover | Second Testnet node; failover keeps exact transaction identity | A5 | S | | | Todo |
-| A7 | Rebuild from reserve | Scripted abandon-and-refund path tested | A1 | S | | | Todo |
+| A1 | Testnet provisioning script | One command creates spending, reserve and supplier accounts, funds XRP, opens RLUSD trust lines, records addresses (no seeds) | F1, F3 | M | Sibusiso (AI-assisted) | [#20](https://github.com/LethaboMH14/SignOff/issues/20) | Review |
+| A2 | Signer list | Agent 1, Warden 1, quorum 2; master key disabled; no regular key; verified by reading the account back | A1 | S | Sibusiso (AI-assisted) | [#21](https://github.com/LethaboMH14/SignOff/issues/21) | Review |
+| A3 | Two-signature payment | Validated RLUSD payment with expected delivered amount; hash logged | A2 | M | Sibusiso (AI-assisted) | [#22](https://github.com/LethaboMH14/SignOff/issues/22) | Doing (RLUSD run blocked, T-059) |
+| A4 | Single-key rejections | Agent alone and Warden alone rejected; result codes logged | A2 | S | Sibusiso (AI-assisted) | [#23](https://github.com/LethaboMH14/SignOff/issues/23) | Review |
+| A5 | Reliable submission | Expiry set, persist before submit, reconcile by validated history, no blind resubmit; timeout test | A3 | M | Sibusiso (AI-assisted) | [#24](https://github.com/LethaboMH14/SignOff/issues/24) | Review |
+| A6 | Node failover | Second Testnet node; failover keeps exact transaction identity | A5 | S | Sibusiso (AI-assisted) | [#25](https://github.com/LethaboMH14/SignOff/issues/25) | Review |
+| A7 | Rebuild from reserve | Scripted abandon-and-refund path tested | A1 | S | Sibusiso (AI-assisted) | [#26](https://github.com/LethaboMH14/SignOff/issues/26) | Review |
 
 ## Gate B: Warden controls
 
