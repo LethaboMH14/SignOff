@@ -33,7 +33,10 @@ export function slugOf(state: DisplayState): string {
 export function StateChip({ state }: { readonly state: DisplayState }) {
   return (
     <span className={`chip chip-${slugOf(state)}`}>
-      <span aria-hidden="true">{symbolOf(state)}</span> {state}
+      <span aria-hidden="true" className={state === 'Paid' ? 'tick' : undefined}>
+        {symbolOf(state)}
+      </span>{' '}
+      {state}
     </span>
   );
 }

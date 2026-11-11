@@ -2,6 +2,7 @@ import { type SubmitEvent, useState } from 'react';
 
 import { type DeskData, type LimitValues, type PendingAction } from './api.js';
 import { DISPLAY_STATES, type DisplayState } from '../src/model/desk.js';
+import { CountUp } from './CountUp.js';
 import { StateChip } from './StateChip.js';
 
 /** The headline states, in the order the desk reads them. The rest are in the queue and in the count below. */
@@ -102,6 +103,11 @@ function StepUp({
     <form
       className="stepup"
       aria-label="Confirm your password"
+      onKeyDown={(event) => {
+        if (event.key === 'Escape') {
+          onCancel();
+        }
+      }}
       onSubmit={(event: SubmitEvent<HTMLFormElement>) => {
         event.preventDefault();
         void onConfirm(password).then(() => {
@@ -116,6 +122,7 @@ function StepUp({
           name="password"
           type="password"
           autoComplete="current-password"
+          autoFocus
           required
           value={password}
           onChange={(event) => {
@@ -256,7 +263,9 @@ export function DeskView(props: DeskViewProps) {
       <ul className="tiles" aria-label="Counts by state">
         {HEADLINE_STATES.map((state) => (
           <li key={state} className="tile">
-            <p className="tile-number">{String(countOf(data.counts, state))}</p>
+            <p className="tile-number">
+              <CountUp value={countOf(data.counts, state)} />
+            </p>
             <p className="tile-label">
               <StateChip state={state} />
             </p>

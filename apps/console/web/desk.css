@@ -265,3 +265,100 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+/*
+ * Motion (D7). Tiles rise in a staggered opening; a screen crossfades with a small slide; the Paid tick is drawn only for a
+ * payment the desk shows as paid; the password sheet slides up. Every animation is replaced by its final state for a
+ * person who asks for reduced motion.
+ */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes screen-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes sheet-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes tick-draw {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.desk,
+.invoice,
+.receipt {
+  animation: screen-in 200ms ease-out both;
+}
+
+.tiles > li {
+  animation: rise 400ms ease-out both;
+}
+
+.tiles > li:nth-child(2) {
+  animation-delay: 60ms;
+}
+
+.tiles > li:nth-child(3) {
+  animation-delay: 120ms;
+}
+
+.tiles > li:nth-child(4) {
+  animation-delay: 180ms;
+}
+
+.tiles > li:nth-child(5) {
+  animation-delay: 240ms;
+}
+
+.tiles > li:nth-child(6) {
+  animation-delay: 300ms;
+}
+
+.stepup {
+  animation: sheet-up 240ms ease-out both;
+}
+
+.tick {
+  display: inline-block;
+  animation: tick-draw 300ms ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

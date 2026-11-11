@@ -110,7 +110,8 @@ describe('the state chips', () => {
   it('give every state its words, and hide the symbol from assistive technology', () => {
     for (const state of DISPLAY_STATES) {
       const markup = renderToStaticMarkup(<StateChip state={state} />);
-      expect(markup).toContain(`<span aria-hidden="true">${symbolOf(state)}</span> ${state}`);
+      expect(markup).toContain(`>${symbolOf(state)}</span> ${state}`);
+      expect(markup).toContain('aria-hidden="true"');
       expect(markup).toContain(`chip-${slugOf(state)}`);
     }
   });

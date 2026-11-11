@@ -208,3 +208,13 @@ One entry per working session (rule R-19 in [RULES.md](../RULES.md)), newest fir
 - Problems / blockers: the phone and desktop layout of the three later screens is not measured (T-108). Colour contrast is not checked by the scan. The agent map (SVG) scrolls inside its own box at 375 px; that is the existing design, not a page scroll, and it is not a D5 screen. Axe-core is run in jsdom, so it does not see layout-dependent rules.
 - Next: the motion layer (D7), then the health checks and deployment configuration (D6).
 
+
+### 2026-11-11 — Sibusiso with Claude (Haiku 5.5) — D7 motion
+
+- Done: the desk's tiles rise in a staggered opening, the KPI numbers climb to their values, the screens crossfade with a small slide, the password sheet slides up and takes focus (Escape closes it), and the Paid tick is drawn only on a Paid chip. Reduced motion replaces every animation with its final state. Branch `feat/D7-motion`, stacked on `feat/D5-mobile-a11y`.
+- Changed decisions: D-084.
+- Evidence: T-109 (187 console tests; repository check exit 0: 995 tests). The runtime checks are not run (T-110).
+- Lenses. Prompt engineering: not applicable. Context engineering: the motion carries no information on its own; every change has its words. Graph engineering: not applicable.
+- Problems / blockers: the opening time is computed (700 ms), not measured; the frame check and the sheet's runtime behaviour are UNVERIFIED (T-110), because the browser pane was hidden. The function-coverage margin is narrow (90.88% against 90%).
+- Next: the health checks and deployment configuration (D6).
+
