@@ -784,6 +784,14 @@ export class WardenService {
     if (limit !== null) {
       return stop(limit);
     }
+    // Other hard holds, including over-limit proposals, retain their precise
+    // reason. Before any ledger preparation, allow at most one unresolved
+    // transaction across ALL payables on this spending account.
+    if ([...this.state.attempts.values()].some((attempt) => isUnresolved(attempt.status))) {
+      return stop(
+        hold('INVARIANT_FAILED', 'another transfer on the spending account is unresolved'),
+      );
+    }
     const terms: PaymentTerms = {
       spending: config.spendingAddress,
       destination: supplier.payee.address,
