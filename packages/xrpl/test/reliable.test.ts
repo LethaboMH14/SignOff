@@ -149,6 +149,28 @@ describe('sendAndReconcile', () => {
     ]);
   });
 
+  it('reconciles a tefPAST_SEQ response against a payment already validated by hash', async () => {
+    const h = harness();
+    const a = await actors(h);
+    const plan = await planFor(h, a, '8', '8');
+    await h.port.submit(plan.txBlob);
+    h.ledger.advance();
+    const staleSequencePort: LedgerPort = {
+      ...h.port,
+      submit: () =>
+        Promise.resolve({ engineResult: 'tefPAST_SEQ', accepted: false, applied: false }),
+    };
+    const decision = await sendAndReconcile(plan, { ...h.deps, port: staleSequencePort });
+    expect(decision.kind).toBe('paid');
+    expect(h.journal.records().map((record) => record.state)).toEqual([
+      'prepared',
+      'submitting',
+      'submitted',
+      'paid',
+    ]);
+    expect(h.ledger.line(a.holder.address, TOKEN, a.issuer.address)?.balance).toBe(8);
+  });
+
   it('survives a lost response: reconciles by hash and applies the payment exactly once', async () => {
     const h = harness();
     const a = await actors(h);

@@ -99,7 +99,12 @@ export async function sendAndReconcile(
   let pending = false;
   try {
     const outcome = await port.submit(plan.txBlob);
-    if (classifySubmitResult(outcome.engineResult) === 'rejected') {
+    // A stale sequence or an "already present" result can describe a transaction
+    // the ledger validated earlier. Never declare it rejected from the submit reply
+    // alone: reconcile the original hash against validated history first.
+    const mightAlreadyExist =
+      outcome.engineResult === 'tefPAST_SEQ' || outcome.engineResult === 'tefALREADY';
+    if (classifySubmitResult(outcome.engineResult) === 'rejected' && !mightAlreadyExist) {
       await journal.append(record(plan, 'rejected', now(), { engineResult: outcome.engineResult }));
       return { kind: 'rejected', engineResult: outcome.engineResult };
     }
