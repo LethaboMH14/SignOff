@@ -81,7 +81,7 @@ The build sliced into small, reviewable issues. Each maps to a requirement in [P
 |---|---|---|---|---|---|---|---|
 | E1 | Customer conversation | One consenting finance lead; notes with consent recorded | — | M | | | Todo |
 | E2 | README status complete | Every row has its real state and evidence link | A–D | S | | | Todo |
-| E3 | Judge check script | One command reproduces the payment and attack suite results | A, B | M | | | Todo |
+| E3 | Judge check script | One command reproduces the payment and attack suite results | A, B | M | Sibusiso (AI-assisted) | | Review (T-115, T-116; live results and Testnet payments UNVERIFIED here) |
 | E4 | Demo video | Under three minutes; real, simulated and unverified labelled; backup recorded | D | M | | | Todo |
 | E5 | Submission | Title, public repo, video on BuilderBase before Thursday night | E4 | S | | | Todo |
 

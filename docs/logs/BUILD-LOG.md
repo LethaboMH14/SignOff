@@ -228,3 +228,13 @@ One entry per working session (rule R-19 in [RULES.md](../RULES.md)), newest fir
 - Problems / blockers: the images are not built; the console-down test is not run as a process test; the account and Warden checks need SIGNOFF_SPENDING_ADDRESS and SIGNOFF_WARDEN_URL; no hosting account or budget is confirmed. Test IDs T-101 and D-081 belong to feat/S3-watchdog, D-080 to the keys branch; this stack uses T-102 to T-114 and D-078 to D-085.
 - Next: the README status table and the judge check script (E2 and E3), then the attempt at the Testnet credential check (S5).
 
+
+### 2026-11-11 — Sibusiso with Claude (Haiku 5.5) — E3 judge check
+
+- Done: `npm run judge:check` runs the payment tests (29 tests in 2 files) and the injection tests (35 tests in 1 file), re-runs the simulated labelled set into a temporary folder and compares it field for field with the committed result, reads the live result files that are committed on this branch, and reports Testnet payments as UNVERIFIED. The report rules and their 17 tests are in `scripts/lib/judge-check.ts`. Branch `feat/E3-judge-check`, stacked on `feat/D6-deploy-health`.
+- Changed decisions: D-086.
+- Evidence: T-115 (unit tests and checks); T-116 (the offline run, exit 0). Live results and Testnet payments are UNVERIFIED on this branch.
+- Lenses. Prompt engineering: not applicable; no prompt changed, and the judge check calls no model. Context engineering: the report carries only check names, statuses and headline numbers, not the text of the labelled cases. Graph engineering: the simulated re-run walks the evaluation from the labelled set through the pipeline and the baseline to the scores, and compares the result with the committed one. Swarm engineering: not applicable.
+- Problems / blockers: the live result files are not in this branch's history (they are on feat/C5-live-providers and feat/keys-dotenv), so the judge reports them UNVERIFIED here until the owner decides on a merge. The judge check does not run the Testnet payments, which need the operator keys.
+- Next: the README status table (E2), then the Testnet credential attempt (S5).
+
