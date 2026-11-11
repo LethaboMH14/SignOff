@@ -92,3 +92,12 @@ The build sliced into small, reviewable issues. Each maps to a requirement in [P
 | S3 | Armed-mode heartbeat watchdog | Server-side fail closed on lost heartbeat; tested | S1 | M | | | Todo |
 | S4 | RFID tag presented | Tag event recorded; receiving approval still required | S1 | S | | | Todo |
 | S5 | XRPL credential on suppliers | Issue, accept, check, delete on Testnet ([ADR 0004](decisions/0004-workshop-adjustments.md)) | B3 | M | | | Todo |
+
+## Maintenance and review blockers (after Gate 0)
+
+| ID | Work | GitHub issue | Related PR | Status |
+|---|---|---|---|---|
+| M1 | Prevent incompatible TypeScript 7 / Node 26 type-definition major jumps in Dependabot until the pinned Node 24 / TS 6 toolchain is migrated with compatible lint/parser and CI | [#46](https://github.com/LethaboMH14/SignOff/issues/46) | [#47](https://github.com/LethaboMH14/SignOff/pull/47) | In review |
+| P0 | Repair Warden signing sequence: **never expose a usable Warden co-signature before final pause/policy/payee checks and server-owned submit** | [#45](https://github.com/LethaboMH14/SignOff/issues/45) | [#27](https://github.com/LethaboMH14/SignOff/pull/27) and [#44](https://github.com/LethaboMH14/SignOff/pull/44) | BLOCKED (changes requested) |
+
+This section tracks maintenance and security blockers without treating these tasks as part of the already merged Gate 0 foundation. Issue #45 must be completed before claiming a secure physical pause or autonomous-payment authorization.
