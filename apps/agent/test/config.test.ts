@@ -10,17 +10,15 @@ describe('chooseModel', () => {
     expect(choice.provider.id).toBe('openrouter');
   });
 
-  it('accepts a named model from either provider, including a Meta model', () => {
-    expect(chooseModel('huggingface', 'meta-llama/Llama-3.3-70B-Instruct:novita').model).toBe(
-      'meta-llama/Llama-3.3-70B-Instruct:novita',
-    );
-    expect(chooseModel('openrouter', 'meta-llama/llama-3.3-70b-instruct').model).toBe(
-      'meta-llama/llama-3.3-70b-instruct',
-    );
+  it('accepts a named model from each provider', () => {
+    expect(chooseModel('groq', 'openai/gpt-oss-20b').model).toBe('openai/gpt-oss-20b');
+    expect(chooseModel('gemini', 'gemini-2.5-flash-lite').model).toBe('gemini-2.5-flash-lite');
+    expect(chooseModel('meta', 'muse-spark-1.2').model).toBe('muse-spark-1.2');
   });
 
-  it('refuses an unknown provider and an Anthropic model', () => {
+  it('refuses an unknown provider, the retired Hugging Face route, and an Anthropic model', () => {
     expect(() => chooseModel('someone', undefined)).toThrow('unknown model provider');
+    expect(() => chooseModel('huggingface', undefined)).toThrow('unknown model provider');
     expect(() => chooseModel('openrouter', 'anthropic/claude-opus-5-5')).toThrow(
       'Anthropic and Claude models are not used by this project',
     );
@@ -32,7 +30,7 @@ describe('chooseModel', () => {
 });
 
 describe('assertDataAllowed', () => {
-  const paid = chooseModel('huggingface', undefined);
+  const paid = chooseModel('groq', undefined);
   const free = chooseModel('openrouter', undefined);
 
   it('lets fictional data go to any allowed model', () => {
@@ -44,12 +42,12 @@ describe('assertDataAllowed', () => {
   it('refuses real invoices unless the provider is confirmed', () => {
     expect(() => {
       assertDataAllowed({ dataClass: 'real', choice: paid, zeroRetentionAck: null });
-    }).toThrow('--zero-retention-ack huggingface');
+    }).toThrow('--zero-retention-ack groq');
     expect(() => {
       assertDataAllowed({ dataClass: 'real', choice: paid, zeroRetentionAck: 'openrouter' });
-    }).toThrow('--zero-retention-ack huggingface');
+    }).toThrow('--zero-retention-ack groq');
     expect(() => {
-      assertDataAllowed({ dataClass: 'real', choice: paid, zeroRetentionAck: 'huggingface' });
+      assertDataAllowed({ dataClass: 'real', choice: paid, zeroRetentionAck: 'groq' });
     }).not.toThrow();
   });
 
@@ -65,8 +63,8 @@ describe('keyFor', () => {
     expect(keyFor(PROVIDERS.openrouter, { OPENROUTER_API_KEY: '  placeholder-value  ' })).toBe(
       'placeholder-value',
     );
-    expect(() => keyFor(PROVIDERS.huggingface, {})).toThrow(
-      'set HF_TOKEN in your environment to use huggingface',
+    expect(() => keyFor(PROVIDERS.groq, {})).toThrow(
+      'set GROQ_API_KEY in your environment to use groq',
     );
     expect(() => keyFor(PROVIDERS.openrouter, { OPENROUTER_API_KEY: '   ' })).toThrow(
       'set OPENROUTER_API_KEY in your environment',

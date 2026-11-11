@@ -15,6 +15,8 @@ import { parseArgs } from 'node:util';
 
 import { Wallet } from 'xrpl';
 
+import { loadDotEnv } from '../../../packages/shared/src/node.js';
+
 import { evidenceRegister } from '../../../packages/shared/src/evidence-register.js';
 import { EvidenceFile } from '../../../packages/shared/src/schemas/evidence.js';
 import { WardenClient, coSignAsAgent } from '../../../packages/warden-api/src/client.js';
@@ -33,6 +35,8 @@ import { evaluate, scoreBaseline, scorePipeline } from './eval/run.js';
 import { simulatedModel } from './eval/simulated-model.js';
 import { watchInbox } from './intake/intake.js';
 import { createChatClient } from './model/chat-client.js';
+import { baseUrlOf } from './model/providers.js';
+import { intervalOf, pacedModel } from './model/pacing.js';
 import type { ModelClient } from './model/types.js';
 import { parseSupplierMaster } from './match/supplier-master.js';
 import { TransitionLog, withRunLockAsync } from './log/transition-log.js';
@@ -69,10 +73,12 @@ async function evalCommand(args: readonly string[]): Promise<void> {
       model: { type: 'string' },
       out: { type: 'string' },
       transitions: { type: 'string' },
+      'min-interval-ms': { type: 'string' },
     },
     strict: true,
   });
   const mode = values.mode ?? 'simulated';
+  const minIntervalMs = intervalOf(values['min-interval-ms']);
   const set = loadLabelledSet(resolve(values.set ?? DEFAULT_SET));
   if (!set.notice.includes('FICTIONAL')) {
     throw new RangeError(
@@ -86,11 +92,15 @@ async function evalCommand(args: readonly string[]): Promise<void> {
     modelLabel = 'simulated (rule-based stand-in)';
   } else if (mode === 'live') {
     const choice = chooseModel(values.provider ?? 'openrouter', values.model);
-    model = createChatClient({
-      provider: choice.provider,
-      model: choice.model,
-      apiKey: keyFor(choice.provider, process.env),
-    });
+    model = pacedModel(
+      createChatClient({
+        provider: choice.provider,
+        model: choice.model,
+        apiKey: keyFor(choice.provider, process.env),
+        baseUrl: baseUrlOf(choice.provider, process.env),
+      }),
+      minIntervalMs,
+    );
     modelLabel = model.label;
   } else {
     throw new RangeError('the mode must be simulated or live');
@@ -236,6 +246,7 @@ async function runCommand(args: readonly string[]): Promise<void> {
     provider: choice.provider,
     model: choice.model,
     apiKey: keyFor(choice.provider, env),
+    baseUrl: baseUrlOf(choice.provider, env),
   });
 
   const evidence = evidenceRegister(EvidenceFile.parse(readJson(evidencePath)));
@@ -292,6 +303,10 @@ async function runCommand(args: readonly string[]): Promise<void> {
 }
 
 async function main(argv: readonly string[]): Promise<void> {
+  const dotEnv = loadDotEnv(resolve('.env'));
+  if (dotEnv.loaded.length > 0) {
+    line(`loaded ${String(dotEnv.loaded.length)} variables from .env`);
+  }
   const [command, ...rest] = argv;
   if (command === 'eval') {
     await evalCommand(rest);

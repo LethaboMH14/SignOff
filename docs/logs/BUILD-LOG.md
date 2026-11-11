@@ -57,6 +57,22 @@ One entry per working session (rule R-19 in [RULES.md](../RULES.md)), newest fir
 - Changed decisions: none accepted as production ready. The RLUSD live transaction (A3), live Agent-to-Warden Testnet run (C7) and live model evaluation (C5) are still unverified. The new feature-branch merge does not constitute Gate B or Gate C release acceptance.
 - CI: not yet verified on the new combined head at the time of this entry. Require exact-head `npm run check` and dependency audit, plus independent review before any merge to main.
 - Next: inspect the resulting GitHub CI for any semantic/type-test regressions and repair; integrate the individually reviewed Gate A5 and Gate B P0/B2/B5/B8 follow-up PRs in dependency order.
+### 2026-11-10 — Sibusiso with Claude (Haiku 5.5) — Model providers: OpenRouter, Groq, Gemini and Meta
+
+- Done: Hugging Face is retired on the user's instruction. Groq, Gemini and Meta are added, with their defaults checked by one minimal probe each (T-125). Meta's address is read from META_API_BASE_URL and validated. Live runs can be paced with `--min-interval-ms`. The README and ADR 0006 are updated to match. Branch `feat/C5-live-providers`, from `feat/gate-c-agent-reliability`.
+- Changed decisions: D-073. ADR 0006 gains decisions 8 and 9 and a context note.
+- Evidence: T-125 (probes) and T-126 (tests, typecheck and lint). The live evaluation results are recorded in the test log when the runs finish.
+- Problems / blockers: Gemini `gemini-2.5-flash` returned HTTP 404, and the Gemma free models on OpenRouter returned HTTP 429 at the time of the probes. Meta's first probe was cut off at 64 tokens, so Meta replies need a larger reply budget than the probe default.
+- Next: the live evaluation on the labelled set with Groq, Gemini and OpenRouter. Meta is probed only.
+
+### 2026-11-11 — Sibusiso with Claude (Haiku 5.5) — Local .env reader for the agent
+
+- Done: the agent command line reads a local `.env` file at start-up, with no new dependency. The shell wins over the file, and no value is printed. Branch `feat/keys-dotenv`, stacked on `feat/C5-live-providers`.
+- Changed decisions: D-080.
+- Evidence: T-100.
+- Problems / blockers: the full `npm run check` has not been run on this branch yet.
+- Next: the Warden's standby watchdog (S3) and the payment desk (D1).
+
 
 ### 2026-11-10 — Sibusiso with Claude (Haiku 5.5) — Gate C issues created and linked
 - Done: created issues #37 to #43 for C1 to C7, titled as in docs/ISSUES.md. Each carries its acceptance criteria, dependencies, status, evidence and branch, with the live runs marked UNVERIFIED where they have not been run. Linked them in the GH column of docs/ISSUES.md.
@@ -289,4 +305,12 @@ One entry per working session (rule R-19 in [RULES.md](../RULES.md)), newest fir
 - Evidence: T-122, T-123, T-124.
 - Problems / blockers: the live P0 negative proof (#54), the RLUSD payment (A3) and a live agent-to-Warden run are still not run. Not pushed.
 - Next: review PRs #47 to #54.
+
+### 2026-11-11 — Sibusiso with Claude — Keys and live provider work merged onto the integration branch
+
+- Done: merged feat/keys-dotenv, which carries the C5 provider work and the three live labelled-set runs, onto feat/integrate-gate-c. The agent command line reads a local `.env`; the `--min-interval-ms` and `--transitions` options both stay in `apps/agent/src/main.ts`.
+- Evidence integrity: this side's IDs collided with Gate C's, so T-090 became T-125, T-091 became T-126 and S-050 became S-055. D-073 and D-080 and S-039 were free and keep their numbers. S-051, T-101 and D-081 stay reserved for the watchdog branch.
+- Evidence: T-127.
+- Problems / blockers: the live runs are the weak result already logged; no accuracy is claimed. RLUSD (A3) is still not funded.
+- Next: RLUSD payment once funded, then the re-review requests on #27 and #44.
 

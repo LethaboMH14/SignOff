@@ -108,16 +108,32 @@ describe('createChatClient request', () => {
     expect(client.label).not.toContain(KEY);
   });
 
-  it('uses the Hugging Face router for that provider', async () => {
+  it('uses the Groq endpoint for that provider', async () => {
     const { fetchImpl, calls } = recordingFetch(() => completion('{}'));
     const client = createChatClient({
-      provider: PROVIDERS.huggingface,
-      model: 'google/gemma-4-31B-it:deepinfra',
+      provider: PROVIDERS.groq,
+      model: 'openai/gpt-oss-120b',
       apiKey: KEY,
       fetchImpl,
     });
     await client.complete(REQUEST);
-    expect(calls[0]?.url).toBe('https://router.huggingface.co/v1/chat/completions');
+    expect(calls[0]?.url).toBe('https://api.groq.com/openai/v1/chat/completions');
+  });
+
+  it('calls the address it is given, and refuses a provider with no address at all', async () => {
+    const { fetchImpl, calls } = recordingFetch(() => completion('{}'));
+    const client = createChatClient({
+      provider: PROVIDERS.meta,
+      model: 'muse-spark-1.3',
+      apiKey: KEY,
+      baseUrl: 'https://meta.example.test/compat/v1',
+      fetchImpl,
+    });
+    await client.complete(REQUEST);
+    expect(calls[0]?.url).toBe('https://meta.example.test/compat/v1/chat/completions');
+    expect(() =>
+      createChatClient({ provider: PROVIDERS.meta, model: 'muse-spark-1.3', apiKey: KEY }),
+    ).toThrow('no address is known for this provider');
   });
 
   it('defaults to a 60-second timeout signal', async () => {

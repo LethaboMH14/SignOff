@@ -127,6 +127,9 @@ Findings, incidents and security-relevant changes. Newest at the bottom.
 | S-052 | 2026-11-10 | Change | Operator read routes added to the Warden for the console (D1W): overview, proposals and suppliers, read-only, operator role only, allowlisted views | T-35 | Tests in TEST-LOG T-121; review by the other team member pending | Closed in code, pending review |
 | S-053 | 2026-11-11 | Change | Gate B #52, #53 and #54 merged into the console stack. A single operator still cannot raise a limit (D3W holds it for a second operator), so #53's safety property holds. Two reason codes added to the shared schema (ACCOUNT_BUSY, RECEIVING_CAPACITY); they carry no data beyond a fixed code. The live STOP proof driver (#54) is present; its result is logged separately once run. | Mitigated, offline |
 | S-054 | 2026-11-11 | Evidence | P0 (issue #45) live negative proof recorded in T-124: an agent holding only its own signature cannot complete a payment, and a late STOP stops the Warden's second signature. Residual: the proof covers the pause path only, not a changed payee or a lowered limit after proposal on Testnet (offline tests only). | Mitigated, live for pause |
+| S-039 | 2026-11-10 | Change | Model providers changed: Hugging Face retired; Groq, Gemini and Meta added. Keys remain environment-only. Meta's address comes from META_API_BASE_URL and is accepted only as https with no credentials, query or fragment. Live runs can be paced | T-04 | Address validation and key-handling tests in TEST-LOG T-126; review by the other team member pending | Closed in code, pending review |
+| S-055 | 2026-11-11 | Change | The agent command line reads a local `.env` file at start-up. Values are placed only in the process environment and are never printed. The shell wins over the file. The Warden and the console do not read `.env` | T-04 | Tests in TEST-LOG T-100; review by the other team member pending | Closed in code, pending review |
+
 
 
 
