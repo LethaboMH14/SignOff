@@ -4,7 +4,7 @@
 
 SignOff reads supplier invoices, checks them against purchasing records, and pays the routine ones without a human click. Every payment needs two signatures. The agent holds one. The second belongs to an independent rulebook service, called Warden, that the agent cannot read, edit or talk its way past. If a payment breaks a rule, Warden withholds its signature, and the XRP Ledger will not accept a payment with only one.
 
-> **Status, 10 November 2026: Gate 0 foundation is merged, and its phase close is in review. Gate A is built and tested on the XRP Ledger Testnet and is in review. The RLUSD payment has not run yet.**
+> **Status, 11 November 2026: Gate 0 code and phase-close documentation are merged. Gate A implements ledger tests with a test-issued token (TST), and is undergoing integration review. A validated RLUSD Testnet payment has not been demonstrated.**
 > The repository holds the Gate 0 foundation and the Gate A ledger layer, which runs on the XRP Ledger Testnet only. Payments so far use a test-issued token, not RLUSD. No customer has been interviewed, no partner is integrated, and no mockups exist. See [Status of every claim](#status-of-every-claim) below.
 
 Built for the [Node Engine Hackathon](https://w3node.io/node-engine) at W3Node, Cape Town, in the Agentic Finance track. Submissions close on Friday 13 November 2026 at 23:59 SAST.
@@ -130,7 +130,7 @@ The track requires an autonomous transaction on XRPL Testnet or Devnet, limits e
 | [docs/RULES.md](docs/RULES.md) | **The working contract:** rules every change must meet, definition of done, phase-close checklist |
 | [docs/PRD.md](docs/PRD.md) | Product requirements: users, goals, requirements, success measures |
 | [docs/ISSUES.md](docs/ISSUES.md) | The build sliced into issues by gate |
-| [docs/logs/](docs/logs/) | Build log, decision journal, test log, security log |
+| [docs/logs/](docs/logs/) | Build log, decision journal, test log, security log, phase reports |
 | [BUILD-BRIEF.md](BUILD-BRIEF.md) | The agreed build, flow, stack and acceptance tests |
 | [docs/PROBLEM.md](docs/PROBLEM.md) | Problem statement and sourced evidence with confidence ratings |
 | [docs/SOLUTION.md](docs/SOLUTION.md) | Rules, two-signature design, simpler options considered |

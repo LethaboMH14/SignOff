@@ -1,20 +1,22 @@
 # Engineering plan
 
-How this repository will be built, reviewed, tested and released. **This is a plan. Built so far: packages/shared, packages/xrpl, scripts and .github; apps and Warden are not started**, and it is sized for the four days before the deadline. Items marked *stretch* are done only if the core flow works first.
+How this repository is built, reviewed, tested and released. **Gate 0 code is merged and CI-tested (owner settings remain open). Gate A's ledger implementation and Testnet TST proofs are built but under integration review; the required live RLUSD payment remains BLOCKED. Later gates are not merged.** It is sized for the four days before the deadline. Items marked *stretch* are done only if the core flow works first.
 
 ## Repository layout
 
+As built in Gate 0, with Gate A ledger implementation under review. Other gates remain unmerged.
+
 ```
-apps/
-  console/     Operator console (React, Vite)
-  agent/       Invoice intake, extraction, matching, payment proposals
-  warden/      Rule checks, second signature, ledger submission (deployed separately)
-packages/
-  shared/      Schemas, types, rule definitions, test fixtures
-  xrpl/        Gate A ledger layer: signer setup, payments, reconciliation, provisioning, rebuild (Testnet only)
-docs/          Problem, solution, business, decisions, runbooks
-scripts/       Secret scan, hook setup, Testnet command line (scripts/testnet); judge check and attack suite not started
-.github/       Pull request template, workflows
+packages/shared/  money rules, Zod contracts, security (base58, XRPL seeds, secret patterns),
+                  logging and redaction, obligation key; entries "." (neutral) and "./node"
+packages/xrpl/    Gate A Testnet ledger implementation, signing, reliable send, failover and rebuild (under review)
+apps/warden/      planned, Gate B: rules service, Warden key, pause route
+apps/agent/       planned, Gate C: intake, extraction, matching, proposals
+apps/console/     planned, Gate D: operator console
+docs/             problem, solution, business, decisions, logs, runbooks
+scripts/          secret scanner, hook installer, configuration guard tests; Gate A Testnet commands
+.githooks/        pre-commit secret check
+.github/          CI workflow, Dependabot, pull request template
 ```
 
 Warden lives in the same repository but deploys as its own service with its own identity and key. The agent's deployment must have no access to Warden's key.
@@ -36,6 +38,12 @@ Warden lives in the same repository but deploys as its own service with its own 
 | End to end | Playwright | The three demo flows on desktop and phone: valid payment, changed-payee hold, lowered-limit hold |
 | Attack suite | Scripted Testnet runs | Each attack in the table below has an observed, recorded outcome |
 | Offline mode | Fixture data, labelled | Tests run without model calls or ledger access, so checks are fast and free |
+| Guard tests | Vitest | Strictness flags, the Node 24 pin, exact installs, the workspace list, the secret-file ignore rules and the platform-neutral entry point stay as specified |
+| Security unit tests | Vitest | The seed checksum, the secret patterns, the scanner and the redaction behave correctly, including the cases that must not match |
+
+**Gate 0 tooling as built:** Vitest 5.1.0 with v8 coverage (90% of statements, functions and lines; 85% of branches). TypeScript 6.0.3 with every strict flag. ESLint 10 with typescript-eslint strict and stylistic type-checked rules and eslint-plugin-security. Prettier for code. `npm run check` runs every check, including the secret scan of tracked files. At the close of Gate 0: 211 tests in 17 files.
+
+**Gate A evidence status:** Testnet transactions using a *test-issued token* are recorded in [TEST-LOG T-053 to T-058](logs/TEST-LOG.md). Single-key rejections are recorded in T-054. A validated RLUSD Testnet transaction is **not** demonstrated (T-059 and T-061 remain BLOCKED); these offline and TST results do not count as RLUSD proof. The Gate A PR is still subject to independent review and post-integration CI.
 
 ### Attack suite
 
@@ -137,6 +145,7 @@ From the [CFO and fraud research](CFO-AGENTIC-FRAUD-SECURITY-RESEARCH-2026-11-10
 
 | Gate | Must show |
 |---|---|
+| 0. Foundation | Strict TypeScript monorepo with one install command; CI on every pull request; secret protection; shared contracts; log redaction. Built and tested (T-001 to T-049). Closes when its pull requests merge (D-038), with the repository settings in S-005 in place |
 | A. Ledger proof | RLUSD trust lines; signer list as in [TRUST.md](TRUST.md); a validated two-signature payment; each key alone rejected; Agent + Warden the only accepted path; a signer change refused without two approvals; rebuild from reserve tested; hashes recorded |
 | B. Warden controls | Authenticated proposals, verified payee, three-way match, duplicate lock, limits, pause; no failed hard control ever leads to a signature |
 | C. Reliability and evidence | Real PDF extraction with source spans, labelled test set, single-prompt baseline, decision log |
