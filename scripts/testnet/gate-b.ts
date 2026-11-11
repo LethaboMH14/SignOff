@@ -618,13 +618,18 @@ async function runB1(rows: Row[], session: Session): Promise<void> {
     actual: reasonOf(after.decision),
     pass: reasonOf(after.decision) === 'HOLD OVER_LIMIT',
   });
-  const restored = await session.operatorA.setLimits({ perPaymentMinor: HIGH_LIMIT_MINOR });
-  version = (restored as { readonly policyVersion: string }).policyVersion;
+  // Limit increases cannot be granted by one operator until maker-checker exists.
+  let increaseRefused = false;
+  try {
+    await session.operatorA.setLimits({ perPaymentMinor: HIGH_LIMIT_MINOR });
+  } catch (error) {
+    increaseRefused = error instanceof ClientError && error.status === 409;
+  }
   record(rows, {
-    step: 'B5 limit restored for the next run',
-    expected: 'policy version changed',
-    actual: version === POLICY_VERSION ? 'unchanged' : 'changed',
-    pass: version !== POLICY_VERSION,
+    step: 'B5 unapproved limit increase fails closed',
+    expected: '409 refusing single-operator increase',
+    actual: increaseRefused ? '409 refusing single-operator increase' : 'increase accepted',
+    pass: increaseRefused,
   });
 }
 

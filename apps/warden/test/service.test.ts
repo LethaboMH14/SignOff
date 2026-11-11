@@ -514,6 +514,27 @@ describe('B4 three-way match', () => {
 });
 
 describe('B5 limits', () => {
+  it('fails closed on every single-operator increase and preserves the current policy', async () => {
+    const base = await provisionedBase();
+    const config = configFor(base);
+    const clock = newClock();
+    const service = await openService(base, config, evidenceFrom([]), { clock });
+    const version = await service.setLimits({ perPaymentMinor: 500 }, OPERATOR_A);
+    expect(service.currentLimits().perPaymentMinor).toBe(500);
+
+    for (const patch of [
+      { perPaymentMinor: 501 },
+      { supplierDailyMinor: config.initialLimits.supplierDailyMinor + 1 },
+      { dailyTotalMinor: config.initialLimits.dailyTotalMinor + 1 },
+    ]) {
+      await expect(service.setLimits(patch, OPERATOR_A)).rejects.toThrow(
+        'limit increase requires independent approval',
+      );
+    }
+    expect(service.currentLimits().policyVersion).toBe(version);
+    expect(service.currentLimits().perPaymentMinor).toBe(500);
+  });
+
   it('holds a payment over the per-payment limit', async () => {
     const base = await provisionedBase();
     const config = configFor(base, {
