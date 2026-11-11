@@ -26,6 +26,14 @@ One entry per working session (rule R-19 in [RULES.md](../RULES.md)), newest fir
 
 ---
 
+### 2026-11-11 — GitHub integration review — Gate C onto latest Gate B
+
+- Done: reconciled the Gate C invoice-agent implementation and its shared `packages/warden-api` refactor against the latest Gate B branch (merge commit `6913189`). Retained the Warden's final-authorization signature boundary, the Gate B Testnet TST evidence, and the Gate C simulated 30-invoice evaluation. The Git history now contains both branch heads rather than dropping either implementation.
+- Evidence integrity: fixed colliding review IDs without overwriting records — Gate C D-061 to D-071 retained, Gate B boundary note moved to D-072; Gate C S-032 to S-037 retained, Gate B P0 note moved to S-038; Gate C T-076 to T-088 retained, later Gate B regression rows moved to T-089 to T-091.
+- Changed decisions: none accepted as production ready. The RLUSD live transaction (A3), live Agent-to-Warden Testnet run (C7) and live model evaluation (C5) are still unverified. The new feature-branch merge does not constitute Gate B or Gate C release acceptance.
+- CI: not yet verified on the new combined head at the time of this entry. Require exact-head `npm run check` and dependency audit, plus independent review before any merge to main.
+- Next: inspect the resulting GitHub CI for any semantic/type-test regressions and repair; integrate the individually reviewed Gate A5 and Gate B P0/B2/B5/B8 follow-up PRs in dependency order.
+
 ### 2026-11-10 — Sibusiso with Claude (Haiku 5.5) — Gate C issues created and linked
 - Done: created issues #37 to #43 for C1 to C7, titled as in docs/ISSUES.md. Each carries its acceptance criteria, dependencies, status, evidence and branch, with the live runs marked UNVERIFIED where they have not been run. Linked them in the GH column of docs/ISSUES.md.
 - Changed decisions: none.
