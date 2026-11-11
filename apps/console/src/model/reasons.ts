@@ -21,6 +21,14 @@ const REASON_TEXT: ReadonlyMap<string, string> = new Map<string, string>([
   ['ACCOUNT_FROZEN', 'The asset or an account is frozen on the ledger.'],
   ['LEDGER_UNREADABLE', 'The ledger could not be read, so nothing was signed.'],
   ['INVARIANT_FAILED', 'A safety check failed, so the payment was stopped.'],
+  [
+    'ACCOUNT_BUSY',
+    'Another payment from the spending account is still being settled. This one waits until it is resolved.',
+  ],
+  [
+    'RECEIVING_CAPACITY',
+    'The supplier account cannot receive this amount yet because it is over the limit it set for this asset.',
+  ],
   ['UNSUPPORTED_TRANSACTION', 'This kind of payment is not allowed.'],
   ['SUPPLIER_NOT_APPROVED', 'The supplier is not approved yet.'],
   ['SIGNER_CHANGE_NOT_APPROVED', 'A change to the signing setup needs two approvals.'],

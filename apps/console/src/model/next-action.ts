@@ -36,6 +36,14 @@ const NEXT_ACTIONS: ReadonlyMap<string, string> = new Map<string, string>([
     'Wait for the ledger to be readable again. Nothing was signed, so nothing needs undoing.',
   ],
   [
+    'ACCOUNT_BUSY',
+    'Wait for the payment in progress to settle or expire, then propose this invoice again. Nothing was signed for it.',
+  ],
+  [
+    'RECEIVING_CAPACITY',
+    'Ask the supplier to raise the limit on their trust line for this asset, or pay a smaller amount. Nothing was signed.',
+  ],
+  [
     'INVARIANT_FAILED',
     'Ask a developer to check the safety check that failed before any payment of this kind is proposed.',
   ],

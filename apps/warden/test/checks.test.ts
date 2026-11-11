@@ -363,7 +363,7 @@ describe('B8 receiving capacity in issued-token trust lines', () => {
   it('holds an amount over the remaining capacity, including fractional currency amounts', () => {
     expect(
       preSigningVerdict({ ...CLEAN_FACTS, destinationLine: healthyLine }, '5.01'),
-    ).toMatchObject({ code: 'INVARIANT_FAILED' });
+    ).toMatchObject({ code: 'RECEIVING_CAPACITY' });
     expect(
       preSigningVerdict(
         {
@@ -372,7 +372,7 @@ describe('B8 receiving capacity in issued-token trust lines', () => {
         },
         '0.200000000000001',
       ),
-    ).toMatchObject({ code: 'INVARIANT_FAILED' });
+    ).toMatchObject({ code: 'RECEIVING_CAPACITY' });
     expect(
       preSigningVerdict(
         {

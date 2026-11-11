@@ -174,7 +174,7 @@ export function preSigningVerdict(facts: PreSigningFacts, amount: string): Verdi
   }
   try {
     if (exceedsReceivingLimit(facts.destinationLine.balance, amount, facts.destinationLine.limit)) {
-      return hold('INVARIANT_FAILED', 'the payee trust line has insufficient receiving capacity');
+      return hold('RECEIVING_CAPACITY', 'the payee trust line has insufficient receiving capacity');
     }
   } catch {
     return hold('INVARIANT_FAILED', 'the payee trust-line amounts cannot be verified');

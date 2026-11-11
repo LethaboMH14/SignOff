@@ -356,6 +356,33 @@ describe('B1 proposals, co-signature and submission', () => {
 });
 
 describe('B2 identity, reservation and duplicates', () => {
+  it('serializes different payables through one spending account until the prior transfer settles', async () => {
+    const base = await provisionedBase();
+    const config = configFor(base);
+    const clock = newClock();
+    const second = entry({ invoiceNumber: 'INV-B2-002', fingerprint: sha256Hex('invoice-B2-002') });
+    const service = await openService(base, config, evidenceFrom([STANDARD, second]), { clock });
+    await activeSupplier(service, base, generateSupplierKey().publicKey);
+    const firstId = newAttemptId();
+    const first = await service.propose(proposalFor(firstId, STANDARD, config, clock.now));
+    expect(first.decision.decision).toBe('ALLOW');
+
+    const competing = await service.propose(proposalFor(newAttemptId(), second, config, clock.now));
+    expect(competing.decision.decision).toBe('HOLD');
+    expect(competing.decision.reasons[0]?.code).toBe('ACCOUNT_BUSY');
+    expect(competing.toCoSign).toBeNull();
+
+    const settled = await service.coSign(
+      firstId,
+      coSignAsAgent(base.agentWallet, first.toCoSign ?? ''),
+    );
+    expect(settled.outcome).toBe('paid');
+    const afterSettlement = await service.propose(
+      proposalFor(newAttemptId(), second, config, clock.now),
+    );
+    expect(afterSettlement.decision.decision).toBe('ALLOW');
+  });
+
   it('lets exactly one of several concurrent proposals for the same payable proceed', async () => {
     const base = await provisionedBase();
     const config = configFor(base);
@@ -487,6 +514,35 @@ describe('B4 three-way match', () => {
 });
 
 describe('B5 limits', () => {
+  it('a single operator cannot raise any limit: the raise waits and the current policy is kept', async () => {
+    const base = await provisionedBase();
+    const config = configFor(base);
+    const clock = newClock();
+    const service = await openService(base, config, evidenceFrom([]), { clock });
+    const lowered = await service.setLimits({ perPaymentMinor: 500 }, OPERATOR_A);
+    expect(lowered.applied).toBe(true);
+    const version = service.currentLimits().policyVersion;
+    expect(service.currentLimits().perPaymentMinor).toBe(500);
+
+    for (const patch of [
+      { perPaymentMinor: 501 },
+      { supplierDailyMinor: config.initialLimits.supplierDailyMinor + 1 },
+      { dailyTotalMinor: config.initialLimits.dailyTotalMinor + 1 },
+    ]) {
+      const raised = await service.setLimits(patch, OPERATOR_A);
+      expect(raised.applied).toBe(false);
+      if (!raised.applied) {
+        await expect(service.approveLimits(raised.requestId, OPERATOR_A)).rejects.toThrow(
+          'cannot also approve',
+        );
+        // A lowering closes the waiting raise, so the next loop starts clean.
+        await service.setLimits({ perPaymentMinor: 500 }, OPERATOR_A);
+      }
+      expect(service.currentLimits().perPaymentMinor).toBe(500);
+    }
+    expect(version).toBeDefined();
+  });
+
   it('holds a payment over the per-payment limit', async () => {
     const base = await provisionedBase();
     const config = configFor(base, {
