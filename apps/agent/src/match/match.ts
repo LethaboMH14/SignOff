@@ -4,8 +4,14 @@ import {
   normaliseInvoiceNumber,
   obligationKey,
 } from '../../../../packages/shared/src/node.js';
+import {
+  DEFAULT_MATCH_TOLERANCE,
+  receiptCovers,
+  supplierNameKey,
+  type Tolerance,
+  withinTolerance,
+} from '../../../../packages/shared/src/match-rules.js';
 import type { SupportedCurrency } from '../../../../packages/shared/src/money/minor-units.js';
-import { normaliseText } from '../text/normalise.js';
 
 import type { SupplierMaster } from './supplier-master.js';
 
@@ -13,6 +19,9 @@ import type { SupplierMaster } from './supplier-master.js';
  * Matching: the verified invoice against the buyer's own records. The invoice record is found by the file's SHA-256,
  * and the purchase order and goods receipt by the number the invoice prints. Every check here compares a value the
  * document stated with a value the document cannot write. Any difference is a hold.
+ *
+ * Tolerance and name rules are shared with the Warden (packages/shared/src/match-rules.ts), so the same input gives
+ * the same verdict on both sides. A supplier name selects a candidate only; the payee account decides who is paid.
  */
 
 export interface VerifiedValues {
@@ -32,6 +41,8 @@ export interface MatchInput {
   readonly suppliers: readonly SupplierMaster[];
   /** True when a payment for this obligation may already exist. */
   readonly alreadyPaid: (obligationKey: string) => boolean;
+  /** The buyer's match tolerance. Defaults to the shared default, which the Warden uses too. */
+  readonly tolerance?: Tolerance;
 }
 
 export type MatchResult =
@@ -58,19 +69,14 @@ export function accountKey(text: string): string {
     .replace(/[^A-Z0-9]/g, '');
 }
 
-function nameKey(text: string): string {
-  return normaliseText(text).toLowerCase();
-}
-
 function findSupplier(
   suppliers: readonly SupplierMaster[],
   legalName: string,
 ): { readonly supplier: SupplierMaster } | { readonly reason: string } {
-  const matches = suppliers.filter(
-    (supplier) => nameKey(supplier.legalName) === nameKey(legalName),
-  );
+  const key = supplierNameKey(legalName);
+  const matches = suppliers.filter((supplier) => supplierNameKey(supplier.legalName) === key);
   const [only] = matches;
-  if (only === undefined) {
+  if (only === undefined || key === '') {
     return { reason: 'SUPPLIER_UNKNOWN' };
   }
   if (matches.length > 1) {
@@ -81,6 +87,7 @@ function findSupplier(
 
 export function matchInvoice(input: MatchInput): MatchResult {
   const { values, evidence } = input;
+  const tolerance = input.tolerance ?? DEFAULT_MATCH_TOLERANCE;
   const invoice = evidence.invoice(input.fingerprint);
   if (invoice === undefined) {
     return { ok: false, reasons: ['NO_INVOICE_RECORD'], obligationKey: null, recordSha256s: [] };
@@ -126,8 +133,24 @@ export function matchInvoice(input: MatchInput): MatchResult {
     if (order.currency !== values.currency) {
       reasons.push('PO_CURRENCY_MISMATCH');
     }
-    if (invoice.amountMinor > order.amountMinor) {
-      reasons.push('AMOUNT_EXCEEDS_ORDER');
+    if (order.status === 'closed') {
+      reasons.push('PO_CLOSED');
+    }
+    const alreadyInvoiced = order.invoicedMinor ?? 0;
+    if (alreadyInvoiced > 0) {
+      // An order already invoiced in part: the invoices together may not pass the order's value.
+      const cumulative = alreadyInvoiced + invoice.amountMinor;
+      if (
+        cumulative > order.amountMinor &&
+        !withinTolerance(order.amountMinor, cumulative, tolerance)
+      ) {
+        reasons.push('PO_FULLY_INVOICED');
+      }
+    } else if (!withinTolerance(order.amountMinor, invoice.amountMinor, tolerance)) {
+      // The single-invoice case: the same rule the Warden applies, in both directions.
+      reasons.push(
+        invoice.amountMinor > order.amountMinor ? 'AMOUNT_EXCEEDS_ORDER' : 'AMOUNT_MISMATCH',
+      );
     }
   }
 
@@ -136,8 +159,14 @@ export function matchInvoice(input: MatchInput): MatchResult {
     reasons.push('NO_GOODS_RECEIPT');
   } else {
     recordSha256s.push(fingerprintOf(receipt));
-    if (invoice.amountMinor > receipt.receivedMinor) {
+    if (!receiptCovers(invoice.amountMinor, receipt.receivedMinor, tolerance)) {
       reasons.push('AMOUNT_EXCEEDS_RECEIPT');
+    }
+    if (order !== undefined && receipt.receivedMinor > order.amountMinor) {
+      if (!withinTolerance(order.amountMinor, receipt.receivedMinor, tolerance)) {
+        // Over-delivery does not raise the payable, but a receipt above the order is a person's question.
+        reasons.push('RECEIPT_EXCEEDS_ORDER');
+      }
     }
   }
 

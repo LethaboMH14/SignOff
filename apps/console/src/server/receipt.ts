@@ -1,4 +1,5 @@
 import { sameIouAmount } from '../../../../packages/xrpl/src/amounts.js';
+import { RLUSD_TESTNET } from '../../../../packages/xrpl/src/constants.js';
 import type { LedgerLookup } from '../../../../packages/xrpl/src/reconcile.js';
 import {
   minorToDecimal,
@@ -80,7 +81,8 @@ export function assetLabelOf(config: ReceiptConfig, ledgerCurrency: string): str
   if (
     config.rlusdIssuer !== null &&
     config.rlusdIssuer === config.tokenIssuer &&
-    ledgerCurrency === 'RLUSD'
+    // The ledger carries RLUSD as its 40-character hex code (constants.ts), not as the word RLUSD.
+    (ledgerCurrency === 'RLUSD' || ledgerCurrency === RLUSD_TESTNET.currency)
   ) {
     return 'RLUSD';
   }

@@ -460,6 +460,7 @@ export class WardenService {
         facts = await readPreSigning(this.deps.port, {
           spending: this.deps.config.spendingAddress,
           destination: payee.address,
+          destinationTag: payee.destinationTag,
           issuer: asset.issuer,
           ledgerCurrency: asset.ledgerCurrency,
           agent: accountRef('agent', this.deps.config.agentAddress, now),
@@ -943,6 +944,7 @@ export class WardenService {
       facts = await readPreSigning(this.deps.port, {
         spending: config.spendingAddress,
         destination: supplier.payee.address,
+        destinationTag: supplier.payee.destinationTag,
         issuer: asset.issuer,
         ledgerCurrency: asset.ledgerCurrency,
         agent,

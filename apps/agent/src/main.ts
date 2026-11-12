@@ -42,6 +42,8 @@ import type { ModelClient } from './model/types.js';
 import { parseSupplierMaster } from './match/supplier-master.js';
 import { TransitionLog, withRunLockAsync } from './log/transition-log.js';
 import { processInvoice } from './workflow/pipeline.js';
+import { conversionOf, convertZarLive, type UsdConversion } from './workflow/fx-convert.js';
+import { fixtureUsdZarRate } from '../../../packages/shared/src/fx/index.js';
 import { wardenPortOf } from './workflow/warden-port.js';
 
 const DEFAULT_SET = fileURLToPath(new URL('../fixtures/labelled', import.meta.url));
@@ -233,6 +235,7 @@ async function runCommand(args: readonly string[]): Promise<void> {
       data: { type: 'string' },
       'zero-retention-ack': { type: 'string' },
       'interval-ms': { type: 'string' },
+      fx: { type: 'string' },
     },
     strict: true,
   });
@@ -291,6 +294,15 @@ async function runCommand(args: readonly string[]): Promise<void> {
 
   await withRunLockAsync(stateDir, async () => {
     const log = TransitionLog.open(logPath, () => new Date());
+    // Rand invoices are converted at the live USD/ZAR rate. `--fx fixture` uses the committed capture (offline runs).
+    const fxMode = values.fx ?? 'live';
+    if (fxMode !== 'live' && fxMode !== 'fixture') {
+      throw new RangeError('--fx must be live or fixture');
+    }
+    const convert = (zarMinor: number): Promise<UsdConversion> =>
+      fxMode === 'live'
+        ? convertZarLive(zarMinor)
+        : Promise.resolve(conversionOf(zarMinor, fixtureUsdZarRate()));
     const deps = {
       model,
       evidence,
@@ -300,6 +312,7 @@ async function runCommand(args: readonly string[]): Promise<void> {
       now: () => new Date(),
       newAttemptId: () => randomUUID(),
       warden,
+      convert,
       signer: { coSign: (blob: string) => coSignAsAgent(wallet, blob) },
     };
     line('agent running. Press Ctrl+C to stop.');

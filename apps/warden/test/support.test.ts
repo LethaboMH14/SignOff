@@ -247,6 +247,7 @@ describe('reading the ledger before signing', () => {
     const facts = await readPreSigning(port, {
       spending: Wallet.generate().address,
       destination: Wallet.generate().address,
+      destinationTag: null,
       issuer: Wallet.generate().address,
       ledgerCurrency: 'TST',
       agent: account(Wallet.generate().address, 'agent'),

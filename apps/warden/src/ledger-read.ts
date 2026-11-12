@@ -8,6 +8,9 @@ import {
 
 /** The ledger flag that freezes every trust line of an issuer. */
 const LSF_GLOBAL_FREEZE = 0x00400000;
+/** Account flags that change what a payment needs: a destination tag, or trust-line authorization. */
+const LSF_REQUIRE_DEST_TAG = 0x00020000;
+const LSF_REQUIRE_AUTH = 0x00040000;
 
 /** What the Warden reads about one trust line before it signs. */
 export interface TrustFacts {
@@ -28,6 +31,14 @@ export interface PreSigningFacts {
   readonly spendingLine: TrustFacts | null;
   readonly destinationExists: boolean;
   readonly destinationLine: TrustFacts | null;
+  /** The issuer requires every holder to be authorized. This payment does not perform that step, so it is held. */
+  readonly issuerRequiresAuth: boolean;
+  /** The payee requires trust-line authorization. Held, for the same reason. */
+  readonly destinationRequiresAuth: boolean;
+  /** The payee requires a destination tag on every payment to it. */
+  readonly destinationRequiresDestTag: boolean;
+  /** The destination tag the enrolled payee has, or null. Compared with the payee's flags before signing. */
+  readonly enrolledDestinationTag: number | null;
 }
 
 export interface PreSigningRequest {
@@ -37,6 +48,8 @@ export interface PreSigningRequest {
   readonly ledgerCurrency: string;
   readonly agent: RegistryAccount;
   readonly warden: RegistryAccount;
+  /** The destination tag the enrolled payee has, or null when it has none. */
+  readonly destinationTag: number | null;
 }
 
 /**
@@ -70,6 +83,11 @@ export async function readPreSigning(
             frozenByIssuer: spendingLine.frozenByIssuer,
             frozenByHolder: spendingLine.frozenByHolder,
           },
+    issuerRequiresAuth: issuer !== null && (issuer.flags & LSF_REQUIRE_AUTH) !== 0,
+    destinationRequiresAuth: destination !== null && (destination.flags & LSF_REQUIRE_AUTH) !== 0,
+    destinationRequiresDestTag:
+      destination !== null && (destination.flags & LSF_REQUIRE_DEST_TAG) !== 0,
+    enrolledDestinationTag: request.destinationTag,
     destinationExists: destination !== null,
     destinationLine:
       destinationLine === null

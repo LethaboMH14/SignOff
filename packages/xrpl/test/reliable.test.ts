@@ -171,6 +171,42 @@ describe('sendAndReconcile', () => {
     expect(h.ledger.line(a.holder.address, TOKEN, a.issuer.address)?.balance).toBe(8);
   });
 
+  it('does not record a tem or tef answer as final while the hash is validated: it reconciles first', async () => {
+    const h = harness();
+    const a = await actors(h);
+    const plan = await planFor(h, a, '6', '6');
+    // An earlier submission validated this blob, but its answer to us was a tef code (for example a stale relay).
+    await h.port.submit(plan.txBlob);
+    h.ledger.advance();
+    const refusingPort: LedgerPort = {
+      ...h.port,
+      submit: () =>
+        Promise.resolve({ engineResult: 'tefBAD_QUORUM', accepted: false, applied: false }),
+    };
+    const decision = await sendAndReconcile(plan, { ...h.deps, port: refusingPort });
+    expect(decision.kind).toBe('paid');
+    expect(h.journal.records().map((record) => record.state)).not.toContain('rejected');
+    expect(h.ledger.line(a.holder.address, TOKEN, a.issuer.address)?.balance).toBe(6);
+  });
+
+  it('keeps a tef answer as rejected when the hash was never validated', async () => {
+    const h = harness();
+    const a = await actors(h);
+    const plan = await planFor(h, a, '2', '2');
+    const refusingPort: LedgerPort = {
+      ...h.port,
+      submit: () =>
+        Promise.resolve({ engineResult: 'tefBAD_QUORUM', accepted: false, applied: false }),
+    };
+    const decision = await sendAndReconcile(plan, { ...h.deps, port: refusingPort });
+    expect(decision).toEqual({ kind: 'rejected', engineResult: 'tefBAD_QUORUM' });
+    expect(h.journal.records().map((record) => record.state)).toEqual([
+      'prepared',
+      'submitting',
+      'rejected',
+    ]);
+  });
+
   it('survives a lost response: reconciles by hash and applies the payment exactly once', async () => {
     const h = harness();
     const a = await actors(h);

@@ -8,8 +8,11 @@ import type { IntakeOutcome } from '../intake/intake.js';
 import { budgetedModel, ModelBudget } from '../model/budget.js';
 import type { ModelClient } from '../model/types.js';
 import { matchInvoice, type VerifiedValues } from '../match/match.js';
+import { screenInvoice, type ScreenCandidate } from '../match/fraud-screen.js';
+import type { Tolerance } from '../../../../packages/shared/src/match-rules.js';
 import type { SupplierMaster } from '../match/supplier-master.js';
-import { screenPages, type ScreenResult } from '../screen/injection.js';
+import { screenDocument, type ScreenInput, type ScreenResult } from '../screen/injection.js';
+import { scanAmountHold } from '../text/scan-amount.js';
 import {
   type Actor,
   type Evidence,
@@ -17,6 +20,7 @@ import {
   type TransitionRecord,
 } from '../log/transition-log.js';
 
+import type { UsdConversion } from './fx-convert.js';
 import { DefinitiveRefusal, type WardenPort } from './warden-port.js';
 import type { State } from './states.js';
 
@@ -45,6 +49,11 @@ export interface PipelineDeps {
   readonly now: () => Date;
   readonly newAttemptId: () => string;
   readonly nonce?: () => string;
+  /**
+   * Converts a rand amount (cents) to the Warden's USD minor units at a live rate. Absent means a rand invoice is
+   * held with FX_UNAVAILABLE. Rejected conversions hold the invoice too.
+   */
+  readonly convert?: (zarMinor: number) => Promise<UsdConversion>;
   /** Null for a run that stops at eligibility, which is how the evaluation runs. */
   readonly warden: WardenPort | null;
   readonly signer: AgentSigner | null;
@@ -53,6 +62,12 @@ export interface PipelineDeps {
    * itself never sets it, so production behaviour is unchanged when it is absent.
    */
   readonly alreadyClearedElsewhere?: (obligationKey: string) => boolean;
+  /** The buyer's payment history, for screening. Absent means no history to compare against. */
+  readonly paymentHistory?: readonly ScreenCandidate[];
+  /** The split threshold (policy). Absent turns the split check off, which the README states as a limit. */
+  readonly splitThresholdMinor?: number;
+  /** The buyer's match tolerance. Absent uses the shared default. */
+  readonly matchTolerance?: Tolerance;
 }
 
 export interface RunResult {
@@ -60,6 +75,8 @@ export interface RunResult {
   readonly finalState: State;
   readonly reasonCode: string;
   readonly reasons: readonly string[];
+  /** The rand-to-USD conversion the Warden was asked to pay, with its rate and source; null for USD invoices. */
+  readonly fx: UsdConversion | null;
   readonly obligationKey: string | null;
   readonly attemptId: string | null;
   readonly wardenDecision: WardenDecision['decision'] | null;
@@ -84,6 +101,7 @@ interface RunState {
   screenCodes: string[];
   verified: VerifiedInvoice | null;
   screen: ScreenResult | null;
+  fx: UsdConversion | null;
 }
 
 const WARDEN_CODE = (code: string): string => `WARDEN_${code}`;
@@ -138,6 +156,7 @@ export async function processInvoice(
   const { correlationId, outcome } = input;
   const fileSha256 = outcome.fingerprint;
   const run: RunState = {
+    fx: null,
     reasonCode: 'OK',
     reasons: [],
     obligationKey: null,
@@ -188,6 +207,7 @@ export async function processInvoice(
     finalState: deps.log.stateOf(correlationId) ?? 'RECEIVED',
     reasonCode: run.reasonCode,
     reasons: run.reasons,
+    fx: run.fx,
     obligationKey: run.obligationKey,
     attemptId: run.attemptId,
     wardenDecision: run.wardenDecision,
@@ -203,9 +223,15 @@ export async function processInvoice(
     move('QUARANTINED', 'intake', outcome.reason);
     return finish();
   }
+  if (outcome.kind === 'seen') {
+    // The bytes were handled before. The earlier run's record stands; nothing is read again.
+    move('QUARANTINED', 'intake', 'ALREADY_HANDLED');
+    return finish();
+  }
 
-  // 2. Screen. A document that carries steering text is quarantined, and no model reads it.
-  const screen = screenPages(outcome.pages);
+  // 2. Screen. Every source the intake read is screened: pages or OCR text, annotations and document information. A
+  // document that carries steering text is quarantined, and no model reads it.
+  const screen = screenDocument(screenInputOf(outcome));
   run.screen = screen;
   run.screenCodes = [...screen.codes];
   if (screen.flagged) {
@@ -248,6 +274,14 @@ export async function processInvoice(
     move('HELD', 'verifier', 'VERIFICATION_FAILED', ['internal:required-values']);
     return finish();
   }
+  // A scanned page is read twice: the model's verified total must be confirmed by the fixed rules on the same OCR text.
+  if (outcome.kind === 'text-ocr') {
+    const scanHold = scanAmountHold(outcome.pages.join('\n'), values.totalMinor);
+    if (scanHold !== null) {
+      move('HELD', 'verifier', scanHold);
+      return finish();
+    }
+  }
 
   // 5. Match. The invoice must agree with the buyer's own records, which the document cannot write.
   const match = matchInvoice({
@@ -257,11 +291,40 @@ export async function processInvoice(
     suppliers: deps.suppliers,
     alreadyPaid: (key) =>
       deps.log.blocksPayment(key) || (deps.alreadyClearedElsewhere?.(key) ?? false),
+    ...(deps.matchTolerance === undefined ? {} : { tolerance: deps.matchTolerance }),
   });
   run.recordSha256s = [...match.recordSha256s];
   run.obligationKey = match.obligationKey;
   if (!match.ok) {
     move('HELD', 'matcher', 'MATCH_FAILED', match.reasons);
+    return finish();
+  }
+
+  // 5b. Screen against the payment history: re-saved or revised copies, near-duplicate numbers, split payments and
+  // dates that cannot be right. Every hit is a hold for a person, never a payment.
+  const invoiceDate = verified.invoiceDate.value;
+  if (invoiceDate === null) {
+    move('HELD', 'matcher', 'VERIFICATION_FAILED', ['internal:invoice-date']);
+    return finish();
+  }
+  const screened = screenInvoice(
+    {
+      fingerprint: fileSha256,
+      supplierId: match.supplierId,
+      invoiceNumber: values.invoiceNumber,
+      amountMinor: match.amountMinor,
+      payeeAccountAsPrinted: values.payeeAccountAsPrinted,
+      invoiceDate,
+    },
+    deps.paymentHistory ?? [],
+    {
+      now: deps.now(),
+      splitThresholdMinor: deps.splitThresholdMinor ?? null,
+      ...(deps.matchTolerance === undefined ? {} : { tolerance: deps.matchTolerance }),
+    },
+  );
+  if (screened.holds.length > 0) {
+    move('HELD', 'matcher', 'SCREEN_HOLD', [...screened.holds]);
     return finish();
   }
   move('WARDEN_ELIGIBLE', 'matcher', 'OK');
@@ -282,6 +345,22 @@ export async function processInvoice(
   );
 }
 
+/** Every text source of an accepted document, for the screen. Held and already-handled files never reach it. */
+function screenInputOf(outcome: IntakeOutcome): ScreenInput {
+  if (outcome.kind === 'text-ocr') {
+    return { pages: outcome.pages, method: 'ocr', annotations: [], metadata: [] };
+  }
+  if (outcome.kind === 'text-pdf') {
+    return {
+      pages: outcome.pages,
+      method: 'text-layer',
+      annotations: outcome.extras.annotations,
+      metadata: outcome.extras.metadata,
+    };
+  }
+  return { pages: [], method: 'text-layer', annotations: [], metadata: [] };
+}
+
 interface Payable {
   readonly supplierId: string;
   readonly currency: string;
@@ -289,9 +368,56 @@ interface Payable {
   readonly fileSha256: string;
 }
 
+type Priced =
+  | {
+      readonly kind: 'ok';
+      readonly payable: Payable;
+      readonly conversion: UsdConversion | null;
+    }
+  | { readonly kind: 'held'; readonly code: string; readonly reason: string };
+
+/**
+ * The amount the Warden is asked to pay, in its payable currency. USD passes unchanged. ZAR is converted at the
+ * live rate (fx-convert.ts); the conversion, with its rate and source, is kept on the run result. Any other
+ * currency, or a failed conversion, holds the invoice: nothing is guessed.
+ */
+async function priceInPayableCurrency(input: Payable, deps: PipelineDeps): Promise<Priced> {
+  if (input.currency === 'USD') {
+    return { kind: 'ok', payable: input, conversion: null };
+  }
+  if (input.currency !== 'ZAR') {
+    return {
+      kind: 'held',
+      code: 'CURRENCY_NOT_PAYABLE',
+      reason: `the invoice currency ${input.currency} has no payable asset`,
+    };
+  }
+  if (deps.convert === undefined) {
+    return {
+      kind: 'held',
+      code: 'FX_UNAVAILABLE',
+      reason: 'no live USD/ZAR rate is configured for this run',
+    };
+  }
+  try {
+    const conversion = await deps.convert(input.amountMinor);
+    return {
+      kind: 'ok',
+      payable: { ...input, currency: conversion.currency, amountMinor: conversion.amountMinor },
+      conversion,
+    };
+  } catch (error) {
+    return {
+      kind: 'held',
+      code: 'FX_UNAVAILABLE',
+      reason: error instanceof Error ? error.message : 'the rate could not be obtained',
+    };
+  }
+}
+
 /** Steps 6 to 9: get unsigned Warden terms, agent-sign, request final Warden authorization, reconcile. */
 async function submit(
-  payable: Payable,
+  input: Payable,
   deps: PipelineDeps,
   run: RunState,
   move: (
@@ -307,6 +433,15 @@ async function submit(
     move('HELD', 'matcher', 'INTERNAL_STATE');
     return finish();
   }
+
+  // The Warden pays USD (RLUSD). A rand invoice is converted at a live rate here, or it is held.
+  const priced = await priceInPayableCurrency(input, deps);
+  if (priced.kind === 'held') {
+    move('HELD', 'matcher', priced.code, [priced.reason]);
+    return finish();
+  }
+  const payable = priced.payable;
+  run.fx = priced.conversion;
 
   const attemptId = deps.newAttemptId();
   const proposed = PaymentProposal.safeParse({
