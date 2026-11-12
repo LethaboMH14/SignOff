@@ -2,12 +2,14 @@
  * The model providers the agent may use. Each speaks the OpenAI-compatible chat completions API over HTTPS, so the agent
  * needs no provider SDK. Anthropic's own models are excluded by project policy (user instruction, 2026-11-10).
  *
- * The default models were read from each provider's public model list on 2026-11-10. Model lists and free tiers change,
- * so re-check an identifier before a live run. Each key is read from its environment variable at run time only. Meta's
- * address is set by the operator in META_API_BASE_URL, because it is not a fixed public address.
+ * The default models of the first four were read from each provider's public model list on 2026-11-10. The AI/ML API
+ * and Hugging Face entries were read from their public docs on 2026-11-12, and their default models are UNVERIFIED for
+ * price and structured output (see each access note). Model lists and free tiers change, so re-check an identifier
+ * before a live run. Each key is read from its environment variable at run time only. Meta's address is set by the
+ * operator in META_API_BASE_URL, because it is not a fixed public address.
  */
 
-export type ProviderId = 'openrouter' | 'groq' | 'gemini' | 'meta';
+export type ProviderId = 'openrouter' | 'groq' | 'gemini' | 'meta' | 'aiml' | 'huggingface';
 
 export interface ProviderDefinition {
   readonly id: ProviderId;
@@ -57,6 +59,29 @@ export const PROVIDERS = {
     accessNote:
       'Meta API. Its address comes from META_API_BASE_URL. Its access terms and data handling are set by Meta and are not verified here.',
   },
+  aiml: {
+    id: 'aiml',
+    baseUrl: 'https://api.aimlapi.com/v1',
+    baseUrlEnv: null,
+    keyEnv: 'AIML_API_KEY',
+    // UNVERIFIED: the id is the one the AI/ML API docs use in their own examples (read 2026-11-12). The docs do not say
+    // it is cheap or free, and do not say it supports JSON or structured output. Check both before any live run.
+    defaultModel: 'google/gemma-3-4b-it',
+    accessNote:
+      'UNVERIFIED: AI/ML API, OpenAI-compatible. Sign up at https://aimlapi.com/app/sign-up and create a key at https://aimlapi.com/app/keys. The docs read 2026-11-12 do not state a free tier, and the default model is not confirmed as cheap or as supporting structured output. Data handling is set by the provider and is not verified here.',
+  },
+  huggingface: {
+    id: 'huggingface',
+    baseUrl: 'https://router.huggingface.co/v1',
+    baseUrlEnv: null,
+    keyEnv: 'HF_TOKEN',
+    // UNVERIFIED: the model id and the ':cheapest' provider suffix are from the Inference Providers docs (read
+    // 2026-11-12). The docs show no price for this model, so it is not confirmed as free or cheap, and its JSON support
+    // is not confirmed per model.
+    defaultModel: 'openai/gpt-oss-120b:cheapest',
+    accessNote:
+      'UNVERIFIED: Hugging Face Inference Providers router, OpenAI-compatible. Create a fine-grained token with the Inference Providers permission at https://huggingface.co/settings/tokens/new?ownUserPermissions=inference.serverless.write&tokenType=fineGrained. The docs read 2026-11-12 state pay-as-you-go pricing with monthly credits for PRO users, and no free tier for other accounts. Data handling is set by the provider and is not verified here.',
+  },
 } as const satisfies Readonly<Record<ProviderId, ProviderDefinition>>;
 
 const BY_ID: ReadonlyMap<string, ProviderDefinition> = new Map<string, ProviderDefinition>([
@@ -64,6 +89,8 @@ const BY_ID: ReadonlyMap<string, ProviderDefinition> = new Map<string, ProviderD
   [PROVIDERS.groq.id, PROVIDERS.groq],
   [PROVIDERS.gemini.id, PROVIDERS.gemini],
   [PROVIDERS.meta.id, PROVIDERS.meta],
+  [PROVIDERS.aiml.id, PROVIDERS.aiml],
+  [PROVIDERS.huggingface.id, PROVIDERS.huggingface],
 ]);
 
 export function providerById(id: string): ProviderDefinition {
