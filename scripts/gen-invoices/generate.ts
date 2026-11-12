@@ -1,6 +1,7 @@
 // Writes the whole fictional corpus: every invoice in every form, POs and GRNs, the supplier master,
 // and labels.json with the expected outcome of each file. Same code, same bytes, every run.
 import { mkdir, rm, writeFile } from 'node:fs/promises';
+import { format } from 'prettier';
 import path from 'node:path';
 import { buildCorpus, type Corpus, type Form, type Invoice, type Split } from './model.js';
 import { layoutGoodsReceivedNote, layoutInvoice, layoutPurchaseOrder } from './layout.js';
@@ -66,6 +67,11 @@ function extensionOf(form: Form): string {
     case 'photo_jpg':
       return 'jpg';
   }
+}
+
+/** Formats a value as JSON exactly as the repo's prettier configuration would. */
+async function formatJson(value: unknown): Promise<string> {
+  return format(JSON.stringify(value), { parser: 'json', printWidth: 100, endOfLine: 'lf' });
 }
 
 /** Writes one output file. Paths come from the output folder and the fixed corpus, never from input. */
@@ -268,16 +274,9 @@ export async function generate(
     buyer: corpus.buyer,
     files: labelEntries,
   };
-  await writeOut(
-    path.join(outDir, 'supplier-master.json'),
-    `${JSON.stringify(suppliers, null, 2)}
-`,
-  );
-  await writeOut(
-    path.join(outDir, 'labels.json'),
-    `${JSON.stringify(labels, null, 2)}
-`,
-  );
+  // Written through prettier's API with the repo's settings, so the files already pass `prettier --check`.
+  await writeOut(path.join(outDir, 'supplier-master.json'), await formatJson(suppliers));
+  await writeOut(path.join(outDir, 'labels.json'), await formatJson(labels));
 
   // Kept for the caller's sanity checks: every supplier is in exactly one split.
   for (const invoice of corpus.invoices) {
