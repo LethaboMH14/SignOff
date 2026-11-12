@@ -13,6 +13,7 @@ import { assertOutsideRepository, defaultLocalDir } from '../../../../packages/x
 import { type ApiContext, type WardenPort } from './api.js';
 import { type ConsoleMode, createConsoleServer } from './app.js';
 import { resolveConsoleMode } from './mode.js';
+import { type AgentUploadConfig } from './upload.js';
 import { type Operator, loadOperators } from './auth/operators.js';
 import { LoginGuard, SessionStore } from './auth/sessions.js';
 import { type ReceiptLedger, TESTNET_EXPLORER } from './receipt.js';
@@ -132,6 +133,21 @@ function lazyLedgerOf(): ReceiptLedger {
   };
 }
 
+/** The agent's upload endpoint, when both the URL and the token file are named. The token is read here, never printed. */
+function agentUploadOf(env: NodeJS.ProcessEnv): AgentUploadConfig | null {
+  const url = env['SIGNOFF_AGENT_UPLOAD_URL'];
+  const tokenFile = env['SIGNOFF_AGENT_UPLOAD_TOKEN_FILE'];
+  if (url === undefined || tokenFile === undefined) {
+    return null;
+  }
+  // eslint-disable-next-line security/detect-non-literal-fs-filename -- the operator's own token file, named at start-up
+  const token = readFileSync(tokenFile, 'utf8').trim();
+  if (token.length < 32) {
+    throw new RangeError('the agent upload token must be at least 32 characters');
+  }
+  return { url, token };
+}
+
 const api: ApiContext = {
   operators: loadOperators(operatorsPath),
   sessions: new SessionStore(() => Date.now()),
@@ -149,6 +165,7 @@ const api: ApiContext = {
     explorerBase: process.env['SIGNOFF_EXPLORER_BASE'] ?? TESTNET_EXPLORER,
     demoRandPerUnit: modeDecision.demoRandPerUnit,
   },
+  agentUpload: agentUploadOf(process.env),
 };
 
 const server = createConsoleServer({

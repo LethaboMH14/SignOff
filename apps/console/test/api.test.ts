@@ -518,3 +518,43 @@ describe('upload and session expiry', () => {
     expect((await call(url, '/api/desk', { cookie: again.cookie })).status).toBe(200);
   });
 });
+
+describe('upload forwarding', () => {
+  it('forwards the bytes to the agent and passes its reply through unchanged', async () => {
+    const { url, harness } = await start();
+    const operator = await signIn(url, OPERATOR_NAME);
+    const seen: { auth?: string | null; name?: string | null; size?: number } = {};
+    (harness.ctx as unknown as { agentUpload: unknown }).agentUpload = {
+      url: 'http://agent.test/v1/invoices',
+      token: 'x'.repeat(40),
+    };
+    const realFetch = globalThis.fetch;
+    globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
+      if (!String(input).startsWith('http://agent.test/')) {
+        return realFetch(input, init);
+      }
+      const headers = new Headers(init?.headers);
+      seen.auth = headers.get('authorization');
+      seen.name = headers.get('x-file-name');
+      seen.size = init?.body instanceof Blob ? init.body.size : -1;
+      return new Response(JSON.stringify({ accepted: true, fileName: 'INV-1.pdf', bytes: 3, sha256: 'ab' }), { status: 202 });
+    }) as typeof fetch;
+    try {
+      const reply = await fetch(`${url}/api/invoices/upload`, {
+        method: 'POST',
+        headers: {
+          cookie: `${operator.cookie}`,
+          'x-signoff-csrf': operator.csrf,
+          origin: url,
+          'x-file-name': 'INV-1.pdf',
+        },
+        body: new Uint8Array([1, 2, 3]),
+      });
+      expect(reply.status).toBe(202);
+      expect(await reply.json()).toMatchObject({ accepted: true, fileName: 'INV-1.pdf' });
+    } finally {
+      globalThis.fetch = realFetch;
+    }
+    expect(seen).toEqual({ auth: `Bearer ${'x'.repeat(40)}`, name: 'INV-1.pdf', size: 3 });
+  });
+});
