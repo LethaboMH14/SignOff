@@ -100,6 +100,25 @@ function streamEvents(
   });
 }
 
+/**
+ * The same records as the stream, for hosts that cannot hold a connection open. The browser sends the last sequence
+ * number it has, and gets the records after it. If the log starts again at a lower number, every record is sent.
+ */
+function transitionsSince(
+  request: IncomingMessage,
+  response: ServerResponse,
+  options: ConsoleOptions,
+): void {
+  const after = parseLastEventId(
+    new URL(request.url ?? '/', 'http://localhost').searchParams.get('after') ?? undefined,
+  );
+  const { records, damaged } = new TransitionTail(options.transitionsPath).readNew();
+  const highest = records.reduce((max, record) => Math.max(max, record.seq), 0);
+  const restarted = after > highest;
+  const sent = records.filter((record) => restarted || record.seq > after);
+  sendJson(response, 200, { mode: options.mode, damaged, events: sent.map(mapEventOf) });
+}
+
 function serveStatic(response: ServerResponse, path: string): void {
   response.writeHead(200, {
     ...SECURITY_HEADERS,
@@ -114,6 +133,14 @@ export function createConsoleServer(options: ConsoleOptions): Server {
   return createServer((request, response) => {
     const pathname = new URL(request.url ?? '/', 'http://localhost').pathname;
     if (pathname.startsWith('/api/')) {
+      if (pathname === '/api/transitions' && request.method === 'GET') {
+        if (callerOf(request, options.api) === null) {
+          sendJson(response, 401, { error: 'sign in to continue' });
+          return;
+        }
+        transitionsSince(request, response, options);
+        return;
+      }
       if (pathname === '/api/events' && request.method === 'GET') {
         if (callerOf(request, options.api) === null) {
           sendJson(response, 401, { error: 'sign in to continue' });

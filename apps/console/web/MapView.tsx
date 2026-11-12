@@ -24,7 +24,7 @@ const MODE_WORDS: Readonly<Record<string, string>> = {
 
 /** The agents' map and the feed of what happened, from the console's event stream. */
 export function MapView() {
-  const stream = useEventStream('/api/events');
+  const stream = useEventStream('/api/transitions');
   const [frozen, setFrozen] = useState<readonly Movement[] | null>(null);
   const movements = frozen ?? stream.board.history;
   const modeWord =

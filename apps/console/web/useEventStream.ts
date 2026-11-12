@@ -17,6 +17,7 @@ export type StreamAction =
   | { readonly type: 'status'; readonly status: ConnectionStatus }
   | { readonly type: 'hello'; readonly mode: string }
   | { readonly type: 'damaged'; readonly count: number }
+  | { readonly type: 'damagedTotal'; readonly count: number }
   | { readonly type: 'idle' };
 
 export const INITIAL_STREAM: StreamState = {
@@ -39,64 +40,93 @@ export function streamReducer(state: StreamState, action: StreamAction): StreamS
       return { ...state, mode: action.mode, status: 'live' };
     case 'damaged':
       return { ...state, damaged: state.damaged + action.count };
+    case 'damagedTotal':
+      return { ...state, damaged: action.count };
     case 'idle':
       return { ...state, board: { ...state.board, activeNode: null } };
-  }
-}
-
-function parseData(message: MessageEvent<string>): unknown {
-  try {
-    return JSON.parse(message.data) as unknown;
-  } catch {
-    return null;
   }
 }
 
 /** How long the map keeps a place marked as working after its last move. */
 export const WORKING_MARK_MS = 1600;
 
-/** Follows the server's event stream. The browser reconnects by itself and resumes from the last id it saw. */
+/** How often the map asks the server for moves it has not shown yet. */
+export const POLL_MS = 1500;
+
+interface PollBody {
+  readonly mode: string;
+  readonly damaged: number;
+  readonly events: readonly unknown[];
+}
+
+function isPollBody(value: unknown): value is PollBody {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'mode' in value &&
+    typeof value.mode === 'string' &&
+    'damaged' in value &&
+    typeof value.damaged === 'number' &&
+    'events' in value &&
+    Array.isArray(value.events)
+  );
+}
+
+/**
+ * Follows the server's log by asking for the moves after the last one shown. It asks again after POLL_MS, so it works on
+ * hosts that cannot hold a connection open. A failed request shows as reconnecting, and the next request tries again.
+ */
 export function useEventStream(url: string): StreamState {
   const [state, dispatch] = useReducer(streamReducer, INITIAL_STREAM);
 
   useEffect(() => {
-    const source = new EventSource(url);
-    source.onopen = () => {
-      dispatch({ type: 'status', status: 'live' });
+    let after = 0;
+    let stopped = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+
+    const poll = async (): Promise<void> => {
+      try {
+        const response = await fetch(`${url}?after=${String(after)}`, {
+          cache: 'no-store',
+          credentials: 'same-origin',
+          headers: { accept: 'application/json' },
+        });
+        if (!response.ok) {
+          throw new Error(`HTTP ${String(response.status)}`);
+        }
+        const body: unknown = await response.json();
+        if (stopped || !isPollBody(body)) {
+          return;
+        }
+        dispatch({ type: 'status', status: 'live' });
+        dispatch({ type: 'hello', mode: body.mode });
+        dispatch({ type: 'damagedTotal', count: body.damaged });
+        for (const raw of body.events) {
+          const event = parseMapEvent(raw);
+          if (event !== null) {
+            dispatch({ type: 'movement', event });
+            after = event.seq;
+          }
+        }
+      } catch {
+        if (!stopped) {
+          dispatch({ type: 'status', status: 'reconnecting' });
+        }
+      } finally {
+        if (!stopped) {
+          timer = setTimeout(() => {
+            void poll();
+          }, POLL_MS);
+        }
+      }
     };
-    source.onerror = () => {
-      dispatch({ type: 'status', status: 'reconnecting' });
-    };
-    source.addEventListener('hello', (message: MessageEvent<string>) => {
-      const data = parseData(message);
-      if (
-        typeof data === 'object' &&
-        data !== null &&
-        'mode' in data &&
-        typeof data.mode === 'string'
-      ) {
-        dispatch({ type: 'hello', mode: data.mode });
-      }
-    });
-    source.addEventListener('transition', (message: MessageEvent<string>) => {
-      const event = parseMapEvent(parseData(message));
-      if (event !== null) {
-        dispatch({ type: 'movement', event });
-      }
-    });
-    source.addEventListener('damaged', (message: MessageEvent<string>) => {
-      const data = parseData(message);
-      if (
-        typeof data === 'object' &&
-        data !== null &&
-        'count' in data &&
-        typeof data.count === 'number'
-      ) {
-        dispatch({ type: 'damaged', count: data.count });
-      }
-    });
+
+    void poll();
     return () => {
-      source.close();
+      stopped = true;
+      if (timer !== undefined) {
+        clearTimeout(timer);
+      }
     };
   }, [url]);
 
