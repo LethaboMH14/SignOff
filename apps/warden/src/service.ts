@@ -112,6 +112,36 @@ export const LIMIT_INCREASE_WINDOW_MS = 24 * 60 * 60 * 1000;
 /** An armed Warden pauses itself when no heartbeat has arrived for this long. A proposed setting, for review. */
 export const WATCHDOG_WINDOW_MS = 30_000;
 
+/** How often the watchdog timer checks the window. A lapse is recorded at most this long after the window ends. */
+export const WATCHDOG_CHECK_MS = 1_000;
+
+/**
+ * Starts the watchdog timer for a running Warden. Each tick runs the service's own check under its lock. A failed
+ * check is reported through `onError` and the timer keeps running. Returns a function that stops the timer.
+ */
+export function startWatchdogTimer(
+  service: Pick<WardenService, 'checkWatchdog'>,
+  onError: (error: unknown) => void,
+  everyMs: number = WATCHDOG_CHECK_MS,
+): () => void {
+  let running = false;
+  const timer = setInterval(() => {
+    if (running) {
+      return;
+    }
+    running = true;
+    service
+      .checkWatchdog()
+      .catch(onError)
+      .finally(() => {
+        running = false;
+      });
+  }, everyMs);
+  return () => {
+    clearInterval(timer);
+  };
+}
+
 const PayeeInput = z.strictObject({
   address: z.string().refine((value) => isValidClassicAddress(value), 'not a classic address'),
   destinationTag: z.int().min(0).max(4_294_967_295).nullable(),
@@ -529,6 +559,14 @@ export class WardenService {
       await this.enforceWatchdog(now);
       this.lastHeartbeatMs = now.getTime();
     });
+  }
+
+  /**
+   * The watchdog's own check, run by a timer with no request needed. An armed Warden that has heard no heartbeat
+   * within the window records its pause here, so an idle Warden pauses on time rather than at the next request.
+   */
+  checkWatchdog(): Promise<void> {
+    return this.exclusive(() => this.enforceWatchdog(this.deps.now()));
   }
 
   async setPaused(paused: boolean, actorId: string): Promise<void> {

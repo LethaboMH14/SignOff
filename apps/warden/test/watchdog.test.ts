@@ -2,13 +2,18 @@ import { randomBytes } from 'node:crypto';
 import type { Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { RequestVerifier, signatureFor, signingText, type Principal } from '../src/auth.js';
 import { coSignAsAgent, generateSupplierKey } from '../src/client.js';
 import { memoryEventLog } from '../src/events.js';
 import { createWardenServer } from '../src/server.js';
-import { WATCHDOG_WINDOW_MS, WardenError, type WardenService } from '../src/service.js';
+import {
+  WATCHDOG_WINDOW_MS,
+  WardenError,
+  type WardenService,
+  startWatchdogTimer,
+} from '../src/service.js';
 import {
   configFor,
   evidenceFrom,
@@ -110,6 +115,74 @@ describe('the watchdog', () => {
     expect(h.log.events()).toContainEqual(
       expect.objectContaining({ type: 'pause.set', paused: true, changedBy: 'watchdog' }),
     );
+  });
+
+  it('records the pause on its own check, with no request arriving', async () => {
+    const h = await harness();
+    await h.service.setArmed(true, OPERATOR_A);
+    advance(h, WATCHDOG_WINDOW_MS + 1);
+    expect(h.log.events()).not.toContainEqual(expect.objectContaining({ changedBy: 'watchdog' }));
+    await h.service.checkWatchdog();
+    expect(h.service.health().paused).toBe(true);
+    expect(h.log.events()).toContainEqual(
+      expect.objectContaining({ type: 'pause.set', paused: true, changedBy: 'watchdog' }),
+    );
+  });
+
+  it('does not pause on its own check while the window is still open', async () => {
+    const h = await harness();
+    await h.service.setArmed(true, OPERATOR_A);
+    advance(h, WATCHDOG_WINDOW_MS);
+    await h.service.checkWatchdog();
+    expect(h.service.health().paused).toBe(false);
+  });
+
+  it('runs the check on a timer and stops when asked', async () => {
+    vi.useFakeTimers();
+    try {
+      let checks = 0;
+      const stop = startWatchdogTimer(
+        {
+          checkWatchdog: () => {
+            checks += 1;
+            return Promise.resolve();
+          },
+        },
+        () => undefined,
+        1_000,
+      );
+      await vi.advanceTimersByTimeAsync(3_500);
+      expect(checks).toBe(3);
+      stop();
+      await vi.advanceTimersByTimeAsync(5_000);
+      expect(checks).toBe(3);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('reports a failed timer check and keeps checking', async () => {
+    vi.useFakeTimers();
+    try {
+      const errors: unknown[] = [];
+      let checks = 0;
+      const stop = startWatchdogTimer(
+        {
+          checkWatchdog: () => {
+            checks += 1;
+            return Promise.reject(new Error('disk full'));
+          },
+        },
+        (error) => errors.push(error),
+        1_000,
+      );
+      await vi.advanceTimersByTimeAsync(2_500);
+      stop();
+      expect(checks).toBe(2);
+      expect(errors).toHaveLength(2);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('keeps an armed Warden running while heartbeats arrive inside the window', async () => {
