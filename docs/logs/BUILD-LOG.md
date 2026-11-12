@@ -289,4 +289,18 @@ One entry per working session (rule R-19 in [RULES.md](../RULES.md)), newest fir
 - Evidence: T-122, T-123, T-124.
 - Problems / blockers: the live P0 negative proof (#54), the RLUSD payment (A3) and a live agent-to-Warden run are still not run. Not pushed.
 - Next: review PRs #47 to #54.
+### 2026-11-11 — Sibusiso with Claude (Haiku 5.5) — S3 armed-mode watchdog, server side
 
+- Done: an armed Warden pauses itself when no operator heartbeat arrives within 30 seconds (a proposed setting). A heartbeat keeps it running and never resumes it. Arm, disarm and heartbeat are operator routes. A restart of an armed Warden starts paused. Branch `feat/S3-watchdog`, stacked on `feat/D3W-second-approver`.
+- Changed decisions: D-081.
+- Evidence: T-101. `npm run check` exit 0 (59 files, 816 tests).
+- Problems / blockers: the 30-second window is a proposed setting for review. The Arduino heartbeat (S1) is not connected, so the hardware path is UNVERIFIED.
+- Next: the payment desk (D1) on the console branch.
+
+
+### 2026-11-11 — Lethabo security review — S3 fail-closed correction
+
+- Done: prevent a late heartbeat from erasing the expired watchdog window; record pause immediately after replaying an armed Warden on restart. Added unit and authenticated HTTP regression coverage on PR #58.
+- Evidence: source changes and tests committed for CI; no local `npm run check` result claimed.
+- Blockers: PR #58 is behind its integration target and was unmergeable at review; exact-head CI and an independent timer are not yet verified. Only simulated development is authorised.
+- Next: run exact-head CI, reconcile the stack, and obtain independent review before merging.

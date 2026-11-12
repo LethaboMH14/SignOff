@@ -23,7 +23,7 @@ import { fileEventLog } from './events.js';
 import { loadEvidence } from './evidence.js';
 import { simulatedIdentityChecker } from './identity.js';
 import { createWardenServer } from './server.js';
-import { WardenService } from './service.js';
+import { WardenService, startWatchdogTimer } from './service.js';
 
 /**
  * The Warden's entry point. It runs as its own process, reads only its own keys file and configuration, and
@@ -62,6 +62,10 @@ async function serve(directory: string): Promise<void> {
     newId: () => randomUUID(),
   });
   await service.recover();
+  // The watchdog runs on its own timer, so an idle armed Warden records its pause without waiting for a request.
+  startWatchdogTimer(service, () => {
+    process.stderr.write('warden: the watchdog check failed\n');
+  });
   const verifier = new RequestVerifier(keys.principals, () => new Date(), Date.now());
   const server = createWardenServer(service, verifier, () => {
     process.stderr.write('warden: internal error\n');
