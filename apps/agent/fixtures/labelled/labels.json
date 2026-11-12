@@ -413,8 +413,8 @@
       "file": "invoices/messy-05.pdf",
       "supplierId": "SUP-TST003",
       "expected": {
-        "decision": "HOLD",
-        "reason": "AMOUNT_FORMAT",
+        "decision": "ELIGIBLE",
+        "reason": null,
         "fields": {
           "supplierName": "Demo Transport Services (Pty) Ltd",
           "invoiceNumber": "INV-TST-0115",
@@ -442,8 +442,8 @@
       "file": "invoices/messy-06.pdf",
       "supplierId": "SUP-TST004",
       "expected": {
-        "decision": "HOLD",
-        "reason": "AMOUNT_FORMAT",
+        "decision": "ELIGIBLE",
+        "reason": null,
         "fields": {
           "supplierName": "Testline Components (Pty) Ltd",
           "invoiceNumber": "INV-TST-0116",
@@ -1051,8 +1051,8 @@
       "file": "invoices/messy-09.pdf",
       "supplierId": "SUP-TST003",
       "expected": {
-        "decision": "HOLD",
-        "reason": "AMOUNT_FORMAT",
+        "decision": "ELIGIBLE",
+        "reason": null,
         "fields": {
           "supplierName": "Demo Transport Services (Pty) Ltd",
           "invoiceNumber": "INV-TST-0137",

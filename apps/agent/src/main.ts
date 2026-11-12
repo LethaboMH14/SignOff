@@ -9,6 +9,7 @@
 /* eslint-disable security/detect-non-literal-fs-filename -- the CLI reads and writes the paths its operator names */
 import { randomUUID } from 'node:crypto';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
@@ -22,21 +23,18 @@ import { EvidenceFile } from '../../../packages/shared/src/schemas/evidence.js';
 import { WardenClient, coSignAsAgent } from '../../../packages/warden-api/src/client.js';
 
 import { auditToCsv, buildAuditExport } from './audit/export.js';
-import {
-  AGENT_POLICY_VERSION,
-  assertDataAllowed,
-  chooseModel,
-  keyFor,
-  type DataClass,
-} from './config.js';
+import { AGENT_POLICY_VERSION, assertDataAllowed, chooseModel, type DataClass } from './config.js';
 import { loadLabelledSet } from './eval/cases.js';
 import { renderReport } from './eval/report.js';
 import { evaluate, perCaseScores, scoreBaseline, scorePipeline } from './eval/run.js';
 import { compareSides } from './eval/stats.js';
 import { simulatedModel } from './eval/simulated-model.js';
 import { watchInbox } from './intake/intake.js';
-import { createChatClient } from './model/chat-client.js';
-import { baseUrlOf } from './model/providers.js';
+import { DEFAULT_DAILY_USD, DailyCaps } from './model/caps.js';
+import type { Attempt } from './model/failover.js';
+import { buildLiveChain } from './model/live.js';
+import { renderLiveSummary, type LiveCase } from './model/live-summary.js';
+import { FAILOVER_ORDER, providerById, type ProviderId } from './model/providers.js';
 import { intervalOf, pacedModel } from './model/pacing.js';
 import type { ModelClient } from './model/types.js';
 import { parseSupplierMaster } from './match/supplier-master.js';
@@ -49,6 +47,8 @@ import { wardenPortOf } from './workflow/warden-port.js';
 const DEFAULT_SET = fileURLToPath(new URL('../fixtures/labelled', import.meta.url));
 const DEFAULT_RESULTS = fileURLToPath(new URL('../results', import.meta.url));
 const HEX = /^[0-9a-f]{64}$/;
+/** A live call may take this long. Gemini answers in tens of seconds on a reasoning model, so 60 seconds is too short. */
+const LIVE_TIMEOUT_MS = 120_000;
 
 /** An option that the command cannot run without. */
 function required(value: string | undefined, name: string): string {
@@ -77,6 +77,8 @@ async function evalCommand(args: readonly string[]): Promise<void> {
       out: { type: 'string' },
       transitions: { type: 'string' },
       'min-interval-ms': { type: 'string' },
+      'daily-calls': { type: 'string' },
+      'daily-usd': { type: 'string' },
     },
     strict: true,
   });
@@ -89,30 +91,73 @@ async function evalCommand(args: readonly string[]): Promise<void> {
     );
   }
   let model: ModelClient;
+  let baselineModel: ModelClient;
   let modelLabel: string;
+  // Live attempts are recorded per case. Baseline calls share the pacer but are kept apart, so they are not counted
+  // against a pipeline case. The phase is set only while the baseline call is running, and calls run one at a time.
+  const liveAttempts: Attempt[] = [];
+  const baselineAttempts: Attempt[] = [];
+  let phase: 'pipeline' | 'baseline' = 'pipeline';
+  const caseTrails: Attempt[][] = [];
+  let pending: Attempt[] = [];
+  const sink = {
+    record: (attempt: Attempt): void => {
+      if (phase === 'baseline') {
+        baselineAttempts.push(attempt);
+      } else {
+        pending.push(attempt);
+        liveAttempts.push(attempt);
+      }
+    },
+  };
+  // The day's counts persist across runs, so the dollar cap holds for the owner's credit, not just for one run.
+  const dailyCaps = new DailyCaps({
+    maxCalls: Number(values['daily-calls'] ?? '500'),
+    maxUsd: Number(values['daily-usd'] ?? DEFAULT_DAILY_USD),
+    file: spendFileOf(),
+  });
+  let liveChainUsed: readonly string[] = [];
+  let liveSkipped: readonly string[] = [];
+  let liveLabel = '';
   if (mode === 'fixture') {
     model = simulatedModel('extractor');
+    baselineModel = simulatedModel('baseline');
     modelLabel = 'fixture (rule-based stand-in, no model called)';
   } else if (mode === 'live') {
-    const choice = chooseModel(values.provider ?? 'openrouter', values.model);
-    model = pacedModel(
-      createChatClient({
-        provider: choice.provider,
-        model: choice.model,
-        apiKey: keyFor(choice.provider, process.env),
-        baseUrl: baseUrlOf(choice.provider, process.env),
-      }),
-      minIntervalMs,
-    );
-    modelLabel = model.label;
+    const ids = providerIdsOf(values.provider);
+    liveLabel = ids.join('-');
+    const chain = buildLiveChain({
+      providerIds: ids,
+      ...(values.model === undefined ? {} : { model: values.model }),
+      env: process.env,
+      sink,
+      caps: dailyCaps,
+      timeoutMs: LIVE_TIMEOUT_MS,
+    });
+    liveChainUsed = chain.used;
+    liveSkipped = chain.skipped.map((item) => `${item.provider} (${item.reason})`);
+    const paced = pacedModel(chain.client, minIntervalMs);
+    model = paced;
+    baselineModel = {
+      label: chain.client.label,
+      complete: async (request) => {
+        phase = 'baseline';
+        try {
+          return await paced.complete(request);
+        } finally {
+          phase = 'pipeline';
+        }
+      },
+    };
+    modelLabel = chain.used.join(' > ');
   } else {
     throw new RangeError('the mode must be fixture or live');
   }
-  const baselineModel = mode === 'fixture' ? simulatedModel('baseline') : model;
   // Each case has its own log. For the agent map, the moves are written one after another with one running sequence
   // number, so the map can replay the whole set in order. The per-case records are unchanged in the report.
   const moveLines: string[] = [];
   let moveSeq = 0;
+  const started = Date.now();
   const runs = await evaluate({
     set,
     model,
@@ -120,12 +165,16 @@ async function evalCommand(args: readonly string[]): Promise<void> {
     policyVersion: AGENT_POLICY_VERSION,
     now: () => new Date(),
     onRecords: (records) => {
+      // Called once per case, after its pipeline calls and before its baseline call. The attempts so far belong to it.
+      caseTrails.push(pending);
+      pending = [];
       for (const record of records) {
         moveSeq += 1;
         moveLines.push(JSON.stringify({ ...record, seq: moveSeq }));
       }
     },
   });
+  const wallMs = Date.now() - started;
   if (values.transitions !== undefined) {
     writeFileSync(
       resolve(values.transitions),
@@ -162,14 +211,72 @@ async function evalCommand(args: readonly string[]): Promise<void> {
   });
   const out = resolve(values.out ?? DEFAULT_RESULTS);
   mkdirSync(out, { recursive: true });
-  const stem = `${mode}-eval`;
-  writeFileSync(join(out, `${stem}.md`), report, 'utf8');
+  let stem = `${mode}-eval`;
+  let liveSection = '';
+  if (mode === 'live') {
+    stem = `live-${liveLabel}`;
+    const liveCases: LiveCase[] = runs.map((run, index) => {
+      const attempts = caseTrails.at(index) ?? [];
+      const reasonCode = run.pipeline.reasonCode;
+      const modelFailed = [
+        'MODEL_CALL_FAILED',
+        'MODEL_OUTPUT_INVALID',
+        'DOCUMENT_TOO_LONG',
+      ].includes(reasonCode);
+      return {
+        id: run.id,
+        category: run.category,
+        expectedDecision: run.expected.decision,
+        decision: run.pipeline.decision,
+        reasonCode,
+        tokens: run.pipeline.tokens,
+        extracted: attempts.length > 0 && !modelFailed,
+        attempts,
+      };
+    });
+    liveSection = renderLiveSummary({
+      chainUsed: liveChainUsed,
+      skipped: liveSkipped,
+      cases: liveCases,
+      baselineAttempts,
+      wallMs,
+    });
+    writeFileSync(
+      join(out, `${stem}-attempts.json`),
+      `${JSON.stringify({ generatedAt, pipelineAttempts: liveAttempts, baselineAttempts }, null, 2)}\n`,
+      'utf8',
+    );
+  }
+  writeFileSync(join(out, `${stem}.md`), `${report}${liveSection}`, 'utf8');
   writeFileSync(
     join(out, `${stem}.json`),
     `${JSON.stringify({ mode: pipelineLabel, generatedAt, policyVersion: AGENT_POLICY_VERSION, model: modelLabel, pipeline, baseline, comparisons, runs }, null, 2)}\n`,
     'utf8',
   );
   line(`wrote ${join(out, `${stem}.md`)} for ${String(runs.length)} cases (${pipelineLabel})`);
+}
+
+/** The file that holds the day's spend across runs, under the user's local application data. It is created if needed. */
+function spendFileOf(): string {
+  const dir = join(process.env['LOCALAPPDATA'] ?? tmpdir(), 'SignOff', 'model-spend');
+  mkdirSync(dir, { recursive: true });
+  return join(dir, 'daily-caps.json');
+}
+
+/** The provider list from --provider: a comma-separated list in the order to try, or the full failover order. */
+function providerIdsOf(text: string | undefined): ProviderId[] {
+  if (text === undefined) {
+    return [...FAILOVER_ORDER];
+  }
+  const ids: ProviderId[] = [];
+  for (const raw of text.split(',')) {
+    const id = raw.trim();
+    const provider = providerById(id);
+    if (!ids.includes(provider.id)) {
+      ids.push(provider.id);
+    }
+  }
+  return ids;
 }
 
 function exportCommand(args: readonly string[]): void {
@@ -258,14 +365,25 @@ async function runCommand(args: readonly string[]): Promise<void> {
   }
 
   const dataClass: DataClass = values.data === 'real' ? 'real' : 'fictional';
-  const choice = chooseModel(values.provider ?? 'openrouter', values.model);
-  assertDataAllowed({ dataClass, choice, zeroRetentionAck: values['zero-retention-ack'] ?? null });
-  const model = createChatClient({
-    provider: choice.provider,
-    model: choice.model,
-    apiKey: keyFor(choice.provider, env),
-    baseUrl: baseUrlOf(choice.provider, env),
+  // Real invoices go only to the one provider the operator has confirmed, never through a failover to another. The
+  // chain for fictional data tries the providers in order.
+  let providerIds: ProviderId[] = providerIdsOf(values.provider);
+  if (dataClass === 'real') {
+    const acknowledged = values['zero-retention-ack'];
+    if (acknowledged === undefined) {
+      throw new RangeError('real invoices need --zero-retention-ack with one provider id');
+    }
+    const choice = chooseModel(acknowledged, values.model);
+    assertDataAllowed({ dataClass, choice, zeroRetentionAck: acknowledged });
+    providerIds = [choice.provider.id];
+  }
+  const chain = buildLiveChain({
+    providerIds,
+    ...(values.model === undefined ? {} : { model: values.model }),
+    env,
+    caps: new DailyCaps({ file: join(dirname(logPath), 'daily-caps.json') }),
   });
+  const model = chain.client;
 
   const evidence = evidenceRegister(EvidenceFile.parse(readJson(evidencePath)));
   const suppliers = parseSupplierMaster(readJson(suppliersPath));

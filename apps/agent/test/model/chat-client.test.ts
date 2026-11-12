@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { createChatClient, MAX_REPLY_BYTES } from '../../src/model/chat-client.js';
-import { PROVIDERS } from '../../src/model/providers.js';
+import { PROVIDERS, type ProviderDefinition } from '../../src/model/providers.js';
 import { ModelError, type ModelRequest } from '../../src/model/types.js';
 
 // A placeholder that is not a credential. It lets the tests check that a key never reaches an error message.
@@ -50,55 +50,57 @@ const REQUEST: ModelRequest = {
   replySchema: { name: 'invoice', schema: { type: 'object' } },
 };
 
-function clientWith(fetchImpl: typeof fetch, extra: { jsonSchema?: boolean } = {}) {
+function clientWith(fetchImpl: typeof fetch, provider: ProviderDefinition = PROVIDERS.openrouter) {
   return createChatClient({
-    provider: PROVIDERS.openrouter,
-    model: 'google/gemma-4-31b-it:free',
+    provider,
+    model: provider === PROVIDERS.openrouter ? 'google/gemma-4-31b-it:free' : 'openai/gpt-oss-120b',
     apiKey: KEY,
     fetchImpl,
-    ...extra,
   });
 }
 
 describe('createChatClient request', () => {
-  it('posts a strict JSON Schema request to the chat endpoint with the key in the header only', async () => {
+  it('posts a JSON Schema reply format to a provider that documents one, with the key in the header only', async () => {
     const { fetchImpl, calls } = recordingFetch(() => completion('{"ok":true}'));
-    const reply = await clientWith(fetchImpl).complete(REQUEST);
+    const reply = await clientWith(fetchImpl, PROVIDERS.groq).complete(REQUEST);
 
     expect(reply.text).toBe('{"ok":true}');
     expect(calls).toHaveLength(1);
     const [call] = calls;
-    expect(call?.url).toBe('https://openrouter.ai/api/v1/chat/completions');
+    expect(call?.url).toBe('https://api.groq.com/openai/v1/chat/completions');
     expect(call?.init.method).toBe('POST');
     expect(call?.init.redirect).toBe('error');
     const headers = call?.init.headers as Record<string, string>;
     expect(headers['authorization']).toBe(`Bearer ${KEY}`);
     const body = JSON.parse(bodyOf(call)) as Record<string, unknown>;
     expect(body).toMatchObject({
-      model: 'google/gemma-4-31b-it:free',
+      model: 'openai/gpt-oss-120b',
       max_tokens: 800,
       temperature: 0,
       stream: false,
+      reasoning_effort: 'low',
       response_format: {
         type: 'json_schema',
-        json_schema: { name: 'invoice', schema: { type: 'object' }, strict: true },
+        json_schema: { name: 'invoice', schema: { type: 'object' } },
       },
     });
+    expect(body['response_format']).not.toHaveProperty('json_schema.strict');
     expect(body['messages']).toHaveLength(2);
   });
 
-  it('asks for JSON mode when the request has no schema', async () => {
+  it('sends no reply format to a provider that does not document one, and sends its reasoning cap', async () => {
     const { fetchImpl, calls } = recordingFetch(() => completion('{}'));
-    await clientWith(fetchImpl).complete({ ...REQUEST, replySchema: null });
+    await clientWith(fetchImpl).complete(REQUEST);
     const body = JSON.parse(bodyOf(calls[0])) as Record<string, unknown>;
-    expect(body['response_format']).toEqual({ type: 'json_object' });
+    expect(body).not.toHaveProperty('response_format');
+    expect(body['reasoning']).toEqual({ effort: 'low' });
   });
 
-  it('asks for JSON mode when the model does not take schemas', async () => {
+  it('sends no reply format when the request has no schema, even to a provider that takes one', async () => {
     const { fetchImpl, calls } = recordingFetch(() => completion('{}'));
-    await clientWith(fetchImpl, { jsonSchema: false }).complete(REQUEST);
+    await clientWith(fetchImpl, PROVIDERS.groq).complete({ ...REQUEST, replySchema: null });
     const body = JSON.parse(bodyOf(calls[0])) as Record<string, unknown>;
-    expect(body['response_format']).toEqual({ type: 'json_object' });
+    expect(body).not.toHaveProperty('response_format');
   });
 
   it('labels the client with provider and model, never with a key', () => {
