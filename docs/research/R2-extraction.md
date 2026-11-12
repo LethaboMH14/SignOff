@@ -353,9 +353,9 @@ Also used from §1: S10 (Gemini prices), S31 (Groq gpt-oss, E), S7 (Textract), S
 | GOT-OCR2, InternVL, SmolVLM / SmolDocling | **not researched** | — | — | — | — |
 | Florence-2 (Microsoft) | MIT (S47, E) | base ~230M, large ~770M (S47, E) | general OCR; no invoice benchmark found | not a document-structure model | base model CPU-feasible (unmeasured) |
 | Qwen2.5-VL-7B | Apache 2.0 tag via olmOCR base (S45, V); Qwen-7B card not read | 7B | none for invoices found | — | not practical |
-| Qwen2.5-VL-3B | **licence not confirmed**: S46 file exists, text not read | 3B | none | check licence before use | slow on CPU |
+| Qwen2.5-VL-3B | **Qwen RESEARCH LICENSE AGREEMENT**, release 19 Sep 2024 (S46, **V**). Not Apache. Treat as excluded for production until counsel reads the commercial clause. | 3B | none | licence | slow on CPU |
 | Qwen3-VL 8B, 30B-A3B | Apache 2.0 (E, Roboflow pages, S47) | 8.8B; 30B | OCR up to 32 languages (E) | — | not practical |
-| Donut (NAVER) | MIT (E) | ~74M (E) | CORD Score 91.3 (S50, E; "Score" column, metric not stated as F1 in the excerpt) | needs fine-tuning for new layouts (E) | feasible on CPU for small inference (unmeasured) |
+| Donut (NAVER) | MIT (S50 LICENSE file, **V**) | ~74M (E) | CORD Score 91.3 (S50, E; "Score" column, metric not stated as F1 in the excerpt) | needs fine-tuning for new layouts (E) | feasible on CPU for small inference (unmeasured) |
 | LayoutLMv3 | **CC BY-NC-SA 4.0** (S49, **V**) | base | DocILE baseline in the benchmark paper (S3, E) | **non-commercial licence** | — (exclude for commercial use) |
 | Table Transformer (TATR) | MIT (S48, **V**) | DETR | PubTables-1M detection and structure (S52, E) | table only; needs layout first | feasible on CPU (unmeasured) |
 | Surya | GPL-3.0 (E, S28 earlier) | — | vendor receipt CER 0.191 (S6, E) | copyleft: a legal review is needed | — |
@@ -380,7 +380,7 @@ Also used from §1: S10 (Gemini prices), S31 (Groq gpt-oss, E), S7 (Textract), S
 - **Repository default:** `apps/agent/src/model/providers.ts` line 56: `defaultModel: 'muse-spark-1.3'` for `meta` (**V**). That is not a Llama identifier. Whether Meta's API serves Llama, and what `muse-spark-1.3` is, was **not verified** here. Fix the default or document it before use.
 - **Llama 3.2 Vision 11B / 90B:** context 128k; "Text + Image" (S38, **V**: "11B (10.6) Text + Image Text 128k Yes"). Licence: Llama 3.2 Community License (S38, **V**). Gated on Hugging Face (S38, **V**). Benchmarks: DocVQA 62.3 / 70.7 on Meta's card (S39, E) and 88.4 / 90.1 on NVIDIA's listing (S40, E); the splits differ, so do not compare. **No invoice benchmark (SROIE, CORD, DocILE) found.** Image count or size limits: **not found**.
 - **Llama 4 Scout / Maverick:** Scout 10.0M context (S36, **V**: "Context 10.0M", "Price Free" on OpenRouter). Maverick 1M context, "Multilingual text and image" (S37, **V**). Licence: "license:other" tag (S37, **V**); "Llama 4 is licensed under the Llama 4 Community License" (S37, **V**, model card text). Native multimodal (E). Image limits: **not found**. No invoice or document benchmark found for Llama 4.
-- **Hosts:** Groq lists `meta-llama/llama-4-scout-17b-16e-instruct` and `meta-llama/llama-4-maverick-17b-128e-instruct` in its model list (S41, **V**). The Llama 3.2 vision models are **not** in the Groq list fetched (S41, **V**). OpenRouter lists Scout free (S36, **V**). Meta's own API pricing: **not verified**; one search excerpt says Meta shut its hosted Llama API on 6 July 2026, uncorroborated, so treat as unknown (E). AI/ML API: a Free Tier FAQ exists (S53, **V**) but **no prices or rate limits were found**.
+- **Hosts:** Groq lists `meta-llama/llama-4-scout-17b-16e-instruct` and `meta-llama/llama-4-maverick-17b-128e-instruct` in its model list (S41, **V**). The Llama 3.2 vision models are **not** in the Groq list fetched (S41, **V**). OpenRouter lists Scout free (S36, **V**). Meta's own API pricing: **not verified**; one search excerpt says Meta shut its hosted Llama API on 6 July 2026, uncorroborated, so treat as unknown (E). AI/ML API: its Free Tier FAQ reads "The Free Tier is currently paused" (S53, **V**, fetched 12 Nov 2026). **Not a free route.** No prices or rate limits found.
 - **Verdict:** Meta's models can read invoice images, and Llama 4 Scout is a cheap free-route candidate for a live test. Nothing published shows their invoice-field accuracy, so they go through the same live run as everything else.
 
 ### 8.4 Cost per 1,000 invoices
@@ -396,7 +396,7 @@ Also used from §1: S10 (Gemini prices), S31 (Groq gpt-oss, E), S7 (Textract), S
 | Hugging Face Inference Providers | provider rate, no markup (S33, **V**) | **depends on model, unverified** | free users must buy credits (S33, **V**); PRO $2.00/month (S33, V) |
 | Llama 4 via other hosts (Together, Cerebras, Cloudflare) | $0.08–0.41 per 1M input (aggregator, E) | not computed (unverified) | conflicting prices across aggregators (S55, E) |
 | Meta's own API | **not verified** | — | — |
-| AI/ML API | **not verified** | — | free tier exists (S53, V); no price page found |
+| AI/ML API | **not verified** | — | Free Tier "currently paused" (S53, **V**); no price page found (S54, V) |
 | Azure prebuilt invoice (OCR path) | ~$10 per 1,000 pages (E) | **~$20** (2 pages × 1,000) | primary rate not rendered (S9, V) |
 | Textract, tables (OCR path) | $0.015 per page (S7, **V**) | **$30.00** | free tier applies to Analyze Expense only (S7, V) |
 | Google Invoice parser (OCR path) | "$0.10 / 1 count" (S8, **V**) | **$100 (10-page count) to $200 (per page)** | unit unverified (E) |
@@ -424,6 +424,22 @@ Also used from §1: S10 (Gemini prices), S31 (Groq gpt-oss, E), S7 (Textract), S
 **What must stay deterministic code (restated):** every amount, date, payee, arithmetic check, quote binding, injection screen and hold decision. A model proposes a field value; code decides whether the payment can proceed.
 
 ---
+
+### 8.6 Gap closure (second round, 12 Nov 2026)
+
+Sources: S58 `https://huggingface.co/stepfun-ai/GOT-OCR2_0` (**V**); S59 `https://huggingface.co/OpenGVLab/InternVL3-2B` (**V**); S60 `https://huggingface.co/ds4sd/SmolDocling-256M-preview` (**V**); S46 Qwen2.5-VL-3B `LICENSE` (**V**); S50 Donut `LICENSE` (**V**, NAVER MIT text); S53 AI/ML API Free Tier FAQ (**V**).
+
+| Model | Licence | Size | Invoice or document evidence | CPU on a Windows laptop |
+|---|---|---|---|---|
+| GOT-OCR2 (stepfun-ai) | Apache-2.0 tag (S58, **V**) | 0.7B (S58, **V**) | none found for invoices; OmniDocBench not checked | small enough to try on CPU; **not measured** |
+| InternVL3-2B (OpenGVLab) | Apache-2.0 tag; README says "released under the MIT License" for the project and Qwen2.5 Apache-2.0 as a component (S59, **V**) | 2B (S59, **V**) | none found for invoices | slow on CPU; **not measured** |
+| SmolDocling-256M-preview (Docling) | Apache 2.0, "Based on SmolVLM-256M-Instruct" (S60, **V**) | 256M (name) | none found for invoices; preview, superseded by Granite-Docling (E, §8.1) | small; **not measured** |
+| Qwen2.5-VL-3B | **Qwen RESEARCH LICENSE AGREEMENT**, 19 Sep 2024 (S46, **V**) | 3B | none | slow on CPU |
+| Donut | **MIT** (S50, **V**) | ~74M (E) | CORD "Score" 91.3 (S50, E) | feasible; **not measured** |
+
+Corrections to earlier sections: Donut's licence is MIT (verified; §8.1 says "E", now V). The Qwen2.5-VL-3B licence is a research licence, not Apache (§8.1 said "not confirmed"). AI/ML API's free tier is paused (§8.3 said "exists").
+
+**Not found or not read:** GOT-OCR2, InternVL and SmolDocling invoice benchmarks (SROIE, CORD, DocILE, OmniDocBench): **NOT MEASURED**. Groq's Scout row in the free-plan rate table was not rendered (S47 lists the model ID only), so Scout limits stay unverified. Meta's own API price: unverified.
 
 ## Limitations and what I could not verify
 
