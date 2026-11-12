@@ -8,6 +8,8 @@ import type { IntakeOutcome } from '../intake/intake.js';
 import { budgetedModel, ModelBudget } from '../model/budget.js';
 import type { ModelClient } from '../model/types.js';
 import { matchInvoice, type VerifiedValues } from '../match/match.js';
+import { screenInvoice, type ScreenCandidate } from '../match/fraud-screen.js';
+import type { Tolerance } from '../../../../packages/shared/src/match-rules.js';
 import type { SupplierMaster } from '../match/supplier-master.js';
 import { screenPages, type ScreenResult } from '../screen/injection.js';
 import {
@@ -53,6 +55,12 @@ export interface PipelineDeps {
    * itself never sets it, so production behaviour is unchanged when it is absent.
    */
   readonly alreadyClearedElsewhere?: (obligationKey: string) => boolean;
+  /** The buyer's payment history, for screening. Absent means no history to compare against. */
+  readonly paymentHistory?: readonly ScreenCandidate[];
+  /** The split threshold (policy). Absent turns the split check off, which the README states as a limit. */
+  readonly splitThresholdMinor?: number;
+  /** The buyer's match tolerance. Absent uses the shared default. */
+  readonly matchTolerance?: Tolerance;
 }
 
 export interface RunResult {
@@ -257,11 +265,40 @@ export async function processInvoice(
     suppliers: deps.suppliers,
     alreadyPaid: (key) =>
       deps.log.blocksPayment(key) || (deps.alreadyClearedElsewhere?.(key) ?? false),
+    ...(deps.matchTolerance === undefined ? {} : { tolerance: deps.matchTolerance }),
   });
   run.recordSha256s = [...match.recordSha256s];
   run.obligationKey = match.obligationKey;
   if (!match.ok) {
     move('HELD', 'matcher', 'MATCH_FAILED', match.reasons);
+    return finish();
+  }
+
+  // 5b. Screen against the payment history: re-saved or revised copies, near-duplicate numbers, split payments and
+  // dates that cannot be right. Every hit is a hold for a person, never a payment.
+  const invoiceDate = verified.invoiceDate.value;
+  if (invoiceDate === null) {
+    move('HELD', 'matcher', 'VERIFICATION_FAILED', ['internal:invoice-date']);
+    return finish();
+  }
+  const screened = screenInvoice(
+    {
+      fingerprint: fileSha256,
+      supplierId: match.supplierId,
+      invoiceNumber: values.invoiceNumber,
+      amountMinor: match.amountMinor,
+      payeeAccountAsPrinted: values.payeeAccountAsPrinted,
+      invoiceDate,
+    },
+    deps.paymentHistory ?? [],
+    {
+      now: deps.now(),
+      splitThresholdMinor: deps.splitThresholdMinor ?? null,
+      ...(deps.matchTolerance === undefined ? {} : { tolerance: deps.matchTolerance }),
+    },
+  );
+  if (screened.holds.length > 0) {
+    move('HELD', 'matcher', 'SCREEN_HOLD', [...screened.holds]);
     return finish();
   }
   move('WARDEN_ELIGIBLE', 'matcher', 'OK');

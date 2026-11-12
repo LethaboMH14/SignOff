@@ -36,6 +36,10 @@ export const PurchaseOrderRecord = z.strictObject({
   supplierId: SupplierId,
   currency: CurrencyCode,
   amountMinor: PayableMinorUnits,
+  /** 'closed' when the buyer has closed the order. Absent means open, so older exports still parse. */
+  status: z.enum(['open', 'closed']).optional(),
+  /** Value already invoiced against this order before this invoice. Absent means nothing yet. */
+  invoicedMinor: MinorUnits.optional(),
 });
 export type PurchaseOrderRecord = z.infer<typeof PurchaseOrderRecord>;
 
