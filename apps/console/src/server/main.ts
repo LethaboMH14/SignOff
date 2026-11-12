@@ -52,7 +52,11 @@ const transitionsPath = resolve(
   process.env['SIGNOFF_CONSOLE_TRANSITIONS'] ?? 'apps/agent/state/agent-log.jsonl',
 );
 const host = process.env['SIGNOFF_CONSOLE_HOST'] ?? '127.0.0.1';
-if (!LOOPBACK.has(host)) {
+// A container host routes traffic to every interface, so the container opts in explicitly with 0.0.0.0. The opt-in is
+// set in deploy/console/Dockerfile only; a local start still listens on loopback.
+const allowAllInterfaces =
+  host === '0.0.0.0' && process.env['SIGNOFF_CONSOLE_ALLOW_ALL_INTERFACES'] === '1';
+if (!LOOPBACK.has(host) && !allowAllInterfaces) {
   throw new RangeError('the console listens on the loopback address only');
 }
 const port = portOf(process.env['SIGNOFF_CONSOLE_PORT'] ?? '4180');
@@ -141,7 +145,13 @@ const api: ApiContext = {
   sessions: new SessionStore(() => Date.now()),
   guard: new LoginGuard(() => Date.now()),
   transitionsPath,
-  allowedOrigins: new Set([`http://127.0.0.1:${String(port)}`, `http://localhost:${String(port)}`]),
+  allowedOrigins: new Set([
+    `http://127.0.0.1:${String(port)}`,
+    `http://localhost:${String(port)}`,
+    ...(process.env['SIGNOFF_CONSOLE_PUBLIC_ORIGIN'] !== undefined
+      ? [process.env['SIGNOFF_CONSOLE_PUBLIC_ORIGIN']]
+      : []),
+  ]),
   version,
   mode,
   wardenFor,
