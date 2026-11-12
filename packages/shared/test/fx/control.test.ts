@@ -9,7 +9,7 @@ const currencyApi = (zar: number) =>
 
 /** A stub that answers by URL: Frankfurter gets `first`, currency-api gets `second` (a Response or a thrown error). */
 function stub(first: () => Response | Error, second: () => Response | Error): typeof fetch {
-  return (async (input: RequestInfo | URL) => {
+  return (async (input: string | URL) => {
     const url = String(input);
     const answer = url.includes('frankfurter') ? first() : second();
     if (answer instanceof Error) throw answer;

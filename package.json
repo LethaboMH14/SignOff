@@ -37,6 +37,7 @@
     "testnet:credential": "tsx scripts/testnet/credential.ts",
     "judge:check": "tsx scripts/judge-check.ts",
     "fx:demo": "tsx scripts/fx-demo.ts",
+    "audit:verify": "tsx scripts/audit-verify.ts",
     "eval": "tsx apps/agent/src/main.ts eval --mode fixture",
     "agent:eval": "tsx apps/agent/src/main.ts eval",
     "agent:run": "tsx apps/agent/src/main.ts run",
