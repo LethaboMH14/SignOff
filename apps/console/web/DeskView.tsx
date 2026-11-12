@@ -336,7 +336,8 @@ export function DeskView(props: DeskViewProps) {
             {rows.length === 0 ? (
               <p className="muted">Nothing has been proposed or held yet.</p>
             ) : (
-              <ul className="invoice-list">
+              // On a narrow screen the list scrolls inside its own box, so it takes focus for the arrow keys.
+              <ul className="invoice-list" tabIndex={0} aria-labelledby="invoices-title">
                 {rows.map((row) => (
                   <li key={row.rowId} className={row === featured ? 'on' : undefined}>
                     <StateSymbol state={row.displayState} />

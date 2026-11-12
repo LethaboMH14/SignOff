@@ -20,7 +20,8 @@ export function Feed({ movements }: { readonly movements: readonly Movement[] })
     return <p className="feed-empty">No moves yet. The list fills in as the agents work.</p>;
   }
   return (
-    <ol className="feed" aria-label="Latest moves, newest first">
+    // The list scrolls inside its own box, so it takes focus: a keyboard user can then scroll it with the arrow keys.
+    <ol className="feed" aria-label="Latest moves, newest first" tabIndex={0}>
       {movements.map((move) => (
         <li key={move.seq} className={`feed-item tone-${move.tone}`}>
           <div className="feed-head">
