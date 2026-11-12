@@ -25,6 +25,8 @@ import { WardenClient, coSignAsAgent } from '../../../packages/warden-api/src/cl
 import { auditToCsv, buildAuditExport } from './audit/export.js';
 import { AGENT_POLICY_VERSION, assertDataAllowed, chooseModel, type DataClass } from './config.js';
 import { loadLabelledSet } from './eval/cases.js';
+import { loadGeneratedSet } from './eval/generated-adapter.js';
+import { buildCorpus } from '../../../scripts/gen-invoices/model.js';
 import { renderReport } from './eval/report.js';
 import { evaluate, perCaseScores, scoreBaseline, scorePipeline } from './eval/run.js';
 import { compareSides } from './eval/stats.js';
@@ -43,6 +45,7 @@ import { processInvoice } from './workflow/pipeline.js';
 import { wardenPortOf } from './workflow/warden-port.js';
 
 const DEFAULT_SET = fileURLToPath(new URL('../fixtures/labelled', import.meta.url));
+const DEFAULT_GENERATED = fileURLToPath(new URL('../fixtures/generated', import.meta.url));
 const DEFAULT_RESULTS = fileURLToPath(new URL('../results', import.meta.url));
 const HEX = /^[0-9a-f]{64}$/;
 /** A live call may take this long. Gemini answers in tens of seconds on a reasoning model, so 60 seconds is too short. */
@@ -75,6 +78,7 @@ async function evalCommand(args: readonly string[]): Promise<void> {
       out: { type: 'string' },
       transitions: { type: 'string' },
       'min-interval-ms': { type: 'string' },
+      'generated-split': { type: 'string' },
       'daily-calls': { type: 'string' },
       'daily-usd': { type: 'string' },
     },
@@ -82,7 +86,16 @@ async function evalCommand(args: readonly string[]): Promise<void> {
   });
   const mode = values.mode ?? 'fixture';
   const minIntervalMs = intervalOf(values['min-interval-ms']);
-  const set = loadLabelledSet(resolve(values.set ?? DEFAULT_SET));
+  // --generated-split dev|heldout reads lane J's generated set, rebuilt from the seeded corpus (generated-adapter.ts).
+  const generatedSplit = values['generated-split'];
+  const set =
+    generatedSplit === undefined
+      ? loadLabelledSet(resolve(values.set ?? DEFAULT_SET))
+      : loadGeneratedSet(
+          resolve(values.set ?? DEFAULT_GENERATED),
+          generatedSplit === 'dev' ? 'dev' : 'heldout',
+          buildCorpus(),
+        );
   if (!set.notice.includes('FICTIONAL')) {
     throw new RangeError(
       'the labelled set does not carry the fictional-data notice, so it is not evaluated here',
