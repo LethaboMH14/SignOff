@@ -39,7 +39,7 @@ The build sliced into small, reviewable issues. Each maps to a requirement in [P
 
 | ID | Title | Acceptance criteria | Depends | Size | Owner | GH | Status |
 |---|---|---|---|---|---|---|---|
-| B1 | Warden service skeleton | Separate deployment and identity; authenticated proposal endpoint; holds its own key only | F2, A3 | M | Sibusiso (AI-assisted) | [#28](https://github.com/LethaboMH14/SignOff/issues/28) | Review (live with a test-issued token, T-071; RLUSD run blocked by A3) |
+| B1 | Warden service skeleton | Separate deployment and identity; authenticated proposal endpoint; holds its own key only | F2, A3 | M | Sibusiso (AI-assisted) | [#28](https://github.com/LethaboMH14/SignOff/issues/28) | Review (live with a test-issued token, T-071; 1 RLUSD validated on Testnet, T-059; the 10 RLUSD run is open) |
 | B2 | Obligation identity and reservation | Stable identity; atomic reservation; one unresolved attempt per payable; concurrency test | B1 | M | Sibusiso (AI-assisted) | [#29](https://github.com/LethaboMH14/SignOff/issues/29) | Review (T-069, T-071) |
 | B3 | Verified supplier and destination | Destination only from enrolled supplier record; changed payee held | B1 | S | Sibusiso (AI-assisted) | [#30](https://github.com/LethaboMH14/SignOff/issues/30) | Review (T-069, T-071) |
 | B4 | Three-way match | Invoice vs purchase order vs goods received, with tolerances; mismatch held | B1 | M | Sibusiso (AI-assisted) | [#31](https://github.com/LethaboMH14/SignOff/issues/31) | Review (T-069, T-071) |

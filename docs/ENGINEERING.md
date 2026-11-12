@@ -1,6 +1,6 @@
 # Engineering plan
 
-How this repository is built, reviewed, tested and released. **Gate 0 and incremental Gate A are merged and CI-tested (owner settings remain open). Gate B (Warden) and Gate C (invoice agent) are implemented and offline-tested on feature branches but not merged. Gate C's labelled evaluation is SIMULATED. The live RLUSD proof and model-to-Warden Testnet run remain BLOCKED/UNVERIFIED.** It is sized for the four days before the deadline. Items marked *stretch* are done only if the core flow works first.
+How this repository is built, reviewed, tested and released. **Gate 0 and incremental Gate A are merged and CI-tested (owner settings remain open). Gate B (Warden) and Gate C (invoice agent) are implemented and offline-tested on feature branches but not merged. Gate C's labelled evaluation is SIMULATED. One RLUSD payment (1 RLUSD) is validated on Testnet (T-059); the 10 RLUSD run is open. The model-to-Warden Testnet run remains UNVERIFIED.** It is sized for the four days before the deadline. Items marked *stretch* are done only if the core flow works first.
 
 ## Repository layout
 
@@ -44,7 +44,7 @@ Warden lives in the same repository but deploys as its own service with its own 
 
 **Gate 0 tooling as built:** Vitest 5.1.0 with v8 coverage (90% of statements, functions and lines; 85% of branches). TypeScript 6.0.3 with every strict flag. ESLint 10 with typescript-eslint strict and stylistic type-checked rules and eslint-plugin-security. Prettier for code. `npm run check` runs every check, including the secret scan of tracked files. At the close of Gate 0: 211 tests in 17 files.
 
-**Gate A evidence status:** Testnet transactions using a *test-issued token* are recorded in [TEST-LOG T-053 to T-058](logs/TEST-LOG.md). Single-key rejections are recorded in T-054. A validated RLUSD Testnet transaction is **not** demonstrated (T-059 and T-061 remain BLOCKED); these offline and TST results do not count as RLUSD proof. Incremental Gate A PR #19 is merged with post-merge CI passing; issue #22 remains OPEN for the RLUSD live proof.
+**Gate A evidence status:** Testnet transactions using a *test-issued token* are recorded in [TEST-LOG T-053 to T-058](logs/TEST-LOG.md). Single-key rejections are recorded in T-054. One RLUSD Testnet payment is validated (T-059: 1 RLUSD, ledger 22255596, hash 3CCC034B2A36A8567625875B4C32B0AC5D3B1875696706ABA27858B1586265F9). The 10 RLUSD run is open (T-061 refused before sending while the account held 0 RLUSD). The TST results do not count as RLUSD proof. Incremental Gate A PR #19 is merged with post-merge CI passing; issue #22 stays OPEN for the 10 RLUSD run.
 
 **Gate C evidence boundary:** The labelled 30-case evaluation uses rule-based stand-ins and is **SIMULATED**. A live model evaluation (T-088) and live Agent → Warden → Testnet run (T-087) remain NOT RUN. Simulated 30/30 results are not measured model accuracy. The Warden signs only after its final policy and ledger checks.
 
@@ -155,7 +155,7 @@ From the [CFO and fraud research](CFO-AGENTIC-FRAUD-SECURITY-RESEARCH-2026-11-10
 | D. Operations and console | Payment desk, changed-payee hold, lowered-limit hold, validated receipt; never "paid" before validation; safe behaviour on timeout |
 | E. Credible pitch | A consenting finance-lead interview; the README status table complete; no savings or partner claims |
 
-After the gates, and only if verified on Testnet: credentials, batch payments, token escrow, a Privy agent wallet, and permission delegation. **Optional judge demonstration after Gates A and B:** the Arduino **Warden Switch** (one-way physical pause, confirmed guard state, optional RFID) under [ADR 0005](decisions/0005-arduino-operator-hardware.md) and its [judge runbook](ARDUINO-JUDGE-DEMO-RUNBOOK.md). The server-side watchdog and no-hardware-resume requirement must be implemented and tested before either is demonstrated as a security feature; omit hardware if it endangers the primary working demo.
+After the gates, and only if verified on Testnet: credentials, batch payments, token escrow (RLUSD escrow not available (issuer allowTrustLineLocking false, to be re-read on ledger)), a Privy agent wallet, and permission delegation. **Optional judge demonstration after Gates A and B:** the Arduino **Warden Switch** (one-way physical pause, confirmed guard state, optional RFID) under [ADR 0005](decisions/0005-arduino-operator-hardware.md) and its [judge runbook](ARDUINO-JUDGE-DEMO-RUNBOOK.md). The server-side watchdog and no-hardware-resume requirement must be implemented and tested before either is demonstrated as a security feature; omit hardware if it endangers the primary working demo.
 
 ## Keeping claims honest
 

@@ -16,7 +16,7 @@ Track as the team summarises it: **build an AI agent that moves money for a real
 
 - Layer 1, settles in 3–5 seconds, fixed fee of about 12 drops (a tiny fraction of a cent), no mining, no smart contracts. Financial features are built into the protocol as "amendments" and called through one API.
 - **Account reserves:** an account needs 1 XRP to exist plus 0.2 XRP for every object it owns (a trust line, a signer list, a credential and so on). Plan funding for every account.
-- **Live on mainnet (so also on Testnet):** multi-purpose tokens (MPTs), token escrow (escrow for issued tokens, not just XRP), **credentials**, permissioned domains, and **batch transactions** (went live about two weeks before the workshop; atomic multi-transaction flows).
+- **Live on mainnet (so also on Testnet):** multi-purpose tokens (MPTs), token escrow (escrow for issued tokens, not just XRP; RLUSD escrow not available: issuer allowTrustLineLocking false, to be re-read on ledger), **credentials**, permissioned domains, and **batch transactions** (went live about two weeks before the workshop; atomic multi-transaction flows).
 - **Described as not live yet, Devnet only (as of 5 November; see corrections):** lending protocol, single-asset vault, **permission delegation**, sponsored fees and reserves, smart escrow.
 - **Networks:** mainnet is production; Testnet mirrors mainnet's features; Devnet is for features not yet live.
 - **Out of scope for the hackathon:** the XRPL EVM sidechain and community networks. The judges want the XRPL Layer 1.
@@ -48,7 +48,7 @@ Track as the team summarises it: **build an AI agent that moves money for a real
 
 ## Questions from other teams
 
-- Escrow: token escrow is live, so test on Testnet or Devnet and deploy to mainnet.
+- Escrow: RLUSD escrow not available (issuer allowTrustLineLocking false, to be re-read on ledger).
 - Fees do not depend on the amount sent; there is no gas market.
 - Lending needs the lending amendment, which is still being voted on.
 - Wallet for the hackathon: Privy.
@@ -63,7 +63,7 @@ Track as the team summarises it: **build an AI agent that moves money for a real
 | RLUSD needs trust lines and reserves | Budget reserves; provision trust lines in the setup script; the trust line limit is one exposure layer, not a loss cap (see corrections) |
 | Simulate exists | Warden simulates before co-signing as a preflight only; "paid" is shown only after a validated ledger result |
 | Batch transactions are live | Stretch: pay several approved invoices atomically |
-| Token escrow is live | Stretch: hold a payment in escrow until goods are received, if the RLUSD issuer allows it on Testnet (unverified) |
+| RLUSD escrow not available (issuer allowTrustLineLocking false, to be re-read on ledger) | Stretch: hold a payment in escrow until goods are received, only if the issuer allows it on Testnet |
 | Privy recommended, with agent policies | Option: keep the agent's key in a Privy agent wallet so it never sits in our code. Time-boxed; must support multi-signing (unverified) |
 | Key handling stressed | GitHub secret scanning, a pre-commit check using tested XRPL seed patterns, seeds only in a secret manager, log redaction, a rehearsed rotation |
 | XRPL MCP server and starter kit | Use them during development |

@@ -52,7 +52,7 @@ The workshop on 5 November described it as not yet live. The reviewer reports th
 
 ### 6. Stretch, only after the delivery gates in ENGINEERING.md
 
-Batch payment of several invoices, token escrow until goods are received (only if the RLUSD issuer allows it on Testnet), and a Privy agent wallet (only if it can sign for an XRPL multi-signed transaction).
+Batch payment of several invoices, token escrow until goods are received (RLUSD escrow not available (issuer allowTrustLineLocking false, to be re-read on ledger)), and a Privy agent wallet (only if it can sign for an XRPL multi-signed transaction).
 
 ## Why
 
