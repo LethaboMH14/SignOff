@@ -35,7 +35,9 @@ const SESSION_MAX_AGE_SECONDS = 8 * 60 * 60;
 const BODY_LIMIT_BYTES = 4096;
 const REQUEST_ID = /^[0-9a-f-]{36}$/;
 const APPROVE_PATH = /^\/api\/limits\/([0-9a-f-]{36})\/approve$/;
-const INVOICE_PATH = /^\/api\/invoices\/([0-9a-f]{64}|[0-9a-f-]{36})$/;
+export const UPLOAD_UNAVAILABLE =
+  'upload is not available: the agent intake endpoint is not merged yet (lane B, PR #80)';
+const INVOICE_PATH =/^\/api\/invoices\/([0-9a-f]{64}|[0-9a-f-]{36})$/;
 const RECEIPT_PATH = /^\/api\/receipts\/([0-9a-f-]{36})$/;
 
 /** The Warden calls the console makes for one person. Each method returns the Warden's answer, unparsed. */
@@ -546,6 +548,11 @@ export async function handleApi(
   const approve = APPROVE_PATH.exec(pathname);
   if (approve !== null && method === 'POST') {
     await approveLimit(request, response, ctx, approve[1] ?? '');
+    return;
+  }
+  if (pathname === '/api/invoices/upload' && method === 'POST') {
+    // Not available until the agent intake endpoint (lane B, PR #80) is merged. Explicit, never a fake success.
+    sendJson(response, 501, { error: UPLOAD_UNAVAILABLE });
     return;
   }
   const invoice = INVOICE_PATH.exec(pathname);

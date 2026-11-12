@@ -8,6 +8,7 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { createConsoleServer } from '../src/server/app.js';
+import { UPLOAD_UNAVAILABLE } from '../src/server/api.js';
 import {
   call,
   type Harness,
@@ -489,5 +490,31 @@ describe('the changes', () => {
       origin: url,
     });
     expect(reply.status).toBe(404);
+  });
+});
+
+describe('upload and session expiry', () => {
+  it('answers the upload route with an explicit not-available, never a fake success', async () => {
+    const { url } = await start();
+    const operator = await signIn(url, OPERATOR_NAME);
+    const reply = await call(url, '/api/invoices/upload', {
+      method: 'POST',
+      cookie: operator.cookie,
+      csrf: operator.csrf,
+      origin: url,
+      body: {},
+    });
+    expect(reply.status).toBe(501);
+    expect(reply.json).toEqual({ error: UPLOAD_UNAVAILABLE });
+  });
+
+  it('ends a session that has expired mid-use, and a fresh sign-in works again', async () => {
+    const { url, harness } = await start();
+    const operator = await signIn(url, OPERATOR_NAME);
+    expect((await call(url, '/api/desk', { cookie: operator.cookie })).status).toBe(200);
+    harness.advance(24 * 60 * 60 * 1000);
+    expect((await call(url, '/api/desk', { cookie: operator.cookie })).status).toBe(401);
+    const again = await signIn(url, OPERATOR_NAME);
+    expect((await call(url, '/api/desk', { cookie: again.cookie })).status).toBe(200);
   });
 });
