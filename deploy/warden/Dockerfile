@@ -16,6 +16,7 @@ COPY packages/ packages/
 RUN npm ci --workspace @signoff/warden --include-workspace-root=false
 
 COPY apps/warden/ apps/warden/
+COPY deploy/entrypoint.mjs deploy/entrypoint.mjs
 COPY tsconfig.base.json ./
 
 USER node
@@ -26,4 +27,5 @@ EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s \
   CMD node -e "fetch('http://127.0.0.1:8080/v1/health').then((r)=>r.json()).then((b)=>process.exit(b.ready===true?0:1)).catch(()=>process.exit(1))"
 
-CMD ["npm", "run", "warden:serve"]
+# The entrypoint writes the Warden secrets from the host secret store, refuses to start if one is missing, then runs the Warden.
+CMD ["node", "deploy/entrypoint.mjs", "warden"]
