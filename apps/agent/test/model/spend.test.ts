@@ -108,6 +108,23 @@ describe('the daily dollar cap', () => {
     expect(second.snapshot()).toMatchObject({ calls: 1, tokens: 10, usd: 0.25 });
   });
 
+  it('keeps the total across days, so the total cap holds when the day rolls over', () => {
+    let day = '2026-11-12';
+    const now = (): Date => new Date(`${day}T10:00:00Z`);
+    const caps = new DailyCaps({ file: null, now, maxUsd: 5, maxTotalUsd: 0.3 });
+    caps.reserve(0.2);
+    caps.settle(0, 0.2, 0.2);
+    day = '2026-11-13';
+    expect(caps.snapshot()).toMatchObject({ usd: 0, total: 0.2 });
+    expect(() => { caps.reserve(0.2); }).toThrow('the total dollar cap would be exceeded');
+  });
+
+  it('gives a default daily cap of $5 and a default total of $10', () => {
+    const caps = new DailyCaps({ file: null });
+    expect(caps.maxUsd).toBe(5);
+    expect(caps.maxTotalUsd).toBe(10);
+  });
+
   it('refuses a daily cap that is not a positive dollar figure', () => {
     expect(() => new DailyCaps({ file: null, maxUsd: 0 })).toThrow(
       'the daily dollar cap must be a positive number',

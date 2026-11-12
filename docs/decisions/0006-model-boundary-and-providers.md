@@ -22,7 +22,7 @@
 5. **Strict replies.** Where a model supports JSON Schema output, the schema is requested. Every reply is validated locally against the strict schema either way, and an invalid reply is never used.
 6. **Data.** Real invoices reach a model only after the operator confirms that provider's zero-retention terms. Free-tier identifiers are refused for real invoices. The labelled evaluation uses fictional invoices only.
 7. **Measure before claiming.** Changing a provider or a model means re-running the labelled evaluation in live mode and recording the result in the test log before any claim is made.
-8. **Few calls to Meta.** *Superseded by [0008](0008-meta-full-provider-and-spend-cap.md):* Meta is a full provider under a hard $3 total spend cap enforced in code. On the user's instruction (2026-11-10), the Meta API was used for probes only, until the owner confirmed full use on 2026-11-12.
+8. **Few calls to Meta.** *Superseded by [0008](0008-meta-full-provider-and-spend-cap.md):* Meta is a full provider under a hard spend cap enforced in code ($10 total, $5 a day). On the user's instruction (2026-11-10), the Meta API was used for probes only, until the owner confirmed full use on 2026-11-12.
 9. **Pacing.** A live run may space its calls with `--min-interval-ms`, so free tiers are not overrun by a burst. The spacing is a setting of the run and is recorded with its result.
 
 ## Alternatives considered

@@ -1,6 +1,6 @@
 {
   "mode": "LIVE",
-  "generatedAt": "2026-11-12T17:27:51.766Z",
+  "generatedAt": "2026-11-12T17:39:30.887Z",
   "policyVersion": "2026-11-10.1",
   "model": "meta:muse-ember-1.0",
   "pipeline": {
@@ -67,29 +67,29 @@
   },
   "baseline": {
     "decisionCounts": {
-      "approved": 7,
-      "held": 55
+      "approved": 11,
+      "held": 51
     },
     "falseApprovals": {
-      "count": 0,
+      "count": 5,
       "n": 41,
-      "rate": 0,
-      "low": 0,
-      "high": 0.08566757018443186
+      "rate": 0.12195121951219512,
+      "low": 0.053233364685777176,
+      "high": 0.25544211520976884
     },
     "falseHolds": {
-      "count": 14,
+      "count": 15,
       "n": 21,
-      "rate": 0.6666666666666666,
-      "low": 0.4537345197425524,
-      "high": 0.8280524739491653
+      "rate": 0.7142857142857143,
+      "low": 0.5004361928391441,
+      "high": 0.8618613704787788
     },
     "decisionAccuracy": {
-      "count": 48,
+      "count": 42,
       "n": 62,
-      "rate": 0.7741935483870968,
-      "low": 0.6559437908464204,
-      "high": 0.8604481696141172
+      "rate": 0.6774193548387096,
+      "low": 0.553680880928481,
+      "high": 0.780455093487161
     },
     "reasonFound": {
       "count": 0,
@@ -99,25 +99,25 @@
       "high": 0.08566757018443186
     },
     "fieldPrecision": {
-      "count": 415,
-      "n": 415,
+      "count": 422,
+      "n": 422,
       "rate": 1,
-      "low": 0.9908283701629962,
+      "low": 0.9909791338040865,
       "high": 1
     },
     "fieldRecall": {
-      "count": 415,
+      "count": 422,
       "n": 425,
-      "rate": 0.9764705882352941,
-      "low": 0.9572349053878162,
-      "high": 0.9871700528308744
+      "rate": 0.9929411764705882,
+      "low": 0.9794545376613959,
+      "high": 0.9975965178784347
     },
     "fieldWrong": {
       "count": 0,
-      "n": 415,
+      "n": 422,
       "rate": 0,
       "low": 0,
-      "high": 0.009171629837003916
+      "high": 0.009020866195913583
     },
     "emptyCorrect": {
       "count": 9,
@@ -132,27 +132,27 @@
       "measure": "Decision correct",
       "n": 62,
       "pipelineMean": 0.9032258064516129,
-      "baselineMean": 0.7741935483870968,
-      "meanDifference": 0.12903225806451613,
-      "ciLow": 0,
-      "ciHigh": 0.27419354838709675,
-      "pValue": 0.05219914613407006,
-      "delta": 0.12903225806451613,
-      "magnitude": "negligible",
-      "gateMannWhitney": false,
-      "gateInterval": false,
-      "verdict": "no significant difference"
+      "baselineMean": 0.6774193548387096,
+      "meanDifference": 0.22580645161290322,
+      "ciLow": 0.08064516129032258,
+      "ciHigh": 0.3709677419354839,
+      "pValue": 0.0021234614783169903,
+      "delta": 0.22580645161290322,
+      "magnitude": "small",
+      "gateMannWhitney": true,
+      "gateInterval": true,
+      "verdict": "pipeline better"
     },
     {
       "measure": "Fields read as labelled (share of 7)",
       "n": 62,
       "pipelineMean": 0.8686635944700462,
-      "baselineMean": 0.9769585253456221,
-      "meanDifference": -0.10829493087557604,
-      "ciLow": -0.20506912442396316,
-      "ciHigh": -0.023041474654377878,
-      "pValue": 0.11844265171697677,
-      "delta": -0.08662851196670135,
+      "baselineMean": 0.9930875576036866,
+      "meanDifference": -0.12442396313364056,
+      "ciLow": -0.21428571428571427,
+      "ciHigh": -0.04608294930875576,
+      "pValue": 0.05421379187209552,
+      "delta": -0.10301768990634755,
       "magnitude": "negligible",
       "gateMannWhitney": false,
       "gateInterval": true,
@@ -162,16 +162,16 @@
       "measure": "No false approval (1 unless HOLD was decided ELIGIBLE)",
       "n": 62,
       "pipelineMean": 0.9193548387096774,
-      "baselineMean": 1,
-      "meanDifference": -0.08064516129032258,
-      "ciLow": -0.16129032258064516,
-      "ciHigh": -0.016129032258064516,
-      "pValue": 0.023451006296274723,
-      "delta": -0.08064516129032258,
+      "baselineMean": 0.9193548387096774,
+      "meanDifference": 0,
+      "ciLow": -0.0967741935483871,
+      "ciHigh": 0.0967741935483871,
+      "pValue": 0.9999999989999999,
+      "delta": 0,
       "magnitude": "negligible",
-      "gateMannWhitney": true,
-      "gateInterval": true,
-      "verdict": "baseline better"
+      "gateMannWhitney": false,
+      "gateInterval": false,
+      "verdict": "no significant difference"
     }
   ],
   "runs": [
@@ -219,7 +219,7 @@
         }
       },
       "baseline": {
-        "decision": "HOLD",
+        "decision": "ELIGIBLE",
         "parsed": true,
         "fields": {
           "supplierName": "Lumen Test Supplies (Pty) Ltd",
@@ -276,7 +276,7 @@
         }
       },
       "baseline": {
-        "decision": "ELIGIBLE",
+        "decision": "HOLD",
         "parsed": true,
         "fields": {
           "supplierName": "Sample Catering Works CC",
@@ -390,7 +390,7 @@
         }
       },
       "baseline": {
-        "decision": "HOLD",
+        "decision": "ELIGIBLE",
         "parsed": true,
         "fields": {
           "supplierName": "Testline Components (Pty) Ltd",
@@ -675,7 +675,7 @@
         }
       },
       "baseline": {
-        "decision": "HOLD",
+        "decision": "ELIGIBLE",
         "parsed": true,
         "fields": {
           "supplierName": "Testline Components (Pty) Ltd",
@@ -1416,7 +1416,7 @@
         }
       },
       "baseline": {
-        "decision": "HOLD",
+        "decision": "ELIGIBLE",
         "parsed": true,
         "fields": {
           "supplierName": "Lumen Test Supplies (Pty) Ltd",
@@ -1710,7 +1710,7 @@
         }
       },
       "baseline": {
-        "decision": "HOLD",
+        "decision": "ELIGIBLE",
         "parsed": true,
         "fields": {
           "supplierName": "Lumen Test Supplies (Pty) Ltd",
@@ -1769,15 +1769,15 @@
       },
       "baseline": {
         "decision": "HOLD",
-        "parsed": false,
+        "parsed": true,
         "fields": {
-          "supplierName": null,
-          "invoiceNumber": null,
-          "invoiceDate": null,
-          "currency": null,
-          "totalMinor": null,
-          "purchaseOrderNumber": null,
-          "payeeAccountAsPrinted": null
+          "supplierName": "Sample Catering Works CC",
+          "invoiceNumber": "INV-TST-0128",
+          "invoiceDate": "2026-10-05",
+          "currency": "ZAR",
+          "totalMinor": 250000,
+          "purchaseOrderNumber": "PO-TST-0128",
+          "payeeAccountAsPrinted": "FICT-ACC-9002"
         }
       }
     },
@@ -1884,7 +1884,7 @@
         }
       },
       "baseline": {
-        "decision": "HOLD",
+        "decision": "ELIGIBLE",
         "parsed": true,
         "fields": {
           "supplierName": "Testline Components (Pty) Ltd",
@@ -1941,7 +1941,7 @@
         }
       },
       "baseline": {
-        "decision": "ELIGIBLE",
+        "decision": "HOLD",
         "parsed": true,
         "fields": {
           "supplierName": "Sample Catering Works CC",
@@ -1998,7 +1998,7 @@
         }
       },
       "baseline": {
-        "decision": "HOLD",
+        "decision": "ELIGIBLE",
         "parsed": true,
         "fields": {
           "supplierName": "Testline Components (Pty) Ltd",
@@ -2055,7 +2055,7 @@
         }
       },
       "baseline": {
-        "decision": "ELIGIBLE",
+        "decision": "HOLD",
         "parsed": true,
         "fields": {
           "supplierName": "Lumen Test Supplies (Pty) Ltd",
@@ -2112,7 +2112,7 @@
         }
       },
       "baseline": {
-        "decision": "ELIGIBLE",
+        "decision": "HOLD",
         "parsed": true,
         "fields": {
           "supplierName": "Example Office Supplies CC",
@@ -2228,7 +2228,7 @@
         }
       },
       "baseline": {
-        "decision": "ELIGIBLE",
+        "decision": "HOLD",
         "parsed": true,
         "fields": {
           "supplierName": "Sample Catering Works CC",
@@ -2923,7 +2923,7 @@
         }
       },
       "baseline": {
-        "decision": "HOLD",
+        "decision": "ELIGIBLE",
         "parsed": true,
         "fields": {
           "supplierName": "Demo Transport Services (Pty) Ltd",
@@ -3275,7 +3275,7 @@
         }
       },
       "baseline": {
-        "decision": "HOLD",
+        "decision": "ELIGIBLE",
         "parsed": true,
         "fields": {
           "supplierName": "Testline Components (Pty) Ltd",
