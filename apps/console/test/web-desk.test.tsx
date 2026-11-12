@@ -15,6 +15,14 @@ import { Login } from '../web/Login.js';
 import { slugOf, StateChip, symbolOf } from '../web/StateChip.js';
 import { DISPLAY_STATES } from '../src/model/desk.js';
 
+/** The overview of a desk read from the Warden. The tests that change it only use such desks. */
+function overviewOf(data: DeskData): NonNullable<DeskData['overview']> {
+  if (data.overview === null) {
+    throw new Error('this test desk has no overview');
+  }
+  return data.overview;
+}
+
 function counts(overrides: Partial<Record<(typeof DISPLAY_STATES)[number], number>> = {}) {
   return Object.fromEntries(
     DISPLAY_STATES.map((state) => [state, new Map(Object.entries(overrides)).get(state) ?? 0]),
@@ -126,7 +134,7 @@ describe('the state chips', () => {
 describe('the desk', () => {
   it('says whether payments are running or paused, in words', () => {
     expect(deskOf(dataOf())).toContain('Payments are running.');
-    expect(deskOf(dataOf({ overview: { ...dataOf().overview, paused: true } }))).toContain(
+    expect(deskOf(dataOf({ overview: { ...overviewOf(dataOf()), paused: true } }))).toContain(
       'Payments are paused.',
     );
   });
@@ -140,7 +148,7 @@ describe('the desk', () => {
 
   it('shows Paid only on the row that is Paid, and the reason words for the held row', () => {
     const markup = deskOf(dataOf());
-    const queue = markup.slice(markup.indexOf('class="queue"'));
+    const queue = markup.slice(markup.indexOf('id="invoice-history"'));
     expect(queue.split('chip-paid').length - 1).toBe(1);
     expect(queue.split('chip-held').length - 1).toBe(1);
     expect(queue).toContain('Model calls: 2 of at most 3');
@@ -180,10 +188,20 @@ describe('the desk', () => {
   });
 });
 
+describe('a desk in simulated mode, with no Warden overview', () => {
+  it('says the Warden was not read, and offers no pause or limit change', () => {
+    const markup = deskOf({ ...dataOf(), overview: null });
+    expect(markup).toContain('Not read in simulated mode.');
+    expect(markup).toContain('Changes are not sent to the Warden in simulated mode');
+    expect(markup).not.toContain('Pause new payments');
+    expect(markup).not.toContain('Rules version');
+  });
+});
+
 describe('a raised limit waiting for a second operator', () => {
   it('names the requester and shows the approval, enabled for another operator', () => {
     const markup = deskOf(
-      dataOf({ overview: { ...dataOf().overview, pendingLimitChange: raiseOf() } }),
+      dataOf({ overview: { ...overviewOf(dataOf()), pendingLimitChange: raiseOf() } }),
     );
     expect(markup).toContain('A raised limit is waiting');
     expect(markup).toContain('Asked by');
@@ -198,7 +216,7 @@ describe('a raised limit waiting for a second operator', () => {
     const markup = deskOf(
       dataOf({
         overview: {
-          ...dataOf().overview,
+          ...overviewOf(dataOf()),
           pendingLimitChange: raiseOf({
             requestedBy: 'you',
             approvalAllowed: false,

@@ -36,26 +36,56 @@ const HEADLINE =
   'decision accuracy 30 of 30 for the pipeline and 17 of 30 for the single-prompt baseline; false approvals 0 of 16 for the pipeline and 13 of 16 for the baseline';
 
 describe('judgeReportOf', () => {
-  it('writes one line per check in order, then a count', () => {
+  it('writes a labelled table, one row per check in order, then a count', () => {
     const report = judgeReportOf([
-      { name: 'a', status: 'PASS', detail: 'ok' },
-      { name: 'b', status: 'READ', detail: 'live' },
-      { name: 'c', status: 'UNVERIFIED', detail: 'not run' },
+      { name: 'a', status: 'PASS', label: 'SIMULATED', note: 'ok', detail: 'ok' },
+      { name: 'b', status: 'READ', label: 'REAL', note: 'live', detail: 'live' },
+      { name: 'c', status: 'UNVERIFIED', label: 'UNVERIFIED', note: 'not run', detail: 'not run' },
     ]);
+    const row = (name: string, result: string, label: string, note: string): string =>
+      `${name.padEnd(34)}${result.padEnd(12)}${label.padEnd(13)}${note}`;
     expect(report.lines).toEqual([
-      'a: PASS. ok',
-      'b: READ, NOT RE-RUN. live',
-      'c: UNVERIFIED. not run',
+      'JUDGE CHECK: offline, fixture mode. No key is read and no payment is sent.',
+      row('CHECK', 'RESULT', 'LABEL', 'NOTE'),
+      row('a', 'PASS', 'SIMULATED', 'ok'),
+      row('b', 'READ', 'REAL', 'live'),
+      row('c', 'UNVERIFIED', 'UNVERIFIED', 'not run'),
       'judge check: 1 pass, 0 fail, 1 read, 1 unverified.',
     ]);
   });
 
+  it('prints the full detail of a failed check below the table, and fails the command', () => {
+    const report = judgeReportOf([
+      { name: 'a', status: 'PASS', label: 'SIMULATED', note: 'ok', detail: 'ok' },
+      { name: 'b', status: 'FAIL', label: 'SIMULATED', note: 'short', detail: 'long reason' },
+    ]);
+    expect(report.lines.at(-2)).toBe('FAILED: b. long reason');
+    expect(report.exitCode).toBe(1);
+  });
+
+  it('cuts a note that is too long for its column, so the table stays on one screen', () => {
+    const report = judgeReportOf([
+      {
+        name: 'x'.repeat(60),
+        status: 'PASS',
+        label: 'REAL',
+        note: 'short',
+        detail: 'short',
+      },
+    ]);
+    expect(report.lines[2]?.startsWith(`${'x'.repeat(33)}~`)).toBe(true);
+  });
+
   it('fails the command only when a check failed', () => {
-    expect(judgeReportOf([{ name: 'a', status: 'UNVERIFIED', detail: 'x' }]).exitCode).toBe(0);
     expect(
       judgeReportOf([
-        { name: 'a', status: 'PASS', detail: 'x' },
-        { name: 'b', status: 'FAIL', detail: 'y' },
+        { name: 'a', status: 'UNVERIFIED', label: 'UNVERIFIED', note: 'x', detail: 'x' },
+      ]).exitCode,
+    ).toBe(0);
+    expect(
+      judgeReportOf([
+        { name: 'a', status: 'PASS', label: 'SIMULATED', note: 'x', detail: 'x' },
+        { name: 'b', status: 'FAIL', label: 'SIMULATED', note: 'y', detail: 'y' },
       ]).exitCode,
     ).toBe(1);
   });
@@ -124,30 +154,33 @@ describe('liveCheckOf', () => {
     );
   });
 
-  it('reads a committed live result without re-running it', () => {
+  it('reads a committed live result without re-running it, and labels it REAL', () => {
     const check = liveCheckOf(
       'live labelled set, Groq',
       resultOf({ mode: 'live', model: 'groq:openai/gpt-oss-120b' }),
       'file.json',
     );
     expect(check.status).toBe('READ');
+    expect(check.label).toBe('REAL');
     expect(check.detail).toBe(
-      `LIVE result from groq:openai/gpt-oss-120b, generated 2026-11-10T20:29:12.567Z: ${HEADLINE}`,
+      `REAL result from groq:openai/gpt-oss-120b, generated 2026-11-10T20:29:12.567Z: ${HEADLINE}`,
     );
   });
 
   it('labels a simulated file SIMULATED and reports what it cannot read', () => {
     const check = liveCheckOf('x', resultOf({ pipeline: {}, baseline: {} }), 'file.json');
+    expect(check.label).toBe('SIMULATED');
     expect(check.detail.startsWith('SIMULATED result from simulated (rule-based stand-in)')).toBe(
       true,
     );
     expect(check.detail).toContain('decision accuracy not readable for the pipeline');
   });
 
-  it('labels a file with no mode UNLABELLED and fills in missing fields', () => {
+  it('labels a file with no mode UNVERIFIED and fills in missing fields', () => {
     const check = liveCheckOf('x', { pipeline: {}, baseline: {} }, 'file.json');
+    expect(check.label).toBe('UNVERIFIED');
     expect(check.detail).toBe(
-      'UNLABELLED result from an unknown model, generated at an unknown time: decision accuracy not readable for the pipeline and not readable for the single-prompt baseline; false approvals not readable for the pipeline and not readable for the baseline',
+      'UNVERIFIED result from an unknown model, generated at an unknown time: decision accuracy not readable for the pipeline and not readable for the single-prompt baseline; false approvals not readable for the pipeline and not readable for the baseline',
     );
   });
 

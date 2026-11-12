@@ -14,6 +14,14 @@ import { Login } from '../web/Login.js';
 import { ReceiptView } from '../web/ReceiptView.js';
 import { DISPLAY_STATES } from '../src/model/desk.js';
 
+/** The overview of a desk read from the Warden. The tests that change it only use such desks. */
+function overviewOf(data: DeskData): NonNullable<DeskData['overview']> {
+  if (data.overview === null) {
+    throw new Error('this test desk has no overview');
+  }
+  return data.overview;
+}
+
 /*
  * The four screens, checked with axe-core in a DOM (jsdom). Colour contrast is switched off here, because jsdom does not
  * lay out a page; it is checked in the browser instead (see the layout check in the test log). Only serious and
@@ -190,7 +198,7 @@ describe('the screens, checked with axe-core', () => {
   it('the payment desk with a waiting raise and the password prompt has no serious or critical problem', async () => {
     const withRaise: DeskData = {
       ...DESK,
-      overview: { ...DESK.overview, pendingLimitChange: RAISE },
+      overview: { ...overviewOf(DESK), pendingLimitChange: RAISE },
     };
     expect(await seriousProblemsOf(deskWith(withRaise, { kind: 'pause', paused: true }))).toEqual(
       [],

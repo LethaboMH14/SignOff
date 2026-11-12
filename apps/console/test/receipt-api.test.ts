@@ -7,7 +7,7 @@ import { join } from 'node:path';
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { createConsoleServer } from '../src/server/app.js';
+import { type ConsoleMode, createConsoleServer } from '../src/server/app.js';
 import {
   call,
   type Harness,
@@ -75,7 +75,7 @@ afterEach(async () => {
   rmSync(directory, { recursive: true, force: true });
 });
 
-async function start(): Promise<{ url: string; harness: Harness }> {
+async function start(mode: ConsoleMode = 'live'): Promise<{ url: string; harness: Harness }> {
   const path = join(directory, 'agent-log.jsonl');
   writeFileSync(
     path,
@@ -124,10 +124,10 @@ async function start(): Promise<{ url: string; harness: Harness }> {
   };
   const server = createConsoleServer({
     transitionsPath: path,
-    mode: 'simulated',
+    mode,
     pollMs: 20,
     staticDir: null,
-    api: harness.ctx,
+    api: { ...harness.ctx, mode },
   });
   servers.push(server);
   await new Promise<void>((listening) => {
@@ -172,6 +172,21 @@ describe('the receipt over the API', () => {
     });
     expect(harness.ledger.hashes).toEqual([HASH]);
     expect(reply.text).not.toContain(SECRET_BLOB);
+  });
+
+  it('in simulated mode, gives no receipt and does not read the ledger, even for a paid payment', async () => {
+    const { url, harness } = await start('simulated');
+    const session = await signIn(url, OPERATOR_NAME);
+    const reply = await call(url, `/api/receipts/${PAID_ATTEMPT}`, { cookie: session.cookie });
+    expect(reply.status).toBe(200);
+    expect(reply.json).toEqual({
+      state: 'not-confirmed',
+      message: 'Not confirmed on the ledger: simulated mode does not read the ledger.',
+    });
+    expect(harness.ledger.hashes).toEqual([]);
+    expect(harness.warden.calls).toEqual([]);
+    expect(reply.text).not.toContain('testnet.xrpl.org');
+    expect(reply.text).not.toContain('"rand"');
   });
 
   it('gives no receipt, and asks the ledger nothing, for a payment that is held', async () => {

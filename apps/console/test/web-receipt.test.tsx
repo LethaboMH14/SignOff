@@ -32,10 +32,10 @@ describe('the receipt screen', () => {
 
   it('labels the rand figure SIMULATED, with its placeholder rate, and says no market rate is claimed', () => {
     const markup = viewOf(CONFIRMED);
-    expect(markup).toContain('<strong>SIMULATED</strong>');
+    expect(markup).toContain('<span class="tag-simulated">SIMULATED</span> ZAR payout');
     expect(markup).toContain('R23125.00');
     expect(markup).toContain('placeholder rate');
-    expect(markup).toContain('No market rate is claimed.');
+    expect(markup).toContain('no market rate is claimed');
   });
 
   it('shows no rand figure when none is configured', () => {

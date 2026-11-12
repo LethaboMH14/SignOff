@@ -322,3 +322,37 @@ One entry per working session (rule R-19 in [RULES.md](../RULES.md)), newest fir
 - Problems / blockers: the Claude window was hidden, so there are no screenshots and the motion check (T-110) was not possible. The stub Warden is not the real Warden, and there is no ledger.
 - Next: look at the console in a visible window for contrast, focus and motion; run the RLUSD payment once funded.
 
+### 2026-11-11 — Sibusiso with Claude — Console redesign: layout, flow hero, logo, font, opening
+
+- Done: applied the approved direction to the real console. On a desktop there are three columns: the invoices and the Warden; the featured invoice, the agent flow and the queue, with the count tiles beneath; and the reason, the pause and limits, and the history. On a phone the columns stack, and the navigation becomes a fixed bar at the foot of the screen. The lightbulb (the crown on the implant) is replaced by the animated agent flow. The opening sequence plays on the first load and can be skipped; it does not play under reduced motion. Screens slide between the desk and the map. The logo sits at the top of every signed-in screen.
+- Changed decisions: D-092, D-093 and D-094.
+- Evidence: T-130 to T-133. Dependency: S-056.
+- Problems and blockers: the mockup's audit chat is not carried over (see D-094). The Chrome window could not be resized to a phone width, so the phone layout is measured, not seen. The exact typeface of the attached wordmark is not identified.
+- Not committed. The work sits uncommitted on feat/console-redesign, branched from feat/keys-and-live-evidence.
+- Next: a visual review on a visible window, then a decision on committing.
+
+
+### 2026-11-12 15:58 SAST — Sibusiso with Claude (Haiku 5.5) — #57 review items
+
+- Done: fixed the item that needed a code change, and checked the rest. Added a visible line "SIMULATED — no payment is executed" under the sign-in illustration, with one test. Checked the sign-in page in the built-in browser at 1280, 375 and 320 px, plus keyboard order, the opening and reduced motion (code and tests), the built bundle and the response headers. `npm run check` passes on the worktree.
+- Changed decisions: none.
+- Evidence: T-144 to T-148; S-058.
+- Problems / blockers: no screen reader was run, the browser pane cannot set reduced motion, and screenshots were not stored. Item 4 stays open because simulated mode reads the Testnet when a receipt is opened for a Paid payment (S-058). The Dockerfile still sets SIGNOFF_CONSOLE_HOST=0.0.0.0, and deploy/README.md still says "prepared, not deployed". Neither is one of #57's four items, so neither was changed. T-143 and D-095 are left for Lethabo's open PR #76, which uses them.
+- Next: decide S-058. On Sibusiso's go: commit with the R-22 trailer (Claude Haiku 5.5) and push. Reply on #57 only on his go.
+- Not committed. The work sits uncommitted in a clean worktree on feat/console-redesign at 18787d4.
+
+### 2026-11-12 16:15 SAST — Sibusiso with Claude (Haiku 5.5) — S-058 fail closed
+
+- Done: fail closed, as Sibusiso chose. In simulated mode the receipt route no longer reads the ledger, so a paid payment is shown as Not confirmed on the ledger, with the reason, and no receipt or rand figure. Live mode is unchanged. Tests cover both modes. With the guard removed, the new test fails, so it does test the guard.
+- Changed decisions: D-096.
+- Evidence: T-149 (receipt tests and typecheck), T-150 (full check); S-058 closed in code; S-059 opened.
+- Problems / blockers: the public demo no longer shows the SIMULATED rand figure on a receipt. The fixture demo page still does. Simulated mode still calls the Warden at SIGNOFF_WARDEN_URL, including pause and limit writes (S-059). That needs a decision before item 4 can be confirmed. Not committed, nothing pushed, and no reply on #57.
+- Next: decide S-059. On Sibusiso's go: commit with the R-22 trailer (Claude Haiku 5.5) and push.
+
+### 2026-11-12 16:24 SAST — Sibusiso with Claude (Haiku 5.5) — S-059 block Warden calls in simulated mode
+
+- Done: blocked every Warden call in simulated mode, as Sibusiso chose. The desk reads only the agent's log, and its Warden panel and pause and limit controls are replaced by a note. Pause, limit and approval changes are refused with 409 before anything is sent. The invoice view and receipts make no Warden call. Live mode is unchanged, and a replay starts without a Warden address. Changed the console README's simulated command so it runs from the repository root and names no Warden.
+- Changed decisions: D-097. D-096 still stands for the ledger.
+- Evidence: T-151 to T-153; S-059 closed in code.
+- Problems / blockers: the public demo's desk no longer shows limits or pause state, because those came from the Warden. A stale console process from an earlier browser check was still listening on port 4180. I stopped it after confirming it by its process, so the browser check ran against the new server. The browser console shows a CSP error for `data:` font URIs from @fontsource; that is pre-existing and not changed. The browser pane cannot set reduced motion or run a screen reader. Not committed, nothing pushed, no reply on #57.
+- Next: on Sibusiso's go, commit with the R-22 trailer (Claude Haiku 5.5) and push. Reply on #57 only on his go.

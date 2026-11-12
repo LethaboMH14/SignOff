@@ -1,17 +1,28 @@
-/* The palette follows the D0 mockups: warm paper, midnight ink, cobalt for verified progress, amber for exceptions. */
+/*
+ * The console's base: tokens, type, buttons, badges, the agent map and the feed. The direction is warm paper, ink, lime for
+ * paid and coral for held. Every state also has a symbol and words, so colour is never the only signal.
+ */
 :root {
-  --paper: #f5f1e8;
-  --card: #fffdf8;
-  --ink: #14244a;
-  --muted: #4f586b;
-  --line: #ddd4c2;
-  --cobalt: #1d4ed0;
-  --cobalt-tint: #e3ebfc;
-  --amber: #7d4300;
-  --amber-fill: #f7c85c;
-  --amber-tint: #fbefd0;
-  --track: #cfc6b2;
-  --focus: #0b5cff;
+  --stage: #e2d9c4;
+  --paper: #f3ecdb;
+  --panel: #efe6d1;
+  --card: #fbf7ec;
+  --ink: #14213d;
+  --ink-2: #33405f;
+  --ink-3: #56607a;
+  --line: rgba(20, 33, 61, 0.14);
+  --track: #c9bfa6;
+  /* Cobalt: verified progress, validated and paid. White text on it is above 6:1. */
+  --verified: #2453c7;
+  --verified-ink: #ffffff;
+  /* Amber: exceptions, holds and anything a person must look at. Ink text on it is above 9:1. */
+  --exception: #f2b33d;
+  --exception-ink: #2b1d00;
+  --focus: #1f5fbf;
+  --font-body:
+    'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-logo: 'Nunito', 'Segoe UI', system-ui, sans-serif;
+  color-scheme: light;
 }
 
 * {
@@ -21,20 +32,20 @@
 html,
 body {
   margin: 0;
-  background: var(--paper);
+}
+
+body {
+  background: var(--stage);
   color: var(--ink);
-  font:
-    16px/1.45 system-ui,
-    -apple-system,
-    'Segoe UI',
-    Roboto,
-    Helvetica,
-    Arial,
-    sans-serif;
+  font: 15px/1.5 var(--font-body);
+  min-height: 100vh;
+  padding: 16px max(16px, env(safe-area-inset-right, 0px)) 24px
+    max(16px, env(safe-area-inset-left, 0px));
 }
 
 h1,
 h2,
+h3,
 p {
   margin: 0;
 }
@@ -42,11 +53,19 @@ p {
 h1 {
   font-size: 1.6rem;
   line-height: 1.2;
+  text-wrap: balance;
 }
 
 h2 {
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   line-height: 1.25;
+  font-weight: 700;
+}
+
+h3 {
+  font-size: 0.98rem;
+  line-height: 1.3;
+  font-weight: 700;
 }
 
 :focus-visible {
@@ -56,40 +75,50 @@ h2 {
 
 button {
   font: inherit;
-  color: var(--ink);
-  background: var(--card);
+  font-weight: 600;
+  color: #fff;
+  background: var(--ink);
   border: 1px solid var(--ink);
   border-radius: 999px;
-  padding: 0.5rem 1rem;
+  padding: 10px 18px;
   min-height: 44px;
+  min-width: 44px;
   cursor: pointer;
+  transition:
+    background-color 150ms ease,
+    color 150ms ease;
 }
 
-button[aria-pressed='true'] {
-  background: var(--ink);
-  color: var(--card);
+button:hover:not(:disabled) {
+  background: #343434;
 }
 
-.topbar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 16px;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 16px;
-  background: var(--ink);
-  color: var(--paper);
+button:disabled {
+  opacity: 0.55;
+  cursor: wait;
 }
 
-.topbar h1 {
-  color: var(--paper);
+button.quiet {
+  color: var(--ink);
+  background: var(--card);
+  border-color: var(--line);
+}
+
+button.quiet:hover:not(:disabled) {
+  background: #fff;
 }
 
 .eyebrow {
-  font-size: 0.85rem;
-  color: var(--amber-fill);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  color: var(--ink-3);
+}
+
+.lede {
+  color: var(--ink-2);
+  margin: 6px 0 12px;
 }
 
 .status {
@@ -102,30 +131,32 @@ button[aria-pressed='true'] {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 0.875rem;
-  font-weight: 600;
-  padding: 0.2rem 0.65rem;
+  font-size: 12.5px;
+  font-weight: 700;
+  padding: 3px 10px;
   border-radius: 999px;
-  border: 1px solid currentColor;
-  color: var(--paper);
+  background: var(--card);
+  border: 1px solid var(--line);
+  color: var(--ink);
 }
 
 .badge-live {
-  color: #bfe3c8;
+  background: var(--verified);
+  color: var(--verified-ink);
+  border-color: transparent;
 }
 
 .badge-reconnecting,
 .badge-warn {
-  color: var(--amber-fill);
+  background: var(--exception);
+  color: var(--exception-ink);
+  border-color: transparent;
 }
 
 .layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(260px, 360px);
-  gap: 16px;
-  padding: 16px;
-  max-width: 1280px;
-  margin: 0 auto;
+  gap: 14px;
 }
 
 @media (max-width: 900px) {
@@ -135,16 +166,10 @@ button[aria-pressed='true'] {
 }
 
 .panel {
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  padding: 14px;
+  background: var(--panel);
+  border-radius: 20px;
+  padding: 16px;
   min-width: 0;
-}
-
-.lede {
-  margin: 6px 0 12px;
-  color: var(--muted);
 }
 
 /* The map scrolls inside its own box on narrow screens, so the page itself never scrolls sideways. */
@@ -177,23 +202,23 @@ button[aria-pressed='true'] {
 
 .node-arrival .node-disc {
   fill: var(--paper);
-  stroke: var(--muted);
+  stroke: var(--ink-3);
 }
 
 .node-hold .node-disc {
-  fill: var(--amber-fill);
-  stroke: var(--amber);
+  fill: var(--exception);
+  stroke: var(--exception-ink);
   stroke-width: 3;
 }
 
 .node-ledger .node-disc {
-  fill: var(--cobalt-tint);
-  stroke: var(--cobalt);
+  fill: var(--card);
+  stroke: var(--ink);
 }
 
 .node-paid .node-disc {
-  fill: var(--cobalt);
-  stroke: var(--cobalt);
+  fill: var(--verified);
+  stroke: var(--ink);
 }
 
 .node-label {
@@ -208,7 +233,7 @@ button[aria-pressed='true'] {
 
 .node-pulse {
   fill: none;
-  stroke: var(--cobalt);
+  stroke: var(--ink);
   stroke-width: 3;
   transform-box: fill-box;
   transform-origin: center;
@@ -232,7 +257,7 @@ button[aria-pressed='true'] {
 }
 
 .token-disc {
-  fill: var(--cobalt);
+  fill: var(--ink);
   stroke: #ffffff;
   stroke-width: 2;
 }
@@ -250,26 +275,42 @@ button[aria-pressed='true'] {
   font-family: ui-monospace, Consolas, 'Courier New', monospace;
 }
 
+.tone-progress .token-disc {
+  fill: var(--ink-2);
+}
+
 .tone-submitted .token-disc {
+  fill: var(--card);
+  stroke: var(--ink);
+  stroke-width: 2;
+}
+
+.tone-submitted .token-glyph {
   fill: var(--ink);
 }
 
 .tone-hold .token-disc {
-  fill: var(--amber-fill);
-  stroke: var(--amber);
+  fill: var(--exception);
+  stroke: var(--exception-ink);
   stroke-width: 3;
 }
 
 .tone-hold .token-glyph {
-  fill: var(--amber);
+  fill: var(--exception-ink);
 }
 
 .tone-paid .token-disc {
-  fill: var(--cobalt);
+  fill: var(--verified);
+  stroke: var(--ink);
+  stroke-width: 2;
+}
+
+.tone-paid .token-glyph {
+  fill: var(--ink);
 }
 
 .tone-failed .token-disc {
-  fill: var(--amber-tint);
+  fill: #fff;
   stroke: var(--ink);
   stroke-width: 2;
 }
@@ -318,7 +359,7 @@ button[aria-pressed='true'] {
   justify-content: space-between;
   gap: 8px;
   font-size: 0.85rem;
-  color: var(--muted);
+  color: var(--ink-2);
 }
 
 .feed-tone {
@@ -327,18 +368,14 @@ button[aria-pressed='true'] {
 
 .tone-hold .feed-tone,
 .tone-failed .feed-tone {
-  color: var(--amber);
-}
-
-.tone-paid .feed-tone {
-  color: var(--cobalt);
+  color: var(--exception-ink);
 }
 
 .feed-reason {
   font-size: 0.9rem;
-  color: var(--muted);
+  color: var(--ink-2);
 }
 
 .feed-empty {
-  color: var(--muted);
+  color: var(--ink-2);
 }

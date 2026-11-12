@@ -65,16 +65,16 @@ The build sliced into small, reviewable issues. Each maps to a requirement in [P
 
 | ID | Title | Acceptance criteria | Depends | Size | Owner | GH | Status |
 |---|---|---|---|---|---|---|---|
-| D0 | Mockups | Payment desk, held invoice, mobile limits, receipt; reviewed before console code | — | M | | | Approved for build; the owner will rework them (no test) |
-| D1 | Payment desk | List with states and plain reasons; never "paid" before validation | D0, C6 | M | Sibusiso (AI-assisted) | | Review (T-098, T-099; final phone check UNVERIFIED) |
-| D2 | Held-invoice view | Evidence, failed rule, next action | D1 | S | Sibusiso (AI-assisted) | | Review (T-102; browser check not run, T-103) |
-| D3 | Limits and pause | Change limits (increase needs second approver), pause, resume with authentication | D1, B5, B7, D3W | S | Sibusiso (AI-assisted) | | Review (T-104; browser check not run, T-103) |
-| D4 | Receipt | Explorer link, delivered amount, simulated rand payout labelled | D1 | S | Sibusiso (AI-assisted) | | Review (T-105; live Testnet receipt not run, T-106) |
-| D5 | Mobile and accessibility | Works at phone width; labels not colour alone; keyboard usable | D1 | S | Sibusiso (AI-assisted) | | Review (T-107; browser layout check UNVERIFIED, T-108) |
+| D0 | Mockups | Payment desk, held invoice, mobile limits, receipt; reviewed before console code | — | M | | | Built as fixture screens in docs/design/screenshots (T-136); owner rework still pending |
+| D1 | Payment desk | List with states and plain reasons; never "paid" before validation | D0, C6 | M | Sibusiso (AI-assisted) | | Review (T-098, T-099; fixture desk at 1440 and 375 captured, T-136; live phone check UNVERIFIED, T-137) |
+| D2 | Held-invoice view | Evidence, failed rule, next action | D1 | S | Sibusiso (AI-assisted) | | Review (T-102; hold view with evidence path captured on fixtures, T-136; live browser check not run, T-137) |
+| D3 | Limits and pause | Change limits (increase needs second approver), pause, resume with authentication | D1, B5, B7, D3W | S | Sibusiso (AI-assisted) | | Review (T-104, T-134; each limit states its effect in words, T-136; live browser check not run, T-137) |
+| D4 | Receipt | Explorer link, delivered amount, simulated rand payout labelled | D1 | S | Sibusiso (AI-assisted) | | Review (T-105, T-134; SIMULATED ZAR payout labelled, T-136; live Testnet receipt not run, T-106) |
+| D5 | Mobile and accessibility | Works at phone width; labels not colour alone; keyboard usable | D1 | S | Sibusiso (AI-assisted) | | Review (T-107; 375 px DOM check, no sideways scroll, T-135; keyboard walk not run, T-137) |
 | D6 | Deployment and health checks | Console, agent and Warden deployed separately; health endpoints; synthetic Testnet check | B1, D1 | M | Sibusiso (AI-assisted) | | Review (T-111; live check partly run, T-112; deployment not performed, T-114) |
 | D1W | Warden operator read routes (proposed) | Read-only views for the console: overview, proposals (holds and payments) and suppliers; operator role only; allowlisted fields; reads write nothing | B1, C6 | M | Sibusiso (AI-assisted) | | Review (T-121; ID proposed, for review) |
 | D3W | Second operator for limit increases (proposed) | A raise becomes a pending request; a second, different operator approves it; decreases apply at once; a pending request expires after 24 hours (proposed rule) | B5, D1W | S | Sibusiso (AI-assisted) | | Review (T-095; ID proposed, for review) |
-| D7 | Motion: opening animation and transitions (proposed) | Opening sequence at most 1.2 s; transitions 180 to 250 ms; reduced motion turns all motion off; the Paid tick appears only after validation | D1 | S | Sibusiso (AI-assisted) | | Review (T-109; runtime checks UNVERIFIED, T-110) |
+| D7 | Motion: opening animation and transitions (proposed) | Opening sequence at most 1.2 s; transitions 180 to 250 ms; reduced motion turns all motion off; the Paid tick appears only after validation | D1 | S | Sibusiso (AI-assisted) | | Review (T-109; evidence path draws in turn, reduced motion is CSS only; timing and reduced-motion display NOT RUN, T-137) |
 | D8 | Live agent map in the console (proposed) | Animated map of invoices moving between agents, from the agent transition log; read-only; SIMULATED replay of the labelled set; Paid only when reconciled | D1 | M | Sibusiso (AI-assisted) | | Review (ID proposed, for review) |
 
 ## Gate E: credible pitch
@@ -82,8 +82,8 @@ The build sliced into small, reviewable issues. Each maps to a requirement in [P
 | ID | Title | Acceptance criteria | Depends | Size | Owner | GH | Status |
 |---|---|---|---|---|---|---|---|
 | E1 | Customer conversation | One consenting finance lead; notes with consent recorded | — | M | | | Todo |
-| E2 | README status complete | Every row has its real state and evidence link | A–D | S | Sibusiso (AI-assisted) | | Review (T-119) |
-| E3 | Judge check script | One command reproduces the payment and attack suite results | A, B | M | Sibusiso (AI-assisted) | | Review (T-115, T-116; live results and Testnet payments UNVERIFIED here) |
+| E2 | README status complete | Every row has its real state and evidence link | A–D | S | Sibusiso (AI-assisted) | | Review (T-119, T-141) |
+| E3 | Judge check script | One command reproduces the payment and attack suite results | A, B | M | Sibusiso (AI-assisted) | | Review (T-115, T-116, T-141; live results and Testnet payments UNVERIFIED here) |
 | E4 | Demo video | Under three minutes; real, simulated and unverified labelled; backup recorded | D | M | | | Todo |
 | E5 | Submission | Title, public repo, video on BuilderBase before Thursday night | E4 | S | | | Todo |
 

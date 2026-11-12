@@ -15,6 +15,8 @@ The first screen after sign-in. It shows the Warden's state (running or paused, 
 
 The desk reads the Warden's operator views and the agent's transition log. It shows the agent's model-call count for each invoice (at most three).
 
+In simulated mode the desk reads only the agent's transition log. The Warden is not called, so the Warden panel says its rules, limits and pause were not read, and the pause and limit controls are not shown. A change asked for in simulated mode is refused and sent nowhere (S-059).
+
 ## Operators and sign-in
 
 Each person has an account with a password (stored as a scrypt hash) and one of two roles:
@@ -50,10 +52,10 @@ Build the web app once:
 npm run build -w @signoff/console
 ```
 
-Start the server on the replay, with the Warden it should call:
+Start the server on the replay from the repository root. A simulated run needs no Warden, because it never calls one:
 
 ```bash
-SIGNOFF_WARDEN_URL=http://127.0.0.1:8080 SIGNOFF_CONSOLE_MODE=simulated SIGNOFF_CONSOLE_TRANSITIONS=apps/console/fixtures/simulated-transitions.jsonl npm run console:serve
+SIGNOFF_CONSOLE_MODE=simulated SIGNOFF_CONSOLE_TRANSITIONS=apps/console/fixtures/simulated-transitions.jsonl npx tsx apps/console/src/server/main.ts
 ```
 
 For a live run, point it at the agent's log and set the mode to `live`:
@@ -66,9 +68,9 @@ Then open http://127.0.0.1:4180 and sign in.
 
 | Variable | Default | Meaning |
 |---|---|---|
-| `SIGNOFF_WARDEN_URL` | none (required) | The Warden's address. The console refuses to start without it. |
+| `SIGNOFF_WARDEN_URL` | none (required in live mode) | The Warden's address. Live mode refuses to start without it. Simulated mode never calls the Warden, so it needs none. |
 | `SIGNOFF_CONSOLE_OPERATORS` | `console/operators.json` in the local SignOff folder | The operator file. It must be outside the repository. |
-| `SIGNOFF_WARDEN_READER_ID` and `SIGNOFF_WARDEN_READER_SECRET_FILE` | none | An optional read-only Warden principal for viewers. Without it, viewers see no desk. |
+| `SIGNOFF_WARDEN_READER_ID` and `SIGNOFF_WARDEN_READER_SECRET_FILE` | none | Live mode only. An optional read-only Warden principal for viewers. Without it, viewers see no desk. |
 | `SIGNOFF_CONSOLE_MODE` | `live` | `simulated` or `live`. Shown on the page. |
 | `SIGNOFF_CONSOLE_TRANSITIONS` | `apps/agent/state/agent-log.jsonl` | The agent's transition log to read. |
 | `SIGNOFF_CONSOLE_PORT` | `4180` | The port. |
@@ -81,6 +83,8 @@ Then open http://127.0.0.1:4180 and sign in.
 ## The receipt
 
 A paid payment has a receipt. The desk decides that the payment is paid; the receipt then re-reads the transaction from the ledger. It gives a receipt only when the ledger validated a success that delivered the amount the Warden settled, and it links the explorer only from a full 64-character transaction hash. Anything else is shown as **Not confirmed on the ledger**, with the reason, and no receipt. The rand figure is always labelled SIMULATED and uses the placeholder rate above; no market rate is claimed.
+
+In simulated mode the console reads neither the ledger nor the Warden. A paid payment is therefore shown as **Not confirmed on the ledger**, with the reason, and no receipt or rand figure is shown. This keeps the public demo from reading a Testnet endpoint (S-058).
 
 In development, `npm run dev -w @signoff/console` serves the page with hot reload and proxies `/api` to the server.
 

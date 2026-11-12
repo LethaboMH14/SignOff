@@ -1,5 +1,7 @@
-import type { InvoiceDetail } from '../src/server/invoice-view.js';
+import { evidenceStagesOf } from '../src/model/evidence-path.js';
 import { reasonTextOf } from '../src/model/reasons.js';
+import type { InvoiceDetail } from '../src/server/invoice-view.js';
+import { EvidencePath } from './EvidencePath.js';
 import { moneyOf, sastOf } from './DeskView.js';
 import { StateChip } from './StateChip.js';
 
@@ -60,6 +62,14 @@ export function InvoiceView({ detail, error, onBack }: InvoiceViewProps) {
             </div>
           </dl>
 
+          <section className="panel" aria-labelledby="path-stages-title">
+            <h3 id="path-stages-title">Payment evidence path</h3>
+            <EvidencePath
+              label="Payment evidence path for this invoice"
+              stages={evidenceStagesOf(detail)}
+            />
+          </section>
+
           <section className="panel" aria-labelledby="failed-title">
             <h3 id="failed-title">What failed</h3>
             {detail.failedRule === null ? (
@@ -109,7 +119,7 @@ export function InvoiceView({ detail, error, onBack }: InvoiceViewProps) {
           )}
 
           <section className="panel" aria-labelledby="path-title">
-            <h3 id="path-title">Evidence path</h3>
+            <h3 id="path-title">Audit timeline</h3>
             <p className="lede">
               Each move is in the order the agent made it. Hashes stand for the invoice file and the
               records it was checked against. No document text is shown.
