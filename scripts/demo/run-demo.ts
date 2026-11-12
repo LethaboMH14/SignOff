@@ -4,7 +4,7 @@
 //
 //   npm run demo                     drops one fresh fictional rand invoice (default R16.00) and runs it end to end
 //   npm run demo -- --zar 20.00      the same with another amount (sized to the RLUSD the spending account holds)
-//   npm run demo -- --provider groq  the model provider (groq is the default; its key must be set)
+//   npm run demo -- --provider meta --model <id>  the model provider (groq is the default); the key and address come from .env
 //
 // Prerequisites (one time): npm run testnet:provision, then npm run demo:prepare (see docs/DEMO-RUNBOOK.md).
 // The processes run in the foreground. Press Ctrl+C to stop all three.
@@ -55,15 +55,30 @@ function envFor(own: Record<string, string>): NodeJS.ProcessEnv {
   return { ...Object.fromEntries(inherited), ...own };
 }
 
-/** Reads a provider key from the environment or from the repository's .env (never printed). */
-function groqKey(): string {
-  const value = process.env['GROQ_API_KEY'];
-  if (value === undefined || value.trim() === '') {
-    throw new DemoError(
-      `GROQ_API_KEY is not set, in the environment or in .env. Nothing was started.`,
-    );
+/**
+ * The provider's variables for the agent process only: its key, and for Meta the https address the key is sent to.
+ * Read from the environment or the repository's .env, and never printed.
+ */
+function providerEnv(provider: 'groq' | 'meta'): Record<string, string> {
+  const need = (name: string, value: string | undefined): string => {
+    if (value === undefined || value.trim() === '') {
+      throw new DemoError(
+        `${name} is not set, in the environment or in .env. Nothing was started.`,
+      );
+    }
+    return value.trim();
+  };
+  if (provider === 'groq') {
+    return { GROQ_API_KEY: need('GROQ_API_KEY', process.env['GROQ_API_KEY']) };
   }
-  return value.trim();
+  const base = need('META_API_BASE_URL', process.env['META_API_BASE_URL']);
+  if (!base.startsWith('https://')) {
+    throw new DemoError('META_API_BASE_URL must start with https://. Nothing was started.');
+  }
+  return {
+    META_API_KEY: need('META_API_KEY', process.env['META_API_KEY']),
+    META_API_BASE_URL: base,
+  };
 }
 
 interface Child {
@@ -277,17 +292,21 @@ async function main(): Promise<void> {
     throw new DemoError('--zar must be a rand amount such as 16.00');
   }
   const zarMinor = Number(zarText.replace('.', ''));
-  const provider = providerIndex >= 0 ? (args[providerIndex + 1] ?? 'groq') : 'groq';
-  if (provider !== 'groq') {
-    throw new DemoError(
-      'the demo is set up for groq; other providers need their key and a working model first',
-    );
+  const providerText = providerIndex >= 0 ? (args[providerIndex + 1] ?? 'groq') : 'groq';
+  if (providerText !== 'groq' && providerText !== 'meta') {
+    throw new DemoError('--provider must be groq or meta');
+  }
+  const provider: 'groq' | 'meta' = providerText;
+  const modelIndex = args.indexOf('--model');
+  const model = modelIndex >= 0 ? (args[modelIndex + 1] ?? '') : '';
+  if (modelIndex >= 0 && !/^[A-Za-z0-9._:/-]{1,80}$/.test(model)) {
+    throw new DemoError('--model must be a model id such as muse-spark-1.1');
   }
 
   const localDir = defaultLocalDir();
   assertOutsideRepository(localDir, repoRoot);
   loadDotEnv(resolve(repoRoot, '.env'));
-  const groqApiKey = groqKey();
+  const providerVars = providerEnv(provider);
 
   const registry = await fileRegistryStore(join(localDir, 'registry.json')).read();
   if (registry === null) {
@@ -393,6 +412,7 @@ async function main(): Promise<void> {
       WARDEN_URL,
       '--provider',
       provider,
+      ...(model === '' ? [] : ['--model', model]),
       '--interval-ms',
       '1000',
     ],
@@ -400,7 +420,7 @@ async function main(): Promise<void> {
       SIGNOFF_AGENT_ID: identities.agentId,
       SIGNOFF_AGENT_SECRET: identities.agentSecretHex,
       SIGNOFF_AGENT_SEED: agent.seed,
-      GROQ_API_KEY: groqApiKey,
+      ...providerVars,
     }),
   );
   await waitFor(
