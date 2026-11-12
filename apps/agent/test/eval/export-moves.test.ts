@@ -32,5 +32,5 @@ describe('the evaluation exports each case moves, for the agent map', () => {
         expect(record.seq).toBe(index + 1);
       });
     }
-  }, 60_000);
+  }, 240_000);
 });

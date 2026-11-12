@@ -1,7 +1,8 @@
 /**
- * Writes the labelled invoice set: the PDFs, the labels, the buyer's evidence export and the supplier master.
- * Run it with `npm run agent:build-set`. The output is deterministic, so running it again gives the same bytes and the
- * same fingerprints. Its output is committed, and a test checks that it still matches the labels.
+ * Writes the labelled invoice set: the PDFs, the labels (with the source span of each field), the buyer's evidence
+ * export and the supplier master. Run it with `npm run agent:build-set`. The output is deterministic, so running it
+ * again gives the same bytes and the same fingerprints. Its output is committed, and a test checks that it still
+ * matches the labels.
  */
 /* eslint-disable security/detect-non-literal-fs-filename -- the generator writes its own fixture folder */
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
@@ -11,7 +12,14 @@ import { fileURLToPath } from 'node:url';
 import { sha256OfBytes } from '../../../packages/shared/src/node.js';
 
 import { writeTextPdf } from './lib/pdf-writer.js';
-import { CASES, invoiceNumberOf, linesOf, purchaseOrderOf, SUPPLIERS } from './labelled-spec.js';
+import {
+  CASES,
+  invoiceNumberOf,
+  layoutOf,
+  numberIndexOf,
+  purchaseOrderOf,
+  SUPPLIERS,
+} from './labelled-spec.js';
 
 const FIXTURES = fileURLToPath(new URL('../fixtures/labelled/', import.meta.url));
 const NOTICE =
@@ -41,11 +49,15 @@ function main(): void {
   CASES.forEach((spec, index) => {
     const id = ids.at(index) ?? `case-${String(index + 1)}`;
     const omit = new Set<string>(spec.omit ?? []);
-    const bytes = writeTextPdf([linesOf(index)]);
+    const { lines, spans } = layoutOf(index);
+    const bytes = writeTextPdf([lines]);
     writeFileSync(join(FIXTURES, 'invoices', `${id}.pdf`), bytes);
 
-    const invoiceNumber = invoiceNumberOf(index);
-    const purchaseOrderId = purchaseOrderOf(index);
+    // A duplicate reuses its original's numbers, so it adds an invoice record only. Every other case adds its own
+    // purchase order and goods receipt. An over-limit case has a smaller order and receipt than its invoice total.
+    const number = numberIndexOf(index);
+    const invoiceNumber = invoiceNumberOf(number);
+    const purchaseOrderId = purchaseOrderOf(number);
     invoices.push({
       fingerprint: sha256OfBytes(bytes),
       supplierId: spec.supplierId,
@@ -55,17 +67,20 @@ function main(): void {
       purchaseOrderId,
       payeeAccountAsPrinted: spec.recordAccount,
     });
-    purchaseOrders.push({
-      purchaseOrderId,
-      supplierId: spec.supplierId,
-      currency: spec.currency,
-      amountMinor: spec.totalMinor,
-    });
-    goodsReceipts.push({
-      purchaseOrderId,
-      receivedMinor: spec.totalMinor,
-      receivedAt: GOODS_RECEIVED_AT,
-    });
+    if (spec.refersTo === undefined) {
+      const orderMinor = spec.orderMinor ?? spec.totalMinor;
+      purchaseOrders.push({
+        purchaseOrderId,
+        supplierId: spec.supplierId,
+        currency: spec.currency,
+        amountMinor: orderMinor,
+      });
+      goodsReceipts.push({
+        purchaseOrderId,
+        receivedMinor: orderMinor,
+        receivedAt: GOODS_RECEIVED_AT,
+      });
+    }
 
     const supplier = SUPPLIERS.find((item) => item.supplierId === spec.supplierId);
     cases.push({
@@ -85,6 +100,7 @@ function main(): void {
           purchaseOrderNumber: omit.has('purchaseOrderNumber') ? null : purchaseOrderId,
           payeeAccountAsPrinted: spec.printedAccount,
         },
+        spans,
       },
       note: spec.note,
     });

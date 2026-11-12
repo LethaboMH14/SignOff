@@ -1,7 +1,7 @@
 import { randomBytes, randomUUID } from 'node:crypto';
 import { join } from 'node:path';
 
-import { sha256OfBytes } from '../../../../packages/shared/src/node.js';
+import { obligationKey, sha256OfBytes } from '../../../../packages/shared/src/node.js';
 import { parseMoneyText } from '../../../../packages/shared/src/money/minor-units.js';
 import { intakeFile } from '../intake/intake.js';
 import type { ModelClient } from '../model/types.js';
@@ -117,15 +117,25 @@ function nonceOf(): string {
   return randomBytes(12).toString('hex');
 }
 
+/**
+ * Runs the cases in the set's order. A case the pipeline would approve clears its obligation for the rest of the run,
+ * so a later re-sent copy of that obligation is held as a duplicate. The baseline has no such memory, which is the
+ * point of the comparison. Each case still has its own transition log.
+ */
 export async function evaluate(input: EvaluationInput): Promise<CaseRun[]> {
   const runs: CaseRun[] = [];
+  const cleared = new Set<string>();
   for (const item of input.set.cases) {
-    runs.push(await evaluateCase(item, input));
+    runs.push(await evaluateCase(item, input, cleared));
   }
   return runs;
 }
 
-async function evaluateCase(item: LabelledCase, input: EvaluationInput): Promise<CaseRun> {
+async function evaluateCase(
+  item: LabelledCase,
+  input: EvaluationInput,
+  cleared: Set<string>,
+): Promise<CaseRun> {
   const path = join(input.set.dir, item.file);
   const outcome = await intakeFile(path);
   const correlationId = outcome.fingerprint ?? sha256OfBytes(Buffer.from(path, 'utf8'));
@@ -143,10 +153,15 @@ async function evaluateCase(item: LabelledCase, input: EvaluationInput): Promise
       nonce: input.nonce ?? nonceOf,
       warden: null,
       signer: null,
+      alreadyClearedElsewhere: (key) => cleared.has(key),
     },
   );
 
   input.onRecords?.(log.records());
+  const readings = readingsOf(result.verified);
+  if (result.finalState === 'WARDEN_ELIGIBLE' && readings.invoiceNumber !== null) {
+    cleared.add(obligationKey(item.supplierId, readings.invoiceNumber));
+  }
 
   const baseline =
     outcome.kind === 'text-pdf'
@@ -280,6 +295,44 @@ export function scoreBaseline(runs: readonly CaseRun[]): Side {
     tokens: [],
     fields: run.baseline.fields,
   }));
+}
+
+/** The per-case scores (higher is better) that the statistics compare. One value per case, in set order. */
+export interface PerCaseScores {
+  /** 1 when the decision matches the label, else 0. */
+  readonly decision: readonly number[];
+  /** The share of the seven labelled fields read exactly as labelled, null counting as right when the label is null. */
+  readonly fields: readonly number[];
+  /** 0 for a false approval (label HOLD, decided ELIGIBLE), else 1. */
+  readonly noFalseApproval: readonly number[];
+}
+
+export function perCaseScores(
+  runs: readonly CaseRun[],
+  side: 'pipeline' | 'baseline',
+): PerCaseScores {
+  const decision: number[] = [];
+  const fields: number[] = [];
+  const noFalseApproval: number[] = [];
+  for (const run of runs) {
+    const picked: Scored =
+      side === 'pipeline'
+        ? {
+            decision: run.pipeline.decision,
+            tokens: run.pipeline.tokens,
+            fields: run.pipeline.fields,
+          }
+        : { decision: run.baseline.decision, tokens: [], fields: run.baseline.fields };
+    decision.push(picked.decision === run.expected.decision ? 1 : 0);
+    const right = FIELD_KEYS.filter(
+      (key) => Reflect.get(picked.fields, key) === Reflect.get(run.expected.fields, key),
+    ).length;
+    fields.push(right / FIELD_KEYS.length);
+    noFalseApproval.push(
+      run.expected.decision === 'HOLD' && picked.decision === 'ELIGIBLE' ? 0 : 1,
+    );
+  }
+  return { decision, fields, noFalseApproval };
 }
 
 /** Per-category counts of wrong decisions, for the report. */
