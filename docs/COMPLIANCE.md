@@ -54,3 +54,48 @@ Whether SignOff's co-signing makes it a regulated party is an **open legal quest
 2. A signed agreement with a licensed payout partner covering due diligence, travel rule and sanctions.
 3. A real screening provider.
 4. An information-security review and a POPIA impact assessment.
+
+## Lane H status: what is real, what is limited by access, what is for counsel
+
+Checked 12 November 2026. **Not certified** against COSO, SOC 2 or any other framework; the mapping below is a labelled style, not an audit.
+
+### Real (built and tested)
+
+| Control | Evidence | Limit |
+|---|---|---|
+| Sanctions screening of the supplier legal name against the OFAC SDN list | `apps/warden/src/checks/sanctions.ts`, `apps/warden/test/sanctions.test.ts`; cache of 19,563 entries retrieved 2026-11-12, sha256 `7f43332d…` | Name matching only, no date-of-birth or address data. Hits and near-hits are held for a person. The Warden does not yet call this check (see SECURITY-MODEL section 7) |
+| Sender-domain exact match and SPF, DMARC, DKIM reads | `apps/warden/src/checks/sender.ts`, `apps/warden/test/sender.test.ts` | DKIM is checked only when a selector is known. DMARC alone is not accepted as proof (a lookalike with its own DMARC is held) |
+| SARS fields and VAT checks | `apps/agent/src/match/sars.ts` (lane C, D-104) | Not called from the pipeline; the mandatory-field lists are unverified |
+| Log redaction of secrets and personal identifiers | `packages/shared/test/logging/redact.test.ts` | Tests cover the listed patterns only |
+| Dev-only fields closed unless a flag is set | `apps/warden/src/dev-fields.ts`, `apps/warden/test/dev-fields.test.ts` | No dev-only field exists in the Warden or console yet; the gate is a tested helper |
+| Kill-switch over HTTP: pause holds payments, STOP closes the listener | `apps/warden/test/server.test.ts`, "kill-switch drill" | Runs the real HTTP server in one test process with a simulated ledger, not the separate Warden process on Testnet |
+
+### Limited by access (cannot be shown here)
+
+- **AVS (account verification):** no bank verification service is connected. The supplier bank-change call-back is an operator process, not an automated check.
+- **CIPC (South Africa company register) and PACRA (Zambia):** no access to a register lookup. Supplier identity is entered, not verified.
+- **Licensed off-ramp:** no licensed crypto asset service provider is contracted. Nothing converts RLUSD to rand.
+- **Live sanctions service:** OpenSanctions was assessed. Its free default dataset is licensed CC BY-NC 4.0 and its screening licence is "Internal use only", so it is not used. OFAC data is the source.
+- **Live DNS from the build machine:** the system resolver refused connections; the test with DNS-over-HTTPS is a different resolver path.
+
+### For counsel (not claimed)
+
+- SA exchange control: the draft crypto manual (August 2026) and its revision announced 21 October 2026.
+- Zambia registration and the Data Protection Act.
+- The travel rule and VASP position for any licensed partner.
+- Whether SignOff, as co-signer, is itself a regulated party.
+- POPIA impact assessment and information-security review before any real personal data.
+
+### OFAC terms
+
+The OFAC sanctions-list-service and FAQ pages were read on 12 November 2026. They do not state copyright, public-domain status, fees or permitted use of the downloadable SDN list. The sanctions-list-service page says: "Published by OFAC, the SDN list contains the names of individuals, entities and groups designated by OFAC...". The Treasury footer links to a "Privacy Policy" and "Policies and Notices" page, which was not read. **Counsel must confirm the reuse terms of the SDN file before any production use.**
+
+### Control mapping (style only, not certified)
+
+| Area | COSO 2013 principle (example) | SOC 2 criterion (example) | Where in this repo |
+|---|---|---|---|
+| Segregation of duties | Control activities (10) | CC5.2 | GOVERNANCE.md section 1 |
+| Change control | Control activities (11) | CC8.1 | GOVERNANCE.md section 2 |
+| Sanctions and sender screening | Risk assessment (7) | CC3.2 | This file, real table |
+| Logging and retention | Information and communication (13) | CC7.2 | GOVERNANCE.md section 5 |
+| Incident response | Control activities (12) | CC7.4 | GOVERNANCE.md section 6 |

@@ -53,8 +53,15 @@ describe('senderPosture and senderVerdict', () => {
       resolver: fixedResolver(GOOD),
       dkimSelector: 'sel1',
     });
-    expect(posture).toEqual({ domain: 'acme.co.za', spf: 'present', dmarc: 'reject', dkim: 'present' });
-    expect(senderVerdict({ senderDomain: 'acme.co.za', enrolledDomain: 'acme.co.za' }, posture)).toBeNull();
+    expect(posture).toEqual({
+      domain: 'acme.co.za',
+      spf: 'present',
+      dmarc: 'reject',
+      dkim: 'present',
+    });
+    expect(
+      senderVerdict({ senderDomain: 'acme.co.za', enrolledDomain: 'acme.co.za' }, posture),
+    ).toBeNull();
   });
 
   it('holds a lookalike even when its own DMARC is reject (DMARC alone is not enough)', async () => {
@@ -64,7 +71,10 @@ describe('senderPosture and senderVerdict', () => {
     };
     const posture = await senderPosture('acrne.co.za', { resolver: fixedResolver(lookalike) });
     expect(posture.dmarc).toBe('reject');
-    const verdict = senderVerdict({ senderDomain: 'acrne.co.za', enrolledDomain: 'acme.co.za' }, posture);
+    const verdict = senderVerdict(
+      { senderDomain: 'acrne.co.za', enrolledDomain: 'acme.co.za' },
+      posture,
+    );
     expect(verdict).toMatchObject({ decision: 'HOLD', code: 'PAYEE_NOT_VERIFIED' });
     expect(verdict?.message).toMatch(/lookalike/);
   });
@@ -73,7 +83,9 @@ describe('senderPosture and senderVerdict', () => {
     const table = { ...GOOD, '_dmarc.acme.co.za': ['v=DMARC1; p=none'] };
     const posture = await senderPosture('acme.co.za', { resolver: fixedResolver(table) });
     expect(posture.dmarc).toBe('none');
-    expect(senderVerdict({ senderDomain: 'acme.co.za', enrolledDomain: 'acme.co.za' }, posture)).toMatchObject({
+    expect(
+      senderVerdict({ senderDomain: 'acme.co.za', enrolledDomain: 'acme.co.za' }, posture),
+    ).toMatchObject({
       decision: 'HOLD',
     });
   });
@@ -82,7 +94,9 @@ describe('senderPosture and senderVerdict', () => {
     const noDmarc = { 'acme.co.za': GOOD['acme.co.za'] };
     const posture = await senderPosture('acme.co.za', { resolver: fixedResolver(noDmarc) });
     expect(posture.dmarc).toBe('absent');
-    expect(senderVerdict({ senderDomain: 'acme.co.za', enrolledDomain: 'acme.co.za' }, posture)).toMatchObject({
+    expect(
+      senderVerdict({ senderDomain: 'acme.co.za', enrolledDomain: 'acme.co.za' }, posture),
+    ).toMatchObject({
       decision: 'HOLD',
     });
     const noSpf = await senderPosture('acme.co.za', {
@@ -93,10 +107,15 @@ describe('senderPosture and senderVerdict', () => {
 
   it('treats a DNS failure other than "no record" as unknown, and holds', async () => {
     const posture = await senderPosture('acme.co.za', {
-      resolver: fixedResolver({ 'acme.co.za': 'SERVFAIL', '_dmarc.acme.co.za': GOOD['_dmarc.acme.co.za'] }),
+      resolver: fixedResolver({
+        'acme.co.za': 'SERVFAIL',
+        '_dmarc.acme.co.za': GOOD['_dmarc.acme.co.za'],
+      }),
     });
     expect(posture.spf).toBe('unknown');
-    expect(senderVerdict({ senderDomain: 'acme.co.za', enrolledDomain: 'acme.co.za' }, posture)).toMatchObject({
+    expect(
+      senderVerdict({ senderDomain: 'acme.co.za', enrolledDomain: 'acme.co.za' }, posture),
+    ).toMatchObject({
       decision: 'HOLD',
     });
   });
@@ -119,7 +138,9 @@ describe('senderPosture and senderVerdict', () => {
       dkimSelector: 'missing',
     });
     expect(posture.dkim).toBe('absent');
-    expect(senderVerdict({ senderDomain: 'acme.co.za', enrolledDomain: 'acme.co.za' }, posture)).toMatchObject({
+    expect(
+      senderVerdict({ senderDomain: 'acme.co.za', enrolledDomain: 'acme.co.za' }, posture),
+    ).toMatchObject({
       decision: 'HOLD',
     });
   });
@@ -142,14 +163,22 @@ describe('disposable domain (onboarding soft signal)', () => {
  */
 const dohResolver: TxtResolver = {
   async resolveTxt(name: string) {
-    const response = await fetch(`https://dns.google/resolve?name=${encodeURIComponent(name)}&type=TXT`, {
-      headers: { accept: 'application/dns-json' },
-      signal: AbortSignal.timeout(15_000),
-    });
-    if (!response.ok) throw Object.assign(new Error(`DoH HTTP ${response.status}`), { code: 'ESERVFAIL' });
-    const body = (await response.json()) as { Status: number; Answer?: { type: number; data: string }[] };
+    const response = await fetch(
+      `https://dns.google/resolve?name=${encodeURIComponent(name)}&type=TXT`,
+      {
+        headers: { accept: 'application/dns-json' },
+        signal: AbortSignal.timeout(15_000),
+      },
+    );
+    if (!response.ok)
+      throw Object.assign(new Error(`DoH HTTP ${response.status}`), { code: 'ESERVFAIL' });
+    const body = (await response.json()) as {
+      Status: number;
+      Answer?: { type: number; data: string }[];
+    };
     if (body.Status === 3) throw Object.assign(new Error('nxdomain'), { code: 'ENOTFOUND' });
-    if (body.Status !== 0) throw Object.assign(new Error(`rcode ${body.Status}`), { code: 'ESERVFAIL' });
+    if (body.Status !== 0)
+      throw Object.assign(new Error(`rcode ${body.Status}`), { code: 'ESERVFAIL' });
     const txt = (body.Answer ?? []).filter((a) => a.type === 16);
     if (txt.length === 0) throw Object.assign(new Error('nodata'), { code: 'ENODATA' });
     // DoH returns each TXT string quoted; strip the quotes and join the chunks of one record.
@@ -160,7 +189,7 @@ const dohResolver: TxtResolver = {
 describe.skipIf(process.env['SIGNOFF_LIVE_DNS'] !== '1')('live DNS (SIGNOFF_LIVE_DNS=1)', () => {
   it('reads SPF and DMARC for example.com from a real resolver', async () => {
     const posture = await senderPosture('example.com', { resolver: dohResolver });
-    expect(posture.spf).toBe('absent');
+    expect(posture.spf).toBe('present'); // example.com publishes 'v=spf1 -all'
     expect(posture.dmarc).toBe('reject');
   });
 

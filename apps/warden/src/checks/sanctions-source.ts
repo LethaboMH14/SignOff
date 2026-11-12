@@ -67,8 +67,11 @@ export function snapshotFromSdnCsv(csv: string, source: SnapshotSource): Sanctio
     // The published file ends with a DOS end-of-file byte (0x1A) after the last CRLF. It is not a row.
     const row = rawRow.map((field) => field.replace(/\u001a/g, ''));
     if (row.every((field) => field.trim() === '')) continue;
-    if (row.length < 4) throw new Error(`SDN row ${index + 1} has ${row.length} fields; expected at least 4`);
-    const [entryNumber = '', rawName = '', type = '', program = ''] = row.map((field) => field.trim());
+    if (row.length < 4)
+      throw new Error(`SDN row ${index + 1} has ${row.length} fields; expected at least 4`);
+    const [entryNumber = '', rawName = '', type = '', program = ''] = row.map((field) =>
+      field.trim(),
+    );
     if (rawName === '' || rawName === '-0-') continue;
     entries.push({ id: `OFAC-${entryNumber}`, name: rawName, type, program });
   }

@@ -42,7 +42,8 @@ export function domainMatches(senderDomain: string, enrolledDomain: string): boo
   return sender !== '' && enrolled !== '' && sender === enrolled;
 }
 
-type TxtLookup = { state: 'present'; records: string[] } | { state: 'absent' } | { state: 'unknown' };
+type TxtLookup =
+  { state: 'present'; records: string[] } | { state: 'absent' } | { state: 'unknown' };
 
 async function txtRecords(resolver: TxtResolver, name: string): Promise<TxtLookup> {
   try {
@@ -66,8 +67,10 @@ export async function senderPosture(
   const resolver = options.resolver ?? nodeResolver;
 
   const apex = await txtRecords(resolver, domain);
-  const spfRecord = apex.state === 'present' ? apex.records.find((r) => /^v=spf1(\s|$)/i.test(r)) : undefined;
-  const spf: DnsRecordState = apex.state === 'unknown' ? 'unknown' : spfRecord ? 'present' : 'absent';
+  const spfRecord =
+    apex.state === 'present' ? apex.records.find((r) => /^v=spf1(\s|$)/i.test(r)) : undefined;
+  const spf: DnsRecordState =
+    apex.state === 'unknown' ? 'unknown' : spfRecord ? 'present' : 'absent';
 
   const dmarcLookup = await txtRecords(resolver, `_dmarc.${domain}`);
   let dmarc: DmarcPolicy;
@@ -77,8 +80,14 @@ export async function senderPosture(
     dmarc = 'absent';
   } else {
     const record = dmarcLookup.records.find((r) => /^v=DMARC1(\s*;|\s*$)/i.test(r));
-    const policy = record?.match(/(?:^|;)\s*p=(reject|quarantine|none)\s*(?:;|$)/i)?.[1]?.toLowerCase();
-    dmarc = !record ? 'absent' : policy === 'reject' || policy === 'quarantine' || policy === 'none' ? policy : 'none';
+    const policy = record
+      ?.match(/(?:^|;)\s*p=(reject|quarantine|none)\s*(?:;|$)/i)?.[1]
+      ?.toLowerCase();
+    dmarc = !record
+      ? 'absent'
+      : policy === 'reject' || policy === 'quarantine' || policy === 'none'
+        ? policy
+        : 'none';
   }
 
   let dkim: DnsRecordState | 'not-checked' = 'not-checked';
@@ -116,16 +125,28 @@ export function senderVerdict(facts: SenderFacts, posture: SenderPosture): Verdi
     );
   }
   if (posture.spf === 'unknown' || posture.dmarc === 'unknown' || posture.dkim === 'unknown') {
-    return hold('PAYEE_NOT_VERIFIED', 'Sender DNS authentication records could not be read. Held until they can.');
+    return hold(
+      'PAYEE_NOT_VERIFIED',
+      'Sender DNS authentication records could not be read. Held until they can.',
+    );
   }
   if (posture.spf === 'absent') {
-    return hold('PAYEE_NOT_VERIFIED', 'Sender domain publishes no SPF record. A person must check.');
+    return hold(
+      'PAYEE_NOT_VERIFIED',
+      'Sender domain publishes no SPF record. A person must check.',
+    );
   }
   if (posture.dmarc !== 'reject' && posture.dmarc !== 'quarantine') {
-    return hold('PAYEE_NOT_VERIFIED', `Sender domain DMARC policy is ${posture.dmarc}, not quarantine or reject. A person must check.`);
+    return hold(
+      'PAYEE_NOT_VERIFIED',
+      `Sender domain DMARC policy is ${posture.dmarc}, not quarantine or reject. A person must check.`,
+    );
   }
   if (posture.dkim === 'absent') {
-    return hold('PAYEE_NOT_VERIFIED', 'The DKIM key for the message selector is not published. A person must check.');
+    return hold(
+      'PAYEE_NOT_VERIFIED',
+      'The DKIM key for the message selector is not published. A person must check.',
+    );
   }
   return null;
 }
@@ -134,7 +155,10 @@ export function senderVerdict(facts: SenderFacts, posture: SenderPosture): Verdi
  * Soft signal for onboarding only. A disposable domain is not a verdict: the caller records it and a person
  * decides. Never call this from the payment path. The list is supplied by the caller (no list is bundled here).
  */
-export function disposableDomainSignal(domain: string, disposableList: ReadonlySet<string>): boolean {
+export function disposableDomainSignal(
+  domain: string,
+  disposableList: ReadonlySet<string>,
+): boolean {
   const normalised = normaliseDomain(domain);
   return normalised !== '' && disposableList.has(normalised);
 }

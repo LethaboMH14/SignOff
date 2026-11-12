@@ -42,19 +42,23 @@ describe('SDN source parsing', () => {
   });
 
   it('rejects a row that is too short to be an SDN row', () => {
-    expect(() => snapshotFromSdnCsv('1,"ONLY TWO"\n', {
-      sourceUrl: 'https://www.treasury.gov/ofac/downloads/sdn.csv',
-      retrievedAt: '2026-11-12',
-      sourceSha256: '0'.repeat(64),
-    })).toThrow(/expected at least 4/);
+    expect(() =>
+      snapshotFromSdnCsv('1,"ONLY TWO"\n', {
+        sourceUrl: 'https://www.treasury.gov/ofac/downloads/sdn.csv',
+        retrievedAt: '2026-11-12',
+        sourceSha256: '0'.repeat(64),
+      }),
+    ).toThrow(/expected at least 4/);
   });
 
   it('ignores the DOS end-of-file byte that ends the published file', () => {
-    expect(snapshotFromSdnCsv(`${FIXTURE}\u001a`, {
-      sourceUrl: 'https://www.treasury.gov/ofac/downloads/sdn.csv',
-      retrievedAt: '2026-11-12',
-      sourceSha256: '0'.repeat(64),
-    }).entries).toHaveLength(3);
+    expect(
+      snapshotFromSdnCsv(`${FIXTURE}\u001a`, {
+        sourceUrl: 'https://www.treasury.gov/ofac/downloads/sdn.csv',
+        retrievedAt: '2026-11-12',
+        sourceSha256: '0'.repeat(64),
+      }).entries,
+    ).toHaveLength(3);
   });
 });
 
@@ -94,10 +98,16 @@ describe('screenSupplierName', () => {
   });
 
   it('holds when the list is older than the maximum age, and passes at exactly the limit', () => {
-    const fresh = new Date(Date.parse('2026-11-12T00:00:00Z') + SANCTIONS_MAX_AGE_DAYS * 86_400_000);
-    expect(screenSupplierName('Acme Stationery Supplies', snapshot('2026-11-12'), fresh).status).toBe('CLEAR');
+    const fresh = new Date(
+      Date.parse('2026-11-12T00:00:00Z') + SANCTIONS_MAX_AGE_DAYS * 86_400_000,
+    );
+    expect(
+      screenSupplierName('Acme Stationery Supplies', snapshot('2026-11-12'), fresh).status,
+    ).toBe('CLEAR');
     const stale = new Date(fresh.getTime() + 86_400_000);
-    expect(screenSupplierName('Acme Stationery Supplies', snapshot('2026-11-12'), stale)).toMatchObject({
+    expect(
+      screenSupplierName('Acme Stationery Supplies', snapshot('2026-11-12'), stale),
+    ).toMatchObject({
       status: 'UNAVAILABLE',
     });
   });

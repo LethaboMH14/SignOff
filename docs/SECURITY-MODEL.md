@@ -48,3 +48,27 @@ This table is incomplete. The console is Lane E's; Lane H has not run the consol
 - Red-team run (promptfoo): not started.
 - Dev-field gate and its test: not built.
 - Live sanctions service: a free source with clear terms is still to be confirmed (OpenSanctions default data is CC BY-NC 4.0, so it is not used).
+
+## 7. Hook for Lane E: wiring the sanctions and sender checks into the Warden
+
+Neither check is called by `apps/warden/src/service.ts` yet. That file belongs to Lane E, so Lane H did not edit it. The intended wiring:
+
+1. **Sanctions, once per supplier at enrolment and again before each payment:**
+   ```ts
+   import { loadSnapshot } from './checks/sanctions-source.js';
+   import { screenSupplierName, sanctionsVerdict } from './checks/sanctions.js';
+   // snapshot = loadSnapshot(join(directory, 'var/sanctions/ofac-sdn.json')); // null when missing
+   const verdict = sanctionsVerdict(screenSupplierName(supplier.legalName, snapshot, new Date()));
+   if (verdict) return verdict; // HOLD, never REFUSE
+   ```
+   The path must come from the Warden's own directory. The cache is refreshed by `npm run sanctions:refresh`.
+2. **Sender, at each proposal, after the payee check:**
+   ```ts
+   import { senderPosture, senderVerdict } from './checks/sender.js';
+   const posture = await senderPosture(facts.senderDomain); // resolver defaults to Node dns
+   const verdict = senderVerdict({ senderDomain: facts.senderDomain, enrolledDomain: supplier.domain }, posture);
+   if (verdict) return verdict;
+   ```
+   `senderPosture` must not be called with a domain taken from the agent's output without an exact match first. The function itself does not trust it.
+
+Both hooks return a HOLD on any failure, including an unreadable list or a DNS error. The Warden must not treat a null snapshot as a clear result. A test that runs the hook through `WardenService` belongs with Lane E.

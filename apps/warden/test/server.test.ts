@@ -418,3 +418,25 @@ describe('the caller side of the Warden', () => {
     expect(() => coSignAsAgent(agent, 'zz')).toThrow();
   });
 });
+
+describe('kill-switch drill (lane H)', () => {
+  it('pauses over HTTP so a proposal is held, then STOP closes the listener and nothing answers', async () => {
+    const h = await harness();
+    await activeSupplierOverHttp(h, generateSupplierKey().publicKey);
+    expect(await h.operatorA.setPaused(true)).toEqual({ paused: true });
+
+    const held = await h.agent.propose(
+      proposalFor(newAttemptId(), STANDARD, h.config, h.clock.now),
+    );
+    expect(held.decision.decision).toBe('HOLD');
+    expect(held.decision.reasons[0]?.code).toBe('PAUSED');
+
+    // STOP: close the listener the harness opened (the last server it registered).
+    const server = servers.at(-1);
+    expect(server).toBeDefined();
+    await new Promise<void>((closed, failed) => {
+      server?.close((error) => (error ? failed(error) : closed()));
+    });
+    await expect(fetch(new URL('/v1/health', h.url))).rejects.toThrow();
+  });
+});

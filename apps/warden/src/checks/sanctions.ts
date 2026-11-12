@@ -47,8 +47,25 @@ export type SanctionsEntry = z.infer<typeof ENTRY>;
 
 /** Words that carry no identity. Dropped before comparison (legal forms, articles and particles). */
 const NOISE_TOKENS = new Set([
-  'PTY', 'LTD', 'LIMITED', 'PROPRIETARY', 'INC', 'LLC', 'CO', 'CC', 'SA', 'PLC', 'CORP', 'COMPANY',
-  'THE', 'OF', 'AND', 'AL', 'EL', 'DE', 'LA',
+  'PTY',
+  'LTD',
+  'LIMITED',
+  'PROPRIETARY',
+  'INC',
+  'LLC',
+  'CO',
+  'CC',
+  'SA',
+  'PLC',
+  'CORP',
+  'COMPANY',
+  'THE',
+  'OF',
+  'AND',
+  'AL',
+  'EL',
+  'DE',
+  'LA',
 ]);
 
 /** Upper-case, strip accents and punctuation, split into tokens, drop noise. Pure and deterministic. */
@@ -69,7 +86,15 @@ export function normalisedName(name: string): string {
 
 export type ScreenOutcome =
   | { readonly status: 'CLEAR' }
-  | { readonly status: 'NEAR' | 'HIT'; readonly matches: readonly { id: string; name: string; program: string; kind: 'exact' | 'near' }[] }
+  | {
+      readonly status: 'NEAR' | 'HIT';
+      readonly matches: readonly {
+        id: string;
+        name: string;
+        program: string;
+        kind: 'exact' | 'near';
+      }[];
+    }
   | { readonly status: 'UNAVAILABLE'; readonly reason: string };
 
 /**
@@ -87,11 +112,15 @@ export function screenSupplierName(
     return { status: 'UNAVAILABLE', reason: 'sanctions list date is missing or in the future' };
   }
   if (ageDays > SANCTIONS_MAX_AGE_DAYS) {
-    return { status: 'UNAVAILABLE', reason: `sanctions list is ${ageDays} days old (limit ${SANCTIONS_MAX_AGE_DAYS})` };
+    return {
+      status: 'UNAVAILABLE',
+      reason: `sanctions list is ${ageDays} days old (limit ${SANCTIONS_MAX_AGE_DAYS})`,
+    };
   }
 
   const subject = nameTokens(supplierName);
-  if (subject.length === 0) return { status: 'UNAVAILABLE', reason: 'supplier name has no screenable words' };
+  if (subject.length === 0)
+    return { status: 'UNAVAILABLE', reason: 'supplier name has no screenable words' };
   const subjectKey = subject.join(' ');
   const subjectSet = new Set(subject);
 
@@ -135,7 +164,10 @@ export function sanctionsVerdict(outcome: ScreenOutcome): Verdict | null {
         `Supplier name is a near match to a sanctions list entry (${outcome.matches.map((m) => m.id).join(', ')}). Common names match often; a person must clear it.`,
       );
     case 'UNAVAILABLE':
-      return hold('SUPPLIER_NOT_APPROVED', `Sanctions screening could not run: ${outcome.reason}. Held until it can.`);
+      return hold(
+        'SUPPLIER_NOT_APPROVED',
+        `Sanctions screening could not run: ${outcome.reason}. Held until it can.`,
+      );
   }
 }
 

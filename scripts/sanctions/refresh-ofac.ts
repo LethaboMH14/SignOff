@@ -13,10 +13,7 @@ import { mkdirSync, renameSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import {
-  OFAC_SDN_URL,
-  snapshotFromSdnCsv,
-} from '../../apps/warden/src/checks/sanctions-source.js';
+import { OFAC_SDN_URL, snapshotFromSdnCsv } from '../../apps/warden/src/checks/sanctions-source.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const out = resolve(here, '../../apps/warden/var/sanctions/ofac-sdn.json');
@@ -34,7 +31,9 @@ async function main(): Promise<void> {
     sourceSha256,
   });
   if (snapshot.entries.length < 1000) {
-    throw new Error(`OFAC parse produced ${snapshot.entries.length} entries; refusing to replace the cache`);
+    throw new Error(
+      `OFAC parse produced ${snapshot.entries.length} entries; refusing to replace the cache`,
+    );
   }
 
   mkdirSync(dirname(out), { recursive: true });
