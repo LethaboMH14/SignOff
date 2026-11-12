@@ -42,6 +42,8 @@
     "agent:run": "tsx apps/agent/src/main.ts run",
     "agent:export": "tsx apps/agent/src/main.ts export",
     "agent:build-set": "tsx apps/agent/tools/build-labelled-set.ts",
+    "agent:experiment-swarm": "tsx --env-file=.env apps/agent/src/experiment/run.ts --provider groq --min-interval-ms 20000 --out results/swarm/runs.jsonl",
+    "agent:report-swarm": "tsx apps/agent/src/experiment/report.ts --in results/swarm/runs.jsonl --out results/swarm/report.md",
     "warden:serve": "npm run serve --workspace @signoff/warden",
     "console:serve": "npm run serve --workspace @signoff/console",
     "console:operator": "tsx apps/console/src/server/operator-cli/main.ts",
