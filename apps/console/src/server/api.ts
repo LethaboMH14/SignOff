@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { countsOf, deskRowsOf } from '../model/desk.js';
 import { type Operator, type OperatorStore } from './auth/operators.js';
 import { hashPassword, verifyPassword } from './auth/passwords.js';
-import { LoginGuard, type Session, SessionStore } from './auth/sessions.js';
+import { LoginGuard, type Session, type SessionStoreApi } from './auth/sessions.js';
 import { cookieOf, readBody, sendEmpty, sendJson } from './http.js';
 import type { ConsoleMode } from './app.js';
 import { invoiceDetailOf } from './invoice-view.js';
@@ -51,7 +51,7 @@ export interface WardenPort {
 
 export interface ApiContext {
   readonly operators: OperatorStore;
-  readonly sessions: SessionStore;
+  readonly sessions: SessionStoreApi;
   readonly guard: LoginGuard;
   /** The agent's transition log. The console only reads it. */
   readonly transitionsPath: string;
@@ -285,7 +285,13 @@ async function stepUp(
   }
   ctx.guard.succeeded(caller.operator.username);
   const until = ctx.sessions.stepUp(caller.session);
-  sendJson(response, 200, { stepUpUntil: new Date(until).toISOString() });
+  // A stateless store gives the session a new cookie value at a step-up, so the response sets it.
+  sendJson(
+    response,
+    200,
+    { stepUpUntil: new Date(until).toISOString() },
+    { 'set-cookie': sessionCookie(caller.session.token) },
+  );
 }
 
 /**
