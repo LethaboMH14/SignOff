@@ -29,6 +29,9 @@ export function Login({ onSignedIn }: { readonly onSignedIn: (session: SessionIn
       <section className="signin-brand" aria-label="About SignOff">
         <Brand className="brand-large" />
         <AgentFlow className="signin-flow" />
+        <p className="sim-note">
+          <span className="tag-simulated">SIMULATED</span> <span>— no payment is executed</span>
+        </p>
         <p className="lede-large">
           An AI accounts-payable agent that cannot move money alone. Every payment needs two
           signatures: the agent&rsquo;s, and Warden&rsquo;s.

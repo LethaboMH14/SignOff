@@ -100,6 +100,7 @@ export async function receiptOf(input: {
   readonly displayState: DisplayState;
   readonly invoiceRef: string;
   readonly payment: ReceiptPayment | null;
+  /** The ledger to read. Null means no ledger is configured, so no receipt can be confirmed. */
   readonly ledger: ReceiptLedger | null;
   readonly config: ReceiptConfig;
 }): Promise<ReceiptView> {

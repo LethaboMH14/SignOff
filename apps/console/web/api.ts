@@ -58,7 +58,8 @@ export interface DeskData {
   readonly asOf: string;
   readonly mode: 'simulated' | 'live';
   readonly damagedLines: number;
-  readonly overview: DeskOverview;
+  /** Null in simulated mode, where the Warden is not called, so there is no overview to show. */
+  readonly overview: DeskOverview | null;
   readonly counts: Readonly<Record<DisplayState, number>>;
   readonly rows: readonly DeskRow[];
 }

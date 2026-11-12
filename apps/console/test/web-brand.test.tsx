@@ -5,6 +5,7 @@ import { initialsOf, roleWordOf } from '../web/App.js';
 import { AgentFlow, Brand, BrandMark, FLOW_STATIONS } from '../web/Brand.js';
 import { featuredOf, nextRowsOf } from '../web/DeskView.js';
 import { Intro } from '../web/Intro.js';
+import { Login } from '../web/Login.js';
 import type { DeskRow, DisplayState } from '../src/model/desk.js';
 
 /** Runs a render with a window that answers the reduced-motion question as the test asks. The tests run in node. */
@@ -89,6 +90,15 @@ describe('the opening', () => {
 
   it('is not rendered at all for a person who has asked for reduced motion', () => {
     expect(withMotion(true, () => renderToStaticMarkup(<Intro />))).toBe('');
+  });
+});
+
+describe('the sign-in page', () => {
+  it('says in words, beside the flow and before the form, that nothing is paid', () => {
+    const markup = renderToStaticMarkup(<Login onSignedIn={() => undefined} />);
+    const words = markup.replace(/<!-- -->|<[^>]+>/g, '');
+    expect(words).toContain('SIMULATED — no payment is executed');
+    expect(markup.indexOf('no payment is executed')).toBeLessThan(markup.indexOf('signin-card'));
   });
 });
 

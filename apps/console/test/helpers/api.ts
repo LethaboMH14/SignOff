@@ -215,7 +215,7 @@ export async function harnessOf(transitionsPath: string): Promise<Harness> {
     transitionsPath,
     allowedOrigins: origins,
     version: '0.1.0',
-    mode: 'simulated',
+    mode: 'live',
     wardenFor: () => warden,
     now: () => new Date(clockMs),
     ledger,

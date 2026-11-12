@@ -312,7 +312,7 @@ export function DeskView(props: DeskViewProps) {
     );
   }
   const { overview, rows } = data;
-  const raise = overview.pendingLimitChange;
+  const raise = overview?.pendingLimitChange ?? null;
   const featured = featuredOf(rows);
   const next = nextRowsOf(rows, featured);
   const featuredHeld = featured !== null && ATTENTION.includes(featured.displayState);
@@ -354,24 +354,33 @@ export function DeskView(props: DeskViewProps) {
 
           <section className="panel" aria-labelledby="warden-title">
             <h2 id="warden-title">Warden</h2>
-            <p className="muted">
-              Rules version {overview.policyVersion}. Usage today{' '}
-              {moneyOf(overview.usageToday.totalMinor, null)}.
-            </p>
-            <dl className="limits">
-              <div>
-                <dt>Per payment</dt>
-                <dd>{moneyOf(overview.limits.perPaymentMinor, null)}</dd>
-              </div>
-              <div>
-                <dt>Per supplier, per day</dt>
-                <dd>{moneyOf(overview.limits.supplierDailyMinor, null)}</dd>
-              </div>
-              <div>
-                <dt>Total, per day</dt>
-                <dd>{moneyOf(overview.limits.dailyTotalMinor, null)}</dd>
-              </div>
-            </dl>
+            {overview === null ? (
+              <p className="muted">
+                Not read in simulated mode. The replay does not call the Warden, so its rules,
+                limits, pause and usage are not shown.
+              </p>
+            ) : (
+              <>
+                <p className="muted">
+                  Rules version {overview.policyVersion}. Usage today{' '}
+                  {moneyOf(overview.usageToday.totalMinor, null)}.
+                </p>
+                <dl className="limits">
+                  <div>
+                    <dt>Per payment</dt>
+                    <dd>{moneyOf(overview.limits.perPaymentMinor, null)}</dd>
+                  </div>
+                  <div>
+                    <dt>Per supplier, per day</dt>
+                    <dd>{moneyOf(overview.limits.supplierDailyMinor, null)}</dd>
+                  </div>
+                  <div>
+                    <dt>Total, per day</dt>
+                    <dd>{moneyOf(overview.limits.dailyTotalMinor, null)}</dd>
+                  </div>
+                </dl>
+              </>
+            )}
           </section>
         </div>
 
@@ -495,51 +504,62 @@ export function DeskView(props: DeskViewProps) {
 
           <section className="panel" aria-labelledby="control-title">
             <h2 id="control-title">Pause and limits</h2>
-            <p>
-              <strong>{overview.paused ? 'Payments are paused.' : 'Payments are running.'}</strong>
-            </p>
-            {raise === null ? null : (
-              <section className="notice" aria-labelledby="raise-title">
-                <h3 id="raise-title">A raised limit is waiting</h3>
+            {overview === null ? (
+              <p className="muted">
+                Changes are not sent to the Warden in simulated mode, so nothing can be paused or
+                limited here.
+              </p>
+            ) : (
+              <>
                 <p>
-                  Asked by {raise.requestedBy}. It expires {sastOf(raise.expiresAt)}. Per payment{' '}
-                  {moneyOf(raise.perPaymentMinor, null)}; per supplier, per day{' '}
-                  {moneyOf(raise.supplierDailyMinor, null)}; total, per day{' '}
-                  {moneyOf(raise.dailyTotalMinor, null)}.
+                  <strong>
+                    {overview.paused ? 'Payments are paused.' : 'Payments are running.'}
+                  </strong>
                 </p>
+                {raise === null ? null : (
+                  <section className="notice" aria-labelledby="raise-title">
+                    <h3 id="raise-title">A raised limit is waiting</h3>
+                    <p>
+                      Asked by {raise.requestedBy}. It expires {sastOf(raise.expiresAt)}. Per
+                      payment {moneyOf(raise.perPaymentMinor, null)}; per supplier, per day{' '}
+                      {moneyOf(raise.supplierDailyMinor, null)}; total, per day{' '}
+                      {moneyOf(raise.dailyTotalMinor, null)}.
+                    </p>
+                    <p>
+                      <button
+                        type="button"
+                        disabled={busy || !raise.approvalAllowed}
+                        aria-describedby="approve-why"
+                        onClick={() => {
+                          props.onApprove(raise.requestId);
+                        }}
+                      >
+                        Approve the raised limit
+                      </button>
+                    </p>
+                    <p id="approve-why">{raise.why}</p>
+                  </section>
+                )}
                 <p>
                   <button
                     type="button"
-                    disabled={busy || !raise.approvalAllowed}
-                    aria-describedby="approve-why"
+                    disabled={busy}
                     onClick={() => {
-                      props.onApprove(raise.requestId);
+                      props.onTogglePause();
                     }}
                   >
-                    Approve the raised limit
+                    {overview.paused ? 'Resume payments' : 'Pause new payments'}
                   </button>
                 </p>
-                <p id="approve-why">{raise.why}</p>
-              </section>
+                <LimitsForm
+                  current={overview.limits}
+                  busy={busy}
+                  onSubmit={(values) => {
+                    props.onRequestLimits(values);
+                  }}
+                />
+              </>
             )}
-            <p>
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => {
-                  props.onTogglePause();
-                }}
-              >
-                {overview.paused ? 'Resume payments' : 'Pause new payments'}
-              </button>
-            </p>
-            <LimitsForm
-              current={overview.limits}
-              busy={busy}
-              onSubmit={(values) => {
-                props.onRequestLimits(values);
-              }}
-            />
             {pending === null ? null : (
               <StepUp busy={busy} onConfirm={props.onConfirm} onCancel={props.onCancelConfirm} />
             )}

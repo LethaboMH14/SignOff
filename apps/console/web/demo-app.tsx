@@ -81,7 +81,9 @@ export function Demo() {
             Each limit says what its change does before you ask for it. A lower limit applies at
             once. A raise needs a second operator.
           </p>
-          <LimitsForm current={desk.overview.limits} busy={false} onSubmit={NOOP} />
+          {desk.overview === null ? null : (
+            <LimitsForm current={desk.overview.limits} busy={false} onSubmit={NOOP} />
+          )}
         </section>
       ) : null}
       {view === 'receipt' ? (

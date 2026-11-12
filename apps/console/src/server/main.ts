@@ -57,7 +57,8 @@ if (!LOOPBACK.has(host)) {
 }
 const port = portOf(process.env['SIGNOFF_CONSOLE_PORT'] ?? '4180');
 const wardenUrl = process.env['SIGNOFF_WARDEN_URL'];
-if (wardenUrl === undefined || !/^https?:\/\//.test(wardenUrl)) {
+// Live mode only: a simulated run never calls the Warden, so it needs no address (S-059).
+if (mode === 'live' && (wardenUrl === undefined || !/^https?:\/\//.test(wardenUrl))) {
   throw new RangeError(
     'SIGNOFF_WARDEN_URL must name the Warden, for example http://127.0.0.1:8080',
   );
@@ -67,8 +68,8 @@ const operatorsPath = resolve(
 );
 assertOutsideRepository(dirname(operatorsPath), repoRoot);
 
-/* The Warden's address, narrowed once above and kept as a plain string for the closures below. */
-const wardenBaseUrl: string = wardenUrl;
+/* The Warden's address, kept as a plain string for the closures below. Empty in simulated mode, where no Warden is called. */
+const wardenBaseUrl: string = wardenUrl ?? '';
 
 const readerId = process.env['SIGNOFF_WARDEN_READER_ID'];
 const readerSecretFile = process.env['SIGNOFF_WARDEN_READER_SECRET_FILE'];
@@ -76,7 +77,7 @@ const readerSecretFile = process.env['SIGNOFF_WARDEN_READER_SECRET_FILE'];
 // eslint-disable-next-line security/detect-non-literal-fs-filename -- the operator's own secret file, named at start-up
 const readerSecretPresent = readerSecretFile !== undefined && existsSync(readerSecretFile);
 const reader: WardenPort | null =
-  readerId !== undefined && readerSecretFile !== undefined && readerSecretPresent
+  mode === 'live' && readerId !== undefined && readerSecretFile !== undefined && readerSecretPresent
     ? new WardenClient({
         baseUrl: wardenBaseUrl,
         principalId: readerId,
@@ -92,6 +93,10 @@ const version = (
 ).version;
 
 function wardenFor(operator: Operator): WardenPort | null {
+  if (mode === 'simulated') {
+    // A simulated run never calls the Warden, so no person is given a Warden to call (S-059).
+    return null;
+  }
   if (operator.role === 'viewer') {
     return reader;
   }

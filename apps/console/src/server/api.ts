@@ -37,6 +37,10 @@ const REQUEST_ID = /^[0-9a-f-]{36}$/;
 const APPROVE_PATH = /^\/api\/limits\/([0-9a-f-]{36})\/approve$/;
 const INVOICE_PATH = /^\/api\/invoices\/([0-9a-f]{64}|[0-9a-f-]{36})$/;
 const RECEIPT_PATH = /^\/api\/receipts\/([0-9a-f-]{36})$/;
+/** In simulated mode the console does not read the ledger, so no receipt is confirmed there (S-058). */
+const SIMULATED_LEDGER_OFF = 'simulated mode does not read the ledger.';
+/** The answer when a change is asked of the Warden in simulated mode. Nothing is sent, so nothing changes. */
+const SIMULATED_WARDEN_REFUSAL = 'simulated mode: the Warden is not called, so nothing is changed.';
 
 /** The Warden calls the console makes for one person. Each method returns the Warden's answer, unparsed. */
 export interface WardenPort {
@@ -59,7 +63,7 @@ export interface ApiContext {
   readonly allowedOrigins: ReadonlySet<string>;
   readonly version: string;
   readonly mode: ConsoleMode;
-  /** The Warden as this person: their own principal for an operator, the read-only reader for a viewer, or null. */
+  /** The Warden as this person: their own principal for an operator, the read-only reader for a viewer, or null. Never called in simulated mode. */
   wardenFor(operator: Operator): WardenPort | null;
   readonly now: () => Date;
   /** The ledger a receipt is re-checked against. Null means no receipt can be confirmed. */
@@ -332,6 +336,20 @@ async function desk(
     notSignedIn(response);
     return;
   }
+  if (ctx.mode === 'simulated') {
+    // The replay reads only the agent's log. The Warden is not called, so its rules, limits and pause are not shown.
+    const replay = readTransitions(ctx.transitionsPath);
+    const replayRows = deskRowsOf(latestInvoicesOf(replay.records), []);
+    sendJson(response, 200, {
+      asOf: ctx.now().toISOString(),
+      mode: ctx.mode,
+      damagedLines: replay.damaged,
+      overview: null,
+      counts: countsOf(replayRows),
+      rows: replayRows,
+    });
+    return;
+  }
   const warden = ctx.wardenFor(caller.operator);
   if (warden === null) {
     sendJson(response, 503, { error: 'this account has no Warden access' });
@@ -383,6 +401,10 @@ async function pause(
   if (body === null) {
     return;
   }
+  if (ctx.mode === 'simulated') {
+    sendJson(response, 409, { error: SIMULATED_WARDEN_REFUSAL });
+    return;
+  }
   const warden = ctx.wardenFor(caller.operator);
   if (warden === null) {
     sendJson(response, 503, { error: 'this account has no Warden access' });
@@ -412,6 +434,10 @@ async function limits(
   }
   const body = await jsonBody(request, response, LimitsBody);
   if (body === null) {
+    return;
+  }
+  if (ctx.mode === 'simulated') {
+    sendJson(response, 409, { error: SIMULATED_WARDEN_REFUSAL });
     return;
   }
   const warden = ctx.wardenFor(caller.operator);
@@ -450,6 +476,10 @@ async function approveLimit(
   }
   if (!REQUEST_ID.test(requestId)) {
     sendJson(response, 400, { error: 'the request id is not recognised' });
+    return;
+  }
+  if (ctx.mode === 'simulated') {
+    sendJson(response, 409, { error: SIMULATED_WARDEN_REFUSAL });
     return;
   }
   const warden = ctx.wardenFor(caller.operator);
@@ -576,15 +606,23 @@ async function receiptRead(
     notSignedIn(response);
     return;
   }
-  const warden = ctx.wardenFor(caller.operator);
-  if (warden === null) {
-    sendJson(response, 503, { error: 'this account has no Warden access' });
-    return;
-  }
   const { records } = readTransitions(ctx.transitionsPath);
   const invoice = latestInvoicesOf(records).find((candidate) => candidate.attemptId === attemptId);
   if (invoice === undefined) {
     sendJson(response, 404, { error: 'no such payment' });
+    return;
+  }
+  if (ctx.mode === 'simulated') {
+    // The Warden is not called and the ledger is not read in simulated mode, so no payment is confirmed (S-058, S-059).
+    sendJson(response, 200, {
+      state: 'not-confirmed',
+      message: `Not confirmed on the ledger: ${SIMULATED_LEDGER_OFF}`,
+    });
+    return;
+  }
+  const warden = ctx.wardenFor(caller.operator);
+  if (warden === null) {
+    sendJson(response, 503, { error: 'this account has no Warden access' });
     return;
   }
   try {
@@ -648,8 +686,9 @@ async function invoiceRead(
     notSignedIn(response);
     return;
   }
-  const warden = ctx.wardenFor(caller.operator);
-  if (warden === null) {
+  // In simulated mode the Warden is not called: the held-invoice view shows the agent's log only.
+  const warden = ctx.mode === 'simulated' ? null : ctx.wardenFor(caller.operator);
+  if (ctx.mode === 'live' && warden === null) {
     sendJson(response, 503, { error: 'this account has no Warden access' });
     return;
   }
@@ -667,12 +706,12 @@ async function invoiceRead(
       (invoiceRecord) => invoiceRecord.correlationId === correlationId,
     )?.attemptId;
     const proposal =
-      attemptId === undefined || attemptId === null
+      warden === null || attemptId === undefined || attemptId === null
         ? null
         : await proposalOrNull(warden, attemptId);
     const supplierId = proposal?.payment?.supplierId ?? null;
     const supplier: SupplierView | null =
-      supplierId === null
+      warden === null || supplierId === null
         ? null
         : (SupplierList.parse(await warden.opsSuppliers()).suppliers.find(
             (candidate) => candidate.supplierId === supplierId,

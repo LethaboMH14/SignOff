@@ -131,7 +131,7 @@ export function Desk({ session, onSession }: DeskProps) {
   );
 
   const onTogglePause = useCallback(() => {
-    if (data !== null) {
+    if (data !== null && data.overview !== null) {
       void run({ kind: 'pause', paused: !data.overview.paused }, session);
     }
   }, [data, run, session]);

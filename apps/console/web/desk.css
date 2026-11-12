@@ -648,6 +648,18 @@ input {
   height: 300px;
 }
 
+/* The sign-in illustration is a simulation: this line says so in words, beside the flow, so the loop is never taken for a payment. */
+.sim-note {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
 .lede-large {
   font-size: 20px;
   line-height: 1.4;

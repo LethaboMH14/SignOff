@@ -77,7 +77,7 @@ async function start(
     mode: 'simulated',
     pollMs: 20,
     staticDir,
-    api: harness.ctx,
+    api: { ...harness.ctx, mode: 'simulated' },
   });
   servers.push(server);
   await new Promise<void>((listening) => {
