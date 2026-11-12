@@ -38,10 +38,10 @@ Build the labelled set (deterministic; the output is committed):
 npm run agent:build-set
 ```
 
-Evaluate with the rule-based stand-ins. No provider key is needed. The report says SIMULATED, and it measures the code checks, not any model:
+Evaluate with the rule-based stand-ins (fixture mode). No provider key is needed. The report says FIXTURE, and it measures the code checks, not any model:
 
 ```bash
-npm run agent:eval -- --mode simulated
+npm run eval
 ```
 
 Evaluate with a provider model. Set the provider's key in your environment first. Only fictional data is evaluated:
@@ -73,6 +73,6 @@ npm run agent:export -- --log apps/agent/state/agent-log.jsonl --obligation <64-
 ## What is verified, and what is not
 
 - **Verified in software:** every test in [TEST-LOG](../../docs/logs/TEST-LOG.md) T-076 to T-086 passes, and the global coverage thresholds hold.
-- **Simulated:** `results/simulated-eval.md` is produced by rule-based stand-ins, not by a model. It shows the pipeline's checks on 30 fictional invoices, and it is not a measure of any model.
+- **Fixture:** `results/fixture-eval.md` is produced by rule-based stand-ins, not by a model. It shows the pipeline's checks on 62 fictional invoices against a single-prompt baseline, and it is not a measure of any model. See `docs/EVALUATION.md`.
 - **Unverified:** the live model accuracy (T-088). The live Warden integration on the Testnet (T-087). Provider data handling. Performance on real invoices.
 - **Held by design:** South African space-grouped and European amount layouts (D-070). This is a measured over-blocking risk for the target customer.

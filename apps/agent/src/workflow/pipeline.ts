@@ -48,6 +48,11 @@ export interface PipelineDeps {
   /** Null for a run that stops at eligibility, which is how the evaluation runs. */
   readonly warden: WardenPort | null;
   readonly signer: AgentSigner | null;
+  /**
+   * Evaluation only: obligations that an earlier case in the same run has already cleared for payment. The agent
+   * itself never sets it, so production behaviour is unchanged when it is absent.
+   */
+  readonly alreadyClearedElsewhere?: (obligationKey: string) => boolean;
 }
 
 export interface RunResult {
@@ -250,7 +255,8 @@ export async function processInvoice(
     fingerprint: fileSha256,
     evidence: deps.evidence,
     suppliers: deps.suppliers,
-    alreadyPaid: (key) => deps.log.blocksPayment(key),
+    alreadyPaid: (key) =>
+      deps.log.blocksPayment(key) || (deps.alreadyClearedElsewhere?.(key) ?? false),
   });
   run.recordSha256s = [...match.recordSha256s];
   run.obligationKey = match.obligationKey;

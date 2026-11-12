@@ -2,7 +2,7 @@
  * The agent's command line. It is the only file that reads the environment and the operating system, so it is wired
  * here and not unit-tested. Its parts are tested where they are defined.
  *
- *   eval    scores the pipeline and the single-prompt baseline on the labelled set (simulated or live)
+ *   eval    scores the pipeline and the single-prompt baseline on the labelled set (fixture or live)
  *   run     watches the inbox and runs each invoice through the workflow against a Warden
  *   export  writes the audit export for one payment or one invoice file
  */
@@ -31,7 +31,8 @@ import {
 } from './config.js';
 import { loadLabelledSet } from './eval/cases.js';
 import { renderReport } from './eval/report.js';
-import { evaluate, scoreBaseline, scorePipeline } from './eval/run.js';
+import { evaluate, perCaseScores, scoreBaseline, scorePipeline } from './eval/run.js';
+import { compareSides } from './eval/stats.js';
 import { simulatedModel } from './eval/simulated-model.js';
 import { watchInbox } from './intake/intake.js';
 import { createChatClient } from './model/chat-client.js';
@@ -77,7 +78,7 @@ async function evalCommand(args: readonly string[]): Promise<void> {
     },
     strict: true,
   });
-  const mode = values.mode ?? 'simulated';
+  const mode = values.mode ?? 'fixture';
   const minIntervalMs = intervalOf(values['min-interval-ms']);
   const set = loadLabelledSet(resolve(values.set ?? DEFAULT_SET));
   if (!set.notice.includes('FICTIONAL')) {
@@ -87,9 +88,9 @@ async function evalCommand(args: readonly string[]): Promise<void> {
   }
   let model: ModelClient;
   let modelLabel: string;
-  if (mode === 'simulated') {
+  if (mode === 'fixture') {
     model = simulatedModel('extractor');
-    modelLabel = 'simulated (rule-based stand-in)';
+    modelLabel = 'fixture (rule-based stand-in, no model called)';
   } else if (mode === 'live') {
     const choice = chooseModel(values.provider ?? 'openrouter', values.model);
     model = pacedModel(
@@ -103,9 +104,9 @@ async function evalCommand(args: readonly string[]): Promise<void> {
     );
     modelLabel = model.label;
   } else {
-    throw new RangeError('the mode must be simulated or live');
+    throw new RangeError('the mode must be fixture or live');
   }
-  const baselineModel = mode === 'simulated' ? simulatedModel('baseline') : model;
+  const baselineModel = mode === 'fixture' ? simulatedModel('baseline') : model;
   // Each case has its own log. For the agent map, the moves are written one after another with one running sequence
   // number, so the map can replay the whole set in order. The per-case records are unchanged in the report.
   const moveLines: string[] = [];
@@ -132,27 +133,41 @@ async function evalCommand(args: readonly string[]): Promise<void> {
   }
   const pipeline = scorePipeline(runs);
   const baseline = scoreBaseline(runs);
+  const swarmScores = perCaseScores(runs, 'pipeline');
+  const baselineScores = perCaseScores(runs, 'baseline');
+  const comparisons = [
+    compareSides('Decision correct', swarmScores.decision, baselineScores.decision),
+    compareSides('Fields read as labelled (share of 7)', swarmScores.fields, baselineScores.fields),
+    compareSides(
+      'No false approval (1 unless HOLD was decided ELIGIBLE)',
+      swarmScores.noFalseApproval,
+      baselineScores.noFalseApproval,
+    ),
+  ];
   const generatedAt = new Date().toISOString();
+  const pipelineLabel = mode === 'fixture' ? 'FIXTURE' : 'LIVE';
   const report = renderReport({
-    mode: mode === 'simulated' ? 'SIMULATED' : 'LIVE',
+    mode: pipelineLabel,
     pipelineModel: modelLabel,
-    baselineModel: mode === 'simulated' ? simulatedModel('baseline').label : modelLabel,
+    baselineModel: mode === 'fixture' ? simulatedModel('baseline').label : modelLabel,
     policyVersion: AGENT_POLICY_VERSION,
     generatedAt,
     notice: set.notice,
     runs,
     pipeline,
     baseline,
+    comparisons,
   });
   const out = resolve(values.out ?? DEFAULT_RESULTS);
   mkdirSync(out, { recursive: true });
-  writeFileSync(join(out, `${mode}-eval.md`), report, 'utf8');
+  const stem = `${mode}-eval`;
+  writeFileSync(join(out, `${stem}.md`), report, 'utf8');
   writeFileSync(
-    join(out, `${mode}-eval.json`),
-    `${JSON.stringify({ mode, generatedAt, policyVersion: AGENT_POLICY_VERSION, model: modelLabel, pipeline, baseline, runs }, null, 2)}\n`,
+    join(out, `${stem}.json`),
+    `${JSON.stringify({ mode: pipelineLabel, generatedAt, policyVersion: AGENT_POLICY_VERSION, model: modelLabel, pipeline, baseline, comparisons, runs }, null, 2)}\n`,
     'utf8',
   );
-  line(`wrote ${join(out, `${mode}-eval.md`)} for ${String(runs.length)} cases`);
+  line(`wrote ${join(out, `${stem}.md`)} for ${String(runs.length)} cases (${pipelineLabel})`);
 }
 
 function exportCommand(args: readonly string[]): void {

@@ -35,6 +35,8 @@
     "testnet:synthetic": "tsx scripts/testnet/synthetic.ts",
     "testnet:credential": "tsx scripts/testnet/credential.ts",
     "judge:check": "tsx scripts/judge-check.ts",
+    "fx:demo": "tsx scripts/fx-demo.ts",
+    "eval": "tsx apps/agent/src/main.ts eval --mode fixture",
     "agent:eval": "tsx apps/agent/src/main.ts eval",
     "agent:run": "tsx apps/agent/src/main.ts run",
     "agent:export": "tsx apps/agent/src/main.ts export",
