@@ -1,0 +1,344 @@
+/* The palette follows the D0 mockups: warm paper, midnight ink, cobalt for verified progress, amber for exceptions. */
+:root {
+  --paper: #f5f1e8;
+  --card: #fffdf8;
+  --ink: #14244a;
+  --muted: #4f586b;
+  --line: #ddd4c2;
+  --cobalt: #1d4ed0;
+  --cobalt-tint: #e3ebfc;
+  --amber: #7d4300;
+  --amber-fill: #f7c85c;
+  --amber-tint: #fbefd0;
+  --track: #cfc6b2;
+  --focus: #0b5cff;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font:
+    16px/1.45 system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    Helvetica,
+    Arial,
+    sans-serif;
+}
+
+h1,
+h2,
+p {
+  margin: 0;
+}
+
+h1 {
+  font-size: 1.6rem;
+  line-height: 1.2;
+}
+
+h2 {
+  font-size: 1.1rem;
+  line-height: 1.25;
+}
+
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+button {
+  font: inherit;
+  color: var(--ink);
+  background: var(--card);
+  border: 1px solid var(--ink);
+  border-radius: 999px;
+  padding: 0.5rem 1rem;
+  min-height: 44px;
+  cursor: pointer;
+}
+
+button[aria-pressed='true'] {
+  background: var(--ink);
+  color: var(--card);
+}
+
+.topbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.topbar h1 {
+  color: var(--paper);
+}
+
+.eyebrow {
+  font-size: 0.85rem;
+  color: var(--amber-fill);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+  color: var(--paper);
+}
+
+.badge-live {
+  color: #bfe3c8;
+}
+
+.badge-reconnecting,
+.badge-warn {
+  color: var(--amber-fill);
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 360px);
+  gap: 16px;
+  padding: 16px;
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+@media (max-width: 900px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.panel {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 14px;
+  min-width: 0;
+}
+
+.lede {
+  margin: 6px 0 12px;
+  color: var(--muted);
+}
+
+/* The map scrolls inside its own box on narrow screens, so the page itself never scrolls sideways. */
+.map-scroll {
+  overflow-x: auto;
+}
+
+.agent-map {
+  display: block;
+  width: 100%;
+  min-width: 760px;
+  height: auto;
+}
+
+.edge {
+  stroke: var(--track);
+  stroke-width: 3;
+  fill: none;
+}
+
+.edge-branch {
+  stroke-dasharray: 6 6;
+}
+
+.node-disc {
+  fill: var(--card);
+  stroke: var(--ink);
+  stroke-width: 2;
+}
+
+.node-arrival .node-disc {
+  fill: var(--paper);
+  stroke: var(--muted);
+}
+
+.node-hold .node-disc {
+  fill: var(--amber-fill);
+  stroke: var(--amber);
+  stroke-width: 3;
+}
+
+.node-ledger .node-disc {
+  fill: var(--cobalt-tint);
+  stroke: var(--cobalt);
+}
+
+.node-paid .node-disc {
+  fill: var(--cobalt);
+  stroke: var(--cobalt);
+}
+
+.node-label {
+  font-size: 15px;
+  font-weight: 600;
+  fill: var(--ink);
+}
+
+.node-active .node-disc {
+  stroke-width: 3;
+}
+
+.node-pulse {
+  fill: none;
+  stroke: var(--cobalt);
+  stroke-width: 3;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: pulse 1.2s ease-out infinite;
+}
+
+@keyframes pulse {
+  from {
+    opacity: 0.9;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.7);
+  }
+}
+
+/* A token glides to its next place. The move is a CSS transition, so the browser does the animation. */
+.token {
+  transition: transform 900ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.token-disc {
+  fill: var(--cobalt);
+  stroke: #ffffff;
+  stroke-width: 2;
+}
+
+.token-glyph {
+  fill: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.token-id {
+  fill: var(--ink);
+  font-size: 12px;
+  font-weight: 600;
+  font-family: ui-monospace, Consolas, 'Courier New', monospace;
+}
+
+.tone-submitted .token-disc {
+  fill: var(--ink);
+}
+
+.tone-hold .token-disc {
+  fill: var(--amber-fill);
+  stroke: var(--amber);
+  stroke-width: 3;
+}
+
+.tone-hold .token-glyph {
+  fill: var(--amber);
+}
+
+.tone-paid .token-disc {
+  fill: var(--cobalt);
+}
+
+.tone-failed .token-disc {
+  fill: var(--amber-tint);
+  stroke: var(--ink);
+  stroke-width: 2;
+}
+
+.tone-failed .token-glyph {
+  fill: var(--ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .token {
+    transition: none;
+  }
+
+  .node-pulse {
+    animation: none;
+    opacity: 0.6;
+  }
+}
+
+.feed-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.feed {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.feed-item {
+  display: grid;
+  gap: 2px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+  overflow-wrap: anywhere;
+}
+
+.feed-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.feed-tone {
+  font-weight: 700;
+}
+
+.tone-hold .feed-tone,
+.tone-failed .feed-tone {
+  color: var(--amber);
+}
+
+.tone-paid .feed-tone {
+  color: var(--cobalt);
+}
+
+.feed-reason {
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.feed-empty {
+  color: var(--muted);
+}

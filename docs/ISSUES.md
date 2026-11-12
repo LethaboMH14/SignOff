@@ -1,5 +1,7 @@
 # Work issues
 
+**Gate 0 status (10 November 2026):** F1 to F5 are merged into main (#12 to #16). The phase-close pull request #17 is merged. CI passed on GitHub for F2 to F5 (T-043 to T-046 and T-049). Gate 0's code and phase report have merged (D-038); owner-controlled repo protections remain unverified. Two acceptance points need the repository owner: F2's required checks before merge, and F3's GitHub secret scanning (S-005). The phase report is in [logs/PHASE-REPORTS.md](logs/PHASE-REPORTS.md).
+
 The build sliced into small, reviewable issues. Each maps to a requirement in [PRD.md](PRD.md) and a gate in [ENGINEERING.md](ENGINEERING.md#delivery-gates). Rule R-16 in [RULES.md](RULES.md): no work starts without an issue here.
 
 **How to use this file**
@@ -15,11 +17,11 @@ The build sliced into small, reviewable issues. Each maps to a requirement in [P
 
 | ID | Title | Acceptance criteria | Depends | Size | Owner | GH | Status |
 |---|---|---|---|---|---|---|---|
-| F1 | Repository scaffold | Monorepo layout from ENGINEERING.md; TypeScript strict; Node 24; one command to install | — | S | Sibusiso (AI-assisted) | [#7](https://github.com/LethaboMH14/SignOff/issues/7) | Review |
-| F2 | CI pipeline | Type check, lint, unit tests and build run on every pull request and must pass to merge | F1 | S | Sibusiso (AI-assisted) | [#8](https://github.com/LethaboMH14/SignOff/issues/8) | Review |
-| F3 | Secret protection | GitHub secret scanning on; pre-commit check using tested XRPL seed patterns, with a test for true and false positives; `.env` ignored | F1, F2 | S | Sibusiso (AI-assisted) | [#9](https://github.com/LethaboMH14/SignOff/issues/9) | Review |
-| F4 | Shared schemas | Zod schemas for invoice extraction, payment proposal, Warden decision, obligation; amounts as integer minor units | F1 | S | Sibusiso (AI-assisted) | [#10](https://github.com/LethaboMH14/SignOff/issues/10) | Review |
-| F5 | Log redaction | Logger that removes seeds, keys, bank details and personal data; test proves it | F3, F4 | S | Sibusiso (AI-assisted) | [#11](https://github.com/LethaboMH14/SignOff/issues/11) | Review |
+| F1 | Repository scaffold | Monorepo layout from ENGINEERING.md; TypeScript strict; Node 24; one command to install | — | S | Sibusiso (AI-assisted) | [#7](https://github.com/LethaboMH14/SignOff/issues/7) | Done (merged in #12) |
+| F2 | CI pipeline | Type check, lint, unit tests and build run on every pull request and must pass to merge | F1 | S | Sibusiso (AI-assisted) | [#8](https://github.com/LethaboMH14/SignOff/issues/8) | Merged (#13); owner settings open (S-005) |
+| F3 | Secret protection | GitHub secret scanning on; pre-commit check using tested XRPL seed patterns, with a test for true and false positives; `.env` ignored | F1, F2 | S | Sibusiso (AI-assisted) | [#9](https://github.com/LethaboMH14/SignOff/issues/9) | Merged (#14); owner settings open (S-005) |
+| F4 | Shared schemas | Zod schemas for invoice extraction, payment proposal, Warden decision, obligation; amounts as integer minor units | F1 | S | Sibusiso (AI-assisted) | [#10](https://github.com/LethaboMH14/SignOff/issues/10) | Done (merged in #15) |
+| F5 | Log redaction | Logger that removes seeds, keys, bank details and personal data; test proves it | F3, F4 | S | Sibusiso (AI-assisted) | [#11](https://github.com/LethaboMH14/SignOff/issues/11) | Done (merged in #16) |
 
 ## Gate A: ledger proof
 
@@ -54,8 +56,8 @@ The build sliced into small, reviewable issues. Each maps to a requirement in [P
 | C1 | Invoice intake | Watched folder or inbox triggers the workflow; file hashed; text PDF only; others held | F4 | S | | [#37](https://github.com/LethaboMH14/SignOff/issues/37) | Review (T-079) |
 | C2 | Extraction with source quotes | Strict structured output; each field quoted; code verifies quote and re-parses amount; abstains when unclear | C1 | M | | [#38](https://github.com/LethaboMH14/SignOff/issues/38) | Review (T-081) |
 | C3 | Prompt-injection handling | Invoice text passed as data; hidden-instruction fixtures cause holds, never actions | C2 | S | | [#39](https://github.com/LethaboMH14/SignOff/issues/39) | Review (T-080) |
-| C4 | Labelled test set | At least 30 invoices: clean, messy, injected, missing fields, forged payee; labels committed | C2 | M | | [#40](https://github.com/LethaboMH14/SignOff/issues/40) | Review (T-078) |
-| C5 | Evaluation and baseline | False approvals, false holds, field accuracy, sample size; compared with a single-prompt baseline | C4 | M | | [#41](https://github.com/LethaboMH14/SignOff/issues/41) | Review (T-084; live T-088 UNVERIFIED) |
+| C4 | Labelled test set | At least 60 invoices: clean, messy, hidden-instruction injection, missing fields, forged payee, over-limit, duplicate; labels with exact source spans committed | C2 | M | | [#40](https://github.com/LethaboMH14/SignOff/issues/40) | Review (T-078) |
+| C5 | Evaluation and baseline | npm run eval (fixture mode): false approvals, false holds, field accuracy, sample size; swarm against a single-prompt baseline with bootstrap CI and Cliff's delta; see docs/EVALUATION.md | C4 | M | | [#41](https://github.com/LethaboMH14/SignOff/issues/41) | Review (T-084; live T-088 UNVERIFIED) |
 | C6 | Decision log and audit export | Every state transition with reason, actor, policy version, evidence; export per payment | B1 | M | | [#42](https://github.com/LethaboMH14/SignOff/issues/42) | Review (T-083) |
 | C7 | Workflow wiring | Fixed sequence: intake, extract, match, Warden, submit, reconcile; at most three model calls | C2, B4 | M | | [#43](https://github.com/LethaboMH14/SignOff/issues/43) | Review (T-082; live T-087 UNVERIFIED) |
 
@@ -63,24 +65,25 @@ The build sliced into small, reviewable issues. Each maps to a requirement in [P
 
 | ID | Title | Acceptance criteria | Depends | Size | Owner | GH | Status |
 |---|---|---|---|---|---|---|---|
-| D0 | Mockups | Payment desk, held invoice, mobile limits, receipt; reviewed before console code | — | M | | | Todo |
-| D1 | Payment desk | List with states and plain reasons; never "paid" before validation | D0, C6 | M | | | Todo |
-| D2 | Held-invoice view | Evidence, failed rule, next action | D1 | S | | | Todo |
-| D3 | Limits and pause | Change limits (increase needs second approver), pause, resume with authentication | D1, B5, B7 | S | | | Todo |
-| D4 | Receipt | Explorer link, delivered amount, simulated rand payout labelled | D1 | S | | | Todo |
-| D5 | Mobile and accessibility | Works at phone width; labels not colour alone; keyboard usable | D1 | S | | | Todo |
-| D6 | Deployment and health checks | Console, agent and Warden deployed separately; health endpoints; synthetic Testnet check | B1, D1 | M | | | Todo |
-| D1W | Warden operator read routes (proposed) | Read-only views for the console: overview, proposals (holds and payments) and suppliers; operator role only; allowlisted fields; reads write nothing | B1, C6 | M | Sibusiso (AI-assisted) | | Doing (ID proposed, for review) |
+| D0 | Mockups | Payment desk, held invoice, mobile limits, receipt; reviewed before console code | — | M | | | Approved for build; the owner will rework them (no test) |
+| D1 | Payment desk | List with states and plain reasons; never "paid" before validation | D0, C6 | M | Sibusiso (AI-assisted) | | Review (T-098, T-099; final phone check UNVERIFIED) |
+| D2 | Held-invoice view | Evidence, failed rule, next action | D1 | S | Sibusiso (AI-assisted) | | Review (T-102; browser check not run, T-103) |
+| D3 | Limits and pause | Change limits (increase needs second approver), pause, resume with authentication | D1, B5, B7, D3W | S | Sibusiso (AI-assisted) | | Review (T-104; browser check not run, T-103) |
+| D4 | Receipt | Explorer link, delivered amount, simulated rand payout labelled | D1 | S | Sibusiso (AI-assisted) | | Review (T-105; live Testnet receipt not run, T-106) |
+| D5 | Mobile and accessibility | Works at phone width; labels not colour alone; keyboard usable | D1 | S | Sibusiso (AI-assisted) | | Review (T-107; browser layout check UNVERIFIED, T-108) |
+| D6 | Deployment and health checks | Console, agent and Warden deployed separately; health endpoints; synthetic Testnet check | B1, D1 | M | Sibusiso (AI-assisted) | | Review (T-111; live check partly run, T-112; deployment not performed, T-114) |
+| D1W | Warden operator read routes (proposed) | Read-only views for the console: overview, proposals (holds and payments) and suppliers; operator role only; allowlisted fields; reads write nothing | B1, C6 | M | Sibusiso (AI-assisted) | | Review (T-121; ID proposed, for review) |
 | D3W | Second operator for limit increases (proposed) | A raise becomes a pending request; a second, different operator approves it; decreases apply at once; a pending request expires after 24 hours (proposed rule) | B5, D1W | S | Sibusiso (AI-assisted) | | Review (T-095; ID proposed, for review) |
-| D7 | Motion: opening animation and transitions (proposed) | Opening sequence at most 1.2 s; transitions 180 to 250 ms; reduced motion turns all motion off; the Paid tick appears only after validation | D1 | S | Sibusiso (AI-assisted) | | Todo (ID proposed, for review) |
+| D7 | Motion: opening animation and transitions (proposed) | Opening sequence at most 1.2 s; transitions 180 to 250 ms; reduced motion turns all motion off; the Paid tick appears only after validation | D1 | S | Sibusiso (AI-assisted) | | Review (T-109; runtime checks UNVERIFIED, T-110) |
+| D8 | Live agent map in the console (proposed) | Animated map of invoices moving between agents, from the agent transition log; read-only; SIMULATED replay of the labelled set; Paid only when reconciled | D1 | M | Sibusiso (AI-assisted) | | Review (ID proposed, for review) |
 
 ## Gate E: credible pitch
 
 | ID | Title | Acceptance criteria | Depends | Size | Owner | GH | Status |
 |---|---|---|---|---|---|---|---|
 | E1 | Customer conversation | One consenting finance lead; notes with consent recorded | — | M | | | Todo |
-| E2 | README status complete | Every row has its real state and evidence link | A–D | S | | | Todo |
-| E3 | Judge check script | One command reproduces the payment and attack suite results | A, B | M | | | Todo |
+| E2 | README status complete | Every row has its real state and evidence link | A–D | S | Sibusiso (AI-assisted) | | Review (T-119) |
+| E3 | Judge check script | One command reproduces the payment and attack suite results | A, B | M | Sibusiso (AI-assisted) | | Review (T-115, T-116; live results and Testnet payments UNVERIFIED here) |
 | E4 | Demo video | Under three minutes; real, simulated and unverified labelled; backup recorded | D | M | | | Todo |
 | E5 | Submission | Title, public repo, video on BuilderBase before Thursday night | E4 | S | | | Todo |
 
@@ -92,4 +95,4 @@ The build sliced into small, reviewable issues. Each maps to a requirement in [P
 | S2 | Status lights | Green only on validated payment | S1 | S | | | Todo |
 | S3 | Armed-mode heartbeat watchdog | Server-side fail closed on lost heartbeat; tested | S1 | M | Sibusiso (AI-assisted) | | Review (T-101; server side only; Arduino link UNVERIFIED) |
 | S4 | RFID tag presented | Tag event recorded; receiving approval still required | S1 | S | | | Todo |
-| S5 | XRPL credential on suppliers | Issue, accept, check, delete on Testnet ([ADR 0004](decisions/0004-workshop-adjustments.md)) | B3 | M | | | Todo |
+| S5 | XRPL credential on suppliers | Issue, accept, check, delete on Testnet ([ADR 0004](decisions/0004-workshop-adjustments.md)) | B3 | M | Sibusiso (AI-assisted) | | Review (T-117, T-118: lifecycle live on Testnet between two test accounts; not yet on the provisioned supplier accounts) |

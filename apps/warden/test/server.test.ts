@@ -2,6 +2,8 @@ import { createPublicKey, generateKeyPairSync, randomBytes, sign } from 'node:cr
 import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 
+import { WARDEN_VERSION } from '../src/version.js';
+
 import { afterEach, describe, expect, it } from 'vitest';
 import { decode, Wallet, type SubmittableTransaction } from 'xrpl';
 
@@ -158,14 +160,24 @@ describe('the Warden over HTTP', () => {
     const h = await harness();
     const response = await fetch(new URL('/v1/health', h.url));
     expect(response.status).toBe(200);
-    expect(await response.json()).toEqual({ paused: false, policyVersion: h.config.policyVersion });
+    expect(await response.json()).toEqual({
+      paused: false,
+      policyVersion: h.config.policyVersion,
+      version: WARDEN_VERSION,
+      ready: true,
+    });
   });
 
   it('pauses and resumes through its own operator route, with no console or other process running', async () => {
     const h = await harness();
     await activeSupplierOverHttp(h, generateSupplierKey().publicKey);
     expect(await h.operatorA.setPaused(true)).toEqual({ paused: true });
-    expect(await h.agent.health()).toEqual({ paused: true, policyVersion: h.config.policyVersion });
+    expect(await h.agent.health()).toEqual({
+      paused: true,
+      policyVersion: h.config.policyVersion,
+      version: WARDEN_VERSION,
+      ready: true,
+    });
     const held = await h.agent.propose(
       proposalFor(newAttemptId(), STANDARD, h.config, h.clock.now),
     );
@@ -235,7 +247,7 @@ describe('the Warden over HTTP', () => {
     ).toBe(404);
   });
 
-  it('reports a co-signature for an unknown attempt as 404, and one signed by the agent alone as 422', async () => {
+  it('reports an unknown attempt as 404, and an unauthorized signer as 422', async () => {
     const h = await harness();
     await activeSupplierOverHttp(h, generateSupplierKey().publicKey);
     await expect(h.agent.coSign(newAttemptId(), 'AABB')).rejects.toMatchObject({ status: 404 });
@@ -243,8 +255,13 @@ describe('the Warden over HTTP', () => {
     const proposed = await h.agent.propose(proposalFor(attemptId, STANDARD, h.config, h.clock.now));
     const fields: Record<string, unknown> = { ...decode(proposed.toCoSign ?? '') };
     delete fields['Signers'];
-    const agentOnly = signAsSigner(h.base.agentWallet, fields as unknown as SubmittableTransaction);
-    await expect(h.agent.coSign(attemptId, agentOnly)).rejects.toMatchObject({ status: 422 });
+    const unexpectedSigner = signAsSigner(
+      Wallet.generate(),
+      fields as unknown as SubmittableTransaction,
+    );
+    await expect(h.agent.coSign(attemptId, unexpectedSigner)).rejects.toMatchObject({
+      status: 422,
+    });
   });
 
   it('turns an unexpected failure into a 500 that reveals nothing, and reports it to the operator', async () => {
@@ -382,16 +399,18 @@ describe('the caller side of the Warden', () => {
     expect(key.privateKey.asymmetricKeyType).toBe('ed25519');
   });
 
-  it('combines the Warden signature with the agent signature into one two-signer transaction', async () => {
+  it('returns no Warden signature before final authorization; agent signs only its own half', async () => {
     const h = await harness();
     await activeSupplierOverHttp(h, generateSupplierKey().publicKey);
     const proposed = await h.agent.propose(
       proposalFor(newAttemptId(), STANDARD, h.config, h.clock.now),
     );
-    const combined = coSignAsAgent(h.base.agentWallet, proposed.toCoSign ?? '');
-    const signers = (decode(combined) as { Signers?: unknown[] }).Signers ?? [];
-    expect(signers).toHaveLength(2);
-    expect(hashOfSigned(combined)).toMatch(/^[0-9A-F]{64}$/);
+    const prepared = decode(proposed.toCoSign ?? '') as { Signers?: unknown[] };
+    expect(prepared.Signers).toBeUndefined();
+    const agentOnly = coSignAsAgent(h.base.agentWallet, proposed.toCoSign ?? '');
+    const signers = (decode(agentOnly) as { Signers?: unknown[] }).Signers ?? [];
+    expect(signers).toHaveLength(1);
+    expect(hashOfSigned(agentOnly)).toMatch(/^[0-9A-F]{64}$/);
   });
 
   it('refuses to co-sign something that is not a transaction', () => {

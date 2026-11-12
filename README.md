@@ -4,8 +4,8 @@
 
 SignOff reads supplier invoices, checks them against purchasing records, and pays the routine ones without a human click. Every payment needs two signatures. The agent holds one. The second belongs to an independent rulebook service, called Warden, that the agent cannot read, edit or talk its way past. If a payment breaks a rule, Warden withholds its signature, and the XRP Ledger will not accept a payment with only one.
 
-> **Status, 10 November 2026: Gate 0 foundation is merged, and its phase close is in review. Gate A is built and tested on the XRP Ledger Testnet and is in review. The RLUSD payment has not run yet.**
-> The repository holds the Gate 0 foundation and the Gate A ledger layer, which runs on the XRP Ledger Testnet only. Payments so far use a test-issued token, not RLUSD. No customer has been interviewed, no partner is integrated, and no mockups exist. See [Status of every claim](#status-of-every-claim) below.
+> **Status, 11 November 2026: Gate 0 and the Gate A ledger layer are merged. The Warden (Gate B), the invoice agent (Gate C) and the operator console (Gate D) are built and tested on feature branches and are NOT merged. Live Testnet evidence uses a test-issued token, not RLUSD. The RLUSD payment (A3) is blocked until testnet RLUSD is funded, and a real agent-to-Warden-to-Testnet run has not happened.**
+> The Warden now signs only at final authorization, after rechecking pause, policy, limits, payee and the ledger, so the agent never holds a usable Warden signature ([issue #45](https://github.com/LethaboMH14/SignOff/issues/45); the live negative proof is not yet run). The agent's model evaluation is SIMULATED. The console, the judge check and a credential check are built and tested in software or on Testnet, as the table below states. Browser layout checks and a live receipt have not run, and nothing is deployed. No customer has been interviewed and no partner is integrated. The screen mockups were approved for build and will be reworked later. See [Status of every claim](#status-of-every-claim) below.
 
 Built for the [Node Engine Hackathon](https://w3node.io/node-engine) at W3Node, Cape Town, in the Agentic Finance track. Submissions close on Friday 13 November 2026 at 23:59 SAST.
 
@@ -92,22 +92,30 @@ This positioning was accepted by the team on 10 November 2026 ([ADR 0001](docs/d
 
 | Item | Planned | Live on Testnet | Simulated in demo | Validated with customers |
 |---|---|---|---|---|
-| Agent run on an invoice file | Yes | Not yet: a live model run and the Warden integration are not run in the build ([TEST-LOG T-087, T-088](docs/logs/TEST-LOG.md)) | Built and tested in software: intake, source-quoted extraction, injection screen, matching, decision log and audit export ([TEST-LOG T-076 to T-086](docs/logs/TEST-LOG.md)). Simulated evaluation on 30 fictional invoices: the pipeline decides 30 of 30, with no false approvals; the stand-ins are not a model measurement ([simulated report](apps/agent/results/simulated-eval.md)) | |
-| Two-signature RLUSD payment | Yes | Not yet: blocked until testnet RLUSD is funded. The same two-signature path has run with a test-issued token ([TEST-LOG T-053](docs/logs/TEST-LOG.md)) | | |
-| Rejection of a single-key payment | Yes | Live on Testnet: agent alone and Warden alone refused with tefBAD_QUORUM ([TEST-LOG T-054](docs/logs/TEST-LOG.md)) | | |
-| Warden rules, holds and operator limits | Yes | Live on Testnet with a test-issued token, not RLUSD: refusals and holds for duplicates, payee, receipt and limit, concurrency, pause, lowered limit and a non-payment co-signature ([TEST-LOG T-071](docs/logs/TEST-LOG.md)); frozen line held, then paid ([T-072](docs/logs/TEST-LOG.md)) | | |
-| Supplier enrolment and signed payout record | Yes | Enrolment and two-person approval recorded by the Warden on Testnet ([TEST-LOG T-071](docs/logs/TEST-LOG.md)); signed payout change tested in software only ([T-069](docs/logs/TEST-LOG.md)) | Identity check simulated | |
-| Invoices, suppliers and buyers | | | Fictional | |
-| Rand conversion and payout to a supplier's bank | | | Yes | |
-| Bank account verification (AVS) | | | Yes | |
-| Accounting system links (Xero, Sage) | | | Yes | |
-| Signer list: Agent + Warden the only accepted path; each key alone rejected | Yes (ADR 0004 test plan) | Live on Testnet: quorum 2, master key disabled, read back ([TEST-LOG T-052](docs/logs/TEST-LOG.md)); single-key refusals ([TEST-LOG T-054](docs/logs/TEST-LOG.md)) | | |
-| Arduino Warden Switch: one-way pause, Warden-confirmed status; optional RFID | Stretch ([ADR 0005](docs/decisions/0005-arduino-operator-hardware.md)); [judge runbook](docs/ARDUINO-JUDGE-DEMO-RUNBOOK.md) | Not yet | | |
-| Permission delegation | Out of the hackathon build; status on our Testnet unverified | Not checked | | |
-| XRPL credential on verified supplier accounts (attestation only) | Stretch (ADR 0004 test plan) | Not yet | | |
-| Trust line limit as one exposure layer (not a loss cap) | Yes (ADR 0004 test plan) | Not yet | | |
-| Customer problem, pricing, willingness to pay | | | | No |
-| Savings or fraud prevented | | | | None claimed |
+| Agent run on an invoice file | Yes | Not yet: no end-to-end run against a running Warden on Testnet is recorded ([TEST-LOG T-087](docs/logs/TEST-LOG.md), UNVERIFIED) | Built and tested in software: intake, source-quoted extraction, injection screen, matching, decision log and audit export ([TEST-LOG T-076 to T-086](docs/logs/TEST-LOG.md)). Simulated evaluation on 30 fictional invoices: the pipeline decides 30 of 30 with no false approvals. SIMULATED stand-in, not a model measurement ([simulated report](apps/agent/results/simulated-eval.md); reproduced by [the judge check](docs/logs/TEST-LOG.md), T-116) | Not claimed |
+| Live model runs on the labelled set (Groq, Gemini, OpenRouter) | Yes | Not a Testnet step. Measured once per provider on branch feat/C5-live-providers, not merged here. The pipeline model call failed on 21 (Groq), 20 (Gemini) and 22 (OpenRouter) of 30 cases, so its holds are mostly failed calls. UNVERIFIED on this branch | Not applicable | Not claimed |
+| Two-signature RLUSD payment | Yes | Not yet: blocked until testnet RLUSD is funded (A3). The same two-signature path has run with a test-issued token ([TEST-LOG T-053](docs/logs/TEST-LOG.md)) | Not applicable | Not claimed |
+| Rejection of a single-key payment | Yes | Live on Testnet: the agent alone and the Warden alone were refused with tefBAD_QUORUM ([TEST-LOG T-054](docs/logs/TEST-LOG.md)) | Not applicable | Not claimed |
+| Warden rules, holds and operator limits | Yes | Live on Testnet with a test-issued token, not RLUSD: refusals and holds for duplicates, payee, receipt, limit, concurrency, pause, a lowered limit and a non-payment co-signature ([TEST-LOG T-071](docs/logs/TEST-LOG.md)); a frozen line held, then paid ([T-072](docs/logs/TEST-LOG.md)) | Not applicable | Not claimed |
+| Supplier enrolment and signed payout record | Yes | Enrolment and two-person approval recorded by the Warden on Testnet ([TEST-LOG T-071](docs/logs/TEST-LOG.md)); signed payout change tested in software only ([T-069](docs/logs/TEST-LOG.md)) | Identity check simulated: a fixed allow-list stands in for bank account verification and registry lookup, and every result says so ([identity.ts](apps/warden/src/identity.ts)) | Not claimed |
+| Invoices, suppliers and buyers | Yes, fictional test data | Not claimed | Fictional only: the labelled set of 30 invoices ([fixtures](apps/agent/fixtures/labelled)) | Not claimed |
+| Rand conversion and payout to a supplier's bank | Simulated only (D4) | Not claimed | Yes, labelled SIMULATED: the receipt shows a rand figure at a placeholder rate ([TEST-LOG T-105](docs/logs/TEST-LOG.md)) | Not claimed |
+| Bank account verification (AVS) | Not built as a separate check | Not claimed | Not built. The simulated identity check above stands in for it | Not claimed |
+| Accounting system links (Xero, Sage) | Not claimed | Not claimed | Not built: no code in the repository | Not claimed |
+| Signer list: Agent + Warden the only accepted path; each key alone rejected | Yes (ADR 0004 test plan) | Live on Testnet: quorum 2, master key disabled, read back ([TEST-LOG T-052](docs/logs/TEST-LOG.md)); single-key refusals ([TEST-LOG T-054](docs/logs/TEST-LOG.md)) | Not applicable | Not claimed |
+| Arduino Warden Switch: one-way pause, Warden-confirmed status; optional RFID | Stretch ([ADR 0005](docs/decisions/0005-arduino-operator-hardware.md)); [judge runbook](docs/ARDUINO-JUDGE-DEMO-RUNBOOK.md) | Not built | Not built: stretch items S1 to S4 are Todo ([ISSUES](docs/ISSUES.md)) | Not claimed |
+| Permission delegation | Out of the hackathon build | Not checked (UNVERIFIED) | Not built | Not claimed |
+| XRPL credential on verified supplier accounts (attestation only) | Stretch ([ADR 0004 test plan](docs/decisions/0004-workshop-adjustments.md)) | Lifecycle live on Testnet between two test accounts: issue, accept, check and delete all validated ([TEST-LOG T-118](docs/logs/TEST-LOG.md)). Not yet on the provisioned supplier accounts | Not applicable | Not claimed |
+| Trust line limit as one exposure layer (not a loss cap) | Yes (ADR 0004 test plan) | Not yet | Not applicable | Not claimed |
+| Operator console: payment desk, held invoice and receipt (D0 to D2, D4) | Yes. Mockups approved for build and to be reworked later ([ISSUES](docs/ISSUES.md)) | Receipt re-reads the Testnet transaction in tests; a live receipt has not run ([TEST-LOG T-106](docs/logs/TEST-LOG.md), UNVERIFIED) | Built and tested in software. The desk never shows Paid before ledger validation and reconciliation; the receipt shows the explorer link and the delivered amount ([TEST-LOG T-098 to T-105](docs/logs/TEST-LOG.md)) | Not claimed |
+| Limits, second approver for increases, and pause (D3, D3W) | Yes. A second approver for increases is a proposed rule ([ISSUES](docs/ISSUES.md)) | Not run on Testnet | Built and tested in software ([TEST-LOG T-095, T-104](docs/logs/TEST-LOG.md)); the browser check has not run ([T-103](docs/logs/TEST-LOG.md), UNVERIFIED) | Not claimed |
+| Mobile layout and accessibility (D5) | Yes | Not applicable | Built; keyboard and accessibility scan in software ([TEST-LOG T-107](docs/logs/TEST-LOG.md)); phone-width browser check UNVERIFIED ([T-108](docs/logs/TEST-LOG.md)) | Not claimed |
+| Motion: opening sequence and transitions (D7, proposed) | Yes, proposed | Not applicable | Built; reduced motion turns it off, and the Paid tick appears only after validation ([TEST-LOG T-109](docs/logs/TEST-LOG.md)); runtime checks UNVERIFIED ([T-110](docs/logs/TEST-LOG.md)) | Not claimed |
+| Deployment and health checks (D6) | Yes: Warden and console on separate hosts; the host and budget await the owner's confirmation ([D-085](docs/logs/DECISION-JOURNAL.md)) | Synthetic check read the validated ledger; the account and Warden checks were not set up ([TEST-LOG T-112](docs/logs/TEST-LOG.md)). Deployment not performed ([T-114](docs/logs/TEST-LOG.md), UNVERIFIED) | Not applicable | Not claimed |
+| Judge check: one command (E3) | Yes ([ISSUES](docs/ISSUES.md)) | Testnet payments UNVERIFIED: the offline command submits none ([TEST-LOG T-116](docs/logs/TEST-LOG.md)) | `npm run judge:check`: payment and injection tests pass, and the simulated labelled set re-runs and matches the committed result, SIMULATED ([T-116](docs/logs/TEST-LOG.md)). Live results UNVERIFIED on this branch | Not claimed |
+| Armed-mode heartbeat watchdog (S3, stretch) | Stretch | Not built on this branch | Built and tested on branch feat/S3-watchdog (T-101 there), not merged | Not claimed |
+| Customer problem, pricing, willingness to pay | Not applicable | Not applicable | Not applicable | Not validated: no customer has been interviewed ([ISSUES E1](docs/ISSUES.md)) |
+| Savings or fraud prevented | Not applicable | Not applicable | Not applicable | None claimed |
 
 This table will be updated with transaction hashes as items go live.
 
@@ -117,8 +125,8 @@ Judges score three areas, taken from the team's BuilderBase dashboard on 9 Novem
 
 | Criterion | Weight | Where the build stands today |
 |---|---|---|
-| Product design | 33% | Nothing to score: no screens or mockups |
-| Technical UX | 34% | Nothing to score: no code, no deployment |
+| Product design | 33% | Mockups approved for build and to be reworked later. The console screens are built and tested in software; the phone layout and motion are not checked in a browser (UNVERIFIED) |
+| Technical UX | 34% | Ledger, Warden, agent and console code exists and is tested in software. No real model-to-Warden-to-Testnet trace, RLUSD proof or deployed console yet ([TEST-LOG T-114](docs/logs/TEST-LOG.md)); browser checks are UNVERIFIED |
 | Business/Market Fit | 33% | Narrative and evidence only, no customer validation |
 
 The track requires an autonomous transaction on XRPL Testnet or Devnet, limits enforced outside the agent's control, and a way for a human operator to change them. See [docs/HACKATHON.md](docs/HACKATHON.md).
@@ -130,7 +138,7 @@ The track requires an autonomous transaction on XRPL Testnet or Devnet, limits e
 | [docs/RULES.md](docs/RULES.md) | **The working contract:** rules every change must meet, definition of done, phase-close checklist |
 | [docs/PRD.md](docs/PRD.md) | Product requirements: users, goals, requirements, success measures |
 | [docs/ISSUES.md](docs/ISSUES.md) | The build sliced into issues by gate |
-| [docs/logs/](docs/logs/) | Build log, decision journal, test log, security log |
+| [docs/logs/](docs/logs/) | Build log, decision journal, test log, security log, phase reports |
 | [BUILD-BRIEF.md](BUILD-BRIEF.md) | The agreed build, flow, stack and acceptance tests |
 | [docs/PROBLEM.md](docs/PROBLEM.md) | Problem statement and sourced evidence with confidence ratings |
 | [docs/SOLUTION.md](docs/SOLUTION.md) | Rules, two-signature design, simpler options considered |
@@ -170,6 +178,7 @@ Read [docs/RULES.md](docs/RULES.md) before changing anything. Work starts from a
 - **The ledger does not check payees or limits.** If Warden is compromised together with the agent key, the loss is bounded only by the spending account's actual balance. A trust line limit does not cap that loss.
 - **Upstream records can be wrong.** A compromised supplier list, purchase order or operator login defeats a perfect agent. See [docs/TRUST.md](docs/TRUST.md#threats-from-upstream-of-the-agent).
 - **A stolen operator login or reserve key is outside this design's protection.** Losing either payment key freezes the small spending balance; recovery means funding a new account.
+- **Live model runs did not measure accuracy.** Each provider ran once on the 30-case labelled set, on branch feat/C5-live-providers. The pipeline model call failed on 20 to 22 of 30 cases, so its holds are mostly failed calls. No accuracy is claimed (T-092 to T-094 on that branch).
 - Nothing here is production software. Testnet only, no real funds.
 
 ## Licence

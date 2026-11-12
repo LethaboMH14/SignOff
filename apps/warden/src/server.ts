@@ -4,6 +4,7 @@ import { z } from 'zod';
 
 import { AuthError, RequestVerifier, type Role, type SignedHeaders } from './auth.js';
 import { WardenError, WardenService } from './service.js';
+import { WARDEN_VERSION } from './version.js';
 
 /**
  * The HTTP surface. Agent and operator routes need a signed request; the supplier change route is signed by
@@ -283,7 +284,8 @@ async function handle(
   const method = request.method ?? '';
   const path = new URL(request.url ?? '/', 'http://localhost').pathname;
   if (method === 'GET' && path === '/v1/health') {
-    send(response, 200, service.health());
+    // Readiness: the service has opened its log and journal, which is why it answers at all. It does not check the ledger; the synthetic Testnet check does that.
+    send(response, 200, { ...service.health(), version: WARDEN_VERSION, ready: true });
     return;
   }
   const matched = routeFor(service, method, path);

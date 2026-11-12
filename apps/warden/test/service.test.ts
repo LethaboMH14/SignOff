@@ -4,6 +4,7 @@ import { decode, Wallet, type SubmittableTransaction } from 'xrpl';
 import { describe, expect, it } from 'vitest';
 
 import {
+  combineSigned,
   hashOfSigned,
   LSF_DISABLE_MASTER,
   signAsSigner,
@@ -93,6 +94,61 @@ function signedChange(privateKey: KeyObject, newAddress: string, nonce: string, 
   );
   return { request, signature };
 }
+
+describe('P0 final Warden authorization boundary', () => {
+  it('never releases the Warden signature on an allowed proposal, so direct agent broadcast fails', async () => {
+    const base = await provisionedBase();
+    const config = configFor(base);
+    const clock = newClock();
+    const service = await openService(base, config, evidenceFrom([STANDARD]), { clock });
+    await activeSupplier(service, base, generateSupplierKey().publicKey);
+    const attemptId = newAttemptId();
+    const proposed = await service.propose(proposalFor(attemptId, STANDARD, config, clock.now));
+    expect(proposed.decision.decision).toBe('ALLOW');
+    const unsigned = decode(proposed.toCoSign ?? '') as { Signers?: unknown[] };
+    expect(unsigned.Signers).toBeUndefined();
+    const agentOnly = coSignAsAgent(base.agentWallet, proposed.toCoSign ?? '');
+    const result = await base.port.submit(agentOnly);
+    expect(result.engineResult).toBe('tefBAD_QUORUM');
+    await service.setPaused(true, OPERATOR_A);
+    await expect(service.coSign(attemptId, agentOnly)).rejects.toThrow('paused');
+    expect(service.attempt(attemptId)?.status).toBe('awaiting');
+    expect(balanceOf(base, base.supplierAccount.address)).not.toBe('10');
+  });
+
+  it('refuses to finalize a payment if the policy changed after preparation', async () => {
+    const base = await provisionedBase();
+    const config = configFor(base);
+    const clock = newClock();
+    const service = await openService(base, config, evidenceFrom([STANDARD]), { clock });
+    await activeSupplier(service, base, generateSupplierKey().publicKey);
+    const attemptId = newAttemptId();
+    const proposed = await service.propose(proposalFor(attemptId, STANDARD, config, clock.now));
+    const agentOnly = coSignAsAgent(base.agentWallet, proposed.toCoSign ?? '');
+    await service.setLimits({ perPaymentMinor: 500 }, OPERATOR_A);
+    await expect(service.coSign(attemptId, agentOnly)).rejects.toThrow('policy changed');
+    expect(balanceOf(base, base.supplierAccount.address)).not.toBe('10');
+  });
+
+  it('rechecks a changed ledger freeze state immediately before Warden signs', async () => {
+    const base = await provisionedBase();
+    const config = configFor(base);
+    const clock = newClock();
+    const service = await openService(base, config, evidenceFrom([STANDARD]), { clock });
+    await activeSupplier(service, base, generateSupplierKey().publicKey);
+    const attemptId = newAttemptId();
+    const proposed = await service.propose(proposalFor(attemptId, STANDARD, config, clock.now));
+    const agentOnly = coSignAsAgent(base.agentWallet, proposed.toCoSign ?? '');
+    base.ledger.setLineFrozen(
+      base.spending.address,
+      TEST_TOKEN_CURRENCY,
+      base.issuer.address,
+      true,
+    );
+    await expect(service.coSign(attemptId, agentOnly)).rejects.toThrow('ledger no longer permits');
+    expect(balanceOf(base, base.supplierAccount.address)).not.toBe('10');
+  });
+});
 
 describe('B1 proposals, co-signature and submission', () => {
   it('pays a proposal that passes every rule: the Warden signs, the agent co-signs, the Warden submits', async () => {
@@ -300,6 +356,33 @@ describe('B1 proposals, co-signature and submission', () => {
 });
 
 describe('B2 identity, reservation and duplicates', () => {
+  it('serializes different payables through one spending account until the prior transfer settles', async () => {
+    const base = await provisionedBase();
+    const config = configFor(base);
+    const clock = newClock();
+    const second = entry({ invoiceNumber: 'INV-B2-002', fingerprint: sha256Hex('invoice-B2-002') });
+    const service = await openService(base, config, evidenceFrom([STANDARD, second]), { clock });
+    await activeSupplier(service, base, generateSupplierKey().publicKey);
+    const firstId = newAttemptId();
+    const first = await service.propose(proposalFor(firstId, STANDARD, config, clock.now));
+    expect(first.decision.decision).toBe('ALLOW');
+
+    const competing = await service.propose(proposalFor(newAttemptId(), second, config, clock.now));
+    expect(competing.decision.decision).toBe('HOLD');
+    expect(competing.decision.reasons[0]?.code).toBe('ACCOUNT_BUSY');
+    expect(competing.toCoSign).toBeNull();
+
+    const settled = await service.coSign(
+      firstId,
+      coSignAsAgent(base.agentWallet, first.toCoSign ?? ''),
+    );
+    expect(settled.outcome).toBe('paid');
+    const afterSettlement = await service.propose(
+      proposalFor(newAttemptId(), second, config, clock.now),
+    );
+    expect(afterSettlement.decision.decision).toBe('ALLOW');
+  });
+
   it('lets exactly one of several concurrent proposals for the same payable proceed', async () => {
     const base = await provisionedBase();
     const config = configFor(base);
@@ -431,6 +514,35 @@ describe('B4 three-way match', () => {
 });
 
 describe('B5 limits', () => {
+  it('a single operator cannot raise any limit: the raise waits and the current policy is kept', async () => {
+    const base = await provisionedBase();
+    const config = configFor(base);
+    const clock = newClock();
+    const service = await openService(base, config, evidenceFrom([]), { clock });
+    const lowered = await service.setLimits({ perPaymentMinor: 500 }, OPERATOR_A);
+    expect(lowered.applied).toBe(true);
+    const version = service.currentLimits().policyVersion;
+    expect(service.currentLimits().perPaymentMinor).toBe(500);
+
+    for (const patch of [
+      { perPaymentMinor: 501 },
+      { supplierDailyMinor: config.initialLimits.supplierDailyMinor + 1 },
+      { dailyTotalMinor: config.initialLimits.dailyTotalMinor + 1 },
+    ]) {
+      const raised = await service.setLimits(patch, OPERATOR_A);
+      expect(raised.applied).toBe(false);
+      if (!raised.applied) {
+        await expect(service.approveLimits(raised.requestId, OPERATOR_A)).rejects.toThrow(
+          'cannot also approve',
+        );
+        // A lowering closes the waiting raise, so the next loop starts clean.
+        await service.setLimits({ perPaymentMinor: 500 }, OPERATOR_A);
+      }
+      expect(service.currentLimits().perPaymentMinor).toBe(500);
+    }
+    expect(version).toBeDefined();
+  });
+
   it('holds a payment over the per-payment limit', async () => {
     const base = await provisionedBase();
     const config = configFor(base, {
@@ -841,16 +953,21 @@ describe('the event log and recovery', () => {
     await activeSupplier(first, base, supplier.publicKey);
     const attemptId = newAttemptId();
     const reply = await first.propose(proposalFor(attemptId, STANDARD, config, clock.now));
+    // Simulate a crash AFTER the Warden's last authorization, when both valid signatures
+    // exist in its private submit journal, but BEFORE the caller receives settlement.
     const agentBlob = coSignAsAgent(base.agentWallet, reply.toCoSign ?? '');
+    const unsigned = decode(reply.toCoSign ?? '') as unknown as SubmittableTransaction;
+    const wardenBlob = signAsSigner(base.wardenWallet, unsigned);
+    const finalBlob = combineSigned([agentBlob, wardenBlob]);
     await log.append({
       type: 'attempt.submitting',
       at: clock.now.toISOString(),
       attemptId,
-      finalBlob: agentBlob,
-      hash: hashOfSigned(agentBlob),
+      finalBlob,
+      hash: hashOfSigned(finalBlob),
     });
     expect(first.attempt(attemptId)?.status).toBe('awaiting');
-    await base.port.submit(agentBlob);
+    await base.port.submit(finalBlob);
     const restarted = await openService(base, config, evidenceFrom([STANDARD]), { clock, log });
     await restarted.recover();
     expect(restarted.attempt(attemptId)?.status).toBe('paid');

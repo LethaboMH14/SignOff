@@ -31,7 +31,7 @@ import type { State } from './states.js';
 
 export const WORKFLOW_VERSION = 'workflow-v1';
 
-/** Signs the Warden's transaction with the agent's key and returns the combined blob. Throws when signing fails. */
+/** Signs the prepared unsigned transaction with the agent key only. Warden adds the final signature later. */
 export interface AgentSigner {
   readonly coSign: (toCoSign: string) => string;
 }
@@ -48,6 +48,11 @@ export interface PipelineDeps {
   /** Null for a run that stops at eligibility, which is how the evaluation runs. */
   readonly warden: WardenPort | null;
   readonly signer: AgentSigner | null;
+  /**
+   * Evaluation only: obligations that an earlier case in the same run has already cleared for payment. The agent
+   * itself never sets it, so production behaviour is unchanged when it is absent.
+   */
+  readonly alreadyClearedElsewhere?: (obligationKey: string) => boolean;
 }
 
 export interface RunResult {
@@ -250,7 +255,8 @@ export async function processInvoice(
     fingerprint: fileSha256,
     evidence: deps.evidence,
     suppliers: deps.suppliers,
-    alreadyPaid: (key) => deps.log.blocksPayment(key),
+    alreadyPaid: (key) =>
+      deps.log.blocksPayment(key) || (deps.alreadyClearedElsewhere?.(key) ?? false),
   });
   run.recordSha256s = [...match.recordSha256s];
   run.obligationKey = match.obligationKey;
@@ -283,7 +289,7 @@ interface Payable {
   readonly fileSha256: string;
 }
 
-/** Steps 6 to 9: propose to the Warden, co-sign what it returns, submit, and reconcile the outcome. */
+/** Steps 6 to 9: get unsigned Warden terms, agent-sign, request final Warden authorization, reconcile. */
 async function submit(
   payable: Payable,
   deps: PipelineDeps,
@@ -364,7 +370,7 @@ async function submit(
     return finish();
   }
 
-  // 7. Sign. The agent co-signs the exact transaction the Warden built. A signing failure leaves the Warden's attempt
+  // 7. Sign. The agent signs only its own half of Warden's unsigned transaction. A signing failure leaves Warden's attempt
   // open, so it goes to reconciliation rather than being retried.
   let blob: string;
   try {

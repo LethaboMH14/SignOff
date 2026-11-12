@@ -3,13 +3,15 @@
 // its allow-list, and the registry, the Warden's files and their lock live outside the repository. Output holds
 // decisions, result codes, counts and transaction hashes only: no addresses and no seeds.
 //
-// Usage: npm run testnet:gate-b -- <prepare|health|b1|b8>
+// Usage: npm run testnet:gate-b -- <prepare|health|b1|b8|p0-stop>
 //   prepare  writes the Warden's configuration, keys, evidence and the callers' secrets into the Warden's private
 //            directory. It refuses when that directory already has an event log, so a run always starts fresh.
 //   health   reads the Warden's health route.
 //   b1       the payment controls (B1 to B7) against the Warden process already running (npm run warden:serve).
 //   b8       the frozen trust line: the issuer freezes the spending line, the Warden holds, the issuer unfreezes
 //            the line, and the Warden pays.
+//   p0-stop  fresh-directory Testnet regression: an Agent-only blob is rejected by ledger quorum; after
+//            operator pause the Warden refuses to finalize the captured proposal. Never pays.
 //
 // The Warden is a separate process. This command talks to it over HTTP, as the agent and the operators do, and
 // it only ever holds the callers' own secrets. The test-issued token (TST) stands in for RLUSD, which is unfunded
@@ -97,6 +99,7 @@ const INVOICES: readonly Invoice[] = [
   { label: 'GB-B7-001', amountMinor: 1000, otherPayee: false, receipt: true },
   { label: 'GB-B7-002', amountMinor: 1000, otherPayee: false, receipt: true },
   { label: 'GB-B8-001', amountMinor: 1000, otherPayee: false, receipt: true },
+  { label: 'GB-P0-001', amountMinor: 1000, otherPayee: false, receipt: true },
 ];
 
 interface Roster {
@@ -618,13 +621,15 @@ async function runB1(rows: Row[], session: Session): Promise<void> {
     actual: reasonOf(after.decision),
     pass: reasonOf(after.decision) === 'HOLD OVER_LIMIT',
   });
-  const restored = await session.operatorA.setLimits({ perPaymentMinor: HIGH_LIMIT_MINOR });
-  version = (restored as { readonly policyVersion: string }).policyVersion;
+  // A raised limit is not applied for one operator: it waits for a second, different operator (D3W).
+  const raised = (await session.operatorA.setLimits({ perPaymentMinor: HIGH_LIMIT_MINOR })) as {
+    readonly applied?: boolean;
+  };
   record(rows, {
-    step: 'B5 limit restored for the next run',
-    expected: 'policy version changed',
-    actual: version === POLICY_VERSION ? 'unchanged' : 'changed',
-    pass: version !== POLICY_VERSION,
+    step: 'B5 a single-operator limit increase is not applied',
+    expected: 'waits for a second operator',
+    actual: raised.applied === false ? 'waits for a second operator' : 'increase applied',
+    pass: raised.applied === false,
   });
 }
 
@@ -703,10 +708,112 @@ async function runB8(rows: Row[], session: Session): Promise<void> {
   }
 }
 
+/**
+ * P0 Testnet NEGATIVE proof on a fresh Warden directory. This intentionally attempts
+ * a single-agent-signature transaction to verify that the ledger refuses it, then
+ * proves a late operator pause prevents Warden from providing the second signature.
+ * No Warden signature is emitted to the caller, and no payment should settle.
+ */
+async function runP0Stop(rows: Row[], session: Session): Promise<void> {
+  const health = await session.warden.health();
+  if (health.paused) {
+    throw new Error('p0-stop requires a fresh, unpaused Testnet Warden session');
+  }
+  const supplier = generateSupplierKey();
+  await session.operatorA.enrolSupplier({
+    supplierId: SUPPLIER_ID,
+    payee: { address: session.roster.supplier.address, destinationTag: null },
+    publicKey: supplier.publicKey,
+  });
+  await session.operatorB.approveSupplier(SUPPLIER_ID);
+
+  const invoice = invoiceOf('GB-P0-001');
+  const attemptId = randomUUID();
+  const proposal = await session.warden.propose(
+    proposalFor(attemptId, invoice.label, invoice.amountMinor, health.policyVersion),
+  );
+  record(rows, {
+    step: 'P0 valid proposal is authorized for preparation',
+    expected: 'ALLOW',
+    actual: reasonOf(proposal.decision),
+    pass: proposal.decision.decision === 'ALLOW',
+  });
+  if (proposal.toCoSign === null) {
+    return;
+  }
+
+  const prepared = decode(proposal.toCoSign) as { readonly Signers?: unknown[] };
+  record(rows, {
+    step: 'P0 prepared terms expose NO Warden signature',
+    expected: '0 signers',
+    actual: `${String(prepared.Signers?.length ?? 0)} signers`,
+    pass: prepared.Signers === undefined,
+  });
+  if (prepared.Signers !== undefined) {
+    return;
+  }
+
+  const agentOnly = coSignAsAgent(session.agentWallet, proposal.toCoSign);
+  const signed = decode(agentOnly) as { readonly Signers?: unknown[] };
+  const signerCount = signed.Signers?.length ?? 0;
+  record(rows, {
+    step: 'P0 captured agent-side transaction has only one signer',
+    expected: '1 signer',
+    actual: `${String(signerCount)} signer`,
+    pass: signerCount === 1,
+  });
+
+  const before = await session.port.trustLine(session.roster.supplier.address, {
+    currency: TEST_TOKEN_CURRENCY,
+    issuer: session.roster.issuer.address,
+  });
+  const attempted = await session.port.submit(agentOnly);
+  record(rows, {
+    step: 'P0 ledger rejects an agent-only direct broadcast',
+    expected: 'tefBAD_QUORUM',
+    actual: attempted.engineResult,
+    pass: attempted.engineResult === 'tefBAD_QUORUM',
+  });
+
+  await session.operatorA.setPaused(true);
+  try {
+    let blockedStatus = 0;
+    try {
+      await session.warden.coSign(attemptId, agentOnly);
+    } catch (error) {
+      if (error instanceof ClientError) {
+        blockedStatus = error.status;
+      } else {
+        throw error;
+      }
+    }
+    record(rows, {
+      step: 'P0 Warden rejects finalization after late operator STOP',
+      expected: '409',
+      actual: String(blockedStatus),
+      pass: blockedStatus === 409,
+    });
+  } finally {
+    // Undo only this run's own pause; never unpause a session that started paused.
+    await session.operatorA.setPaused(false);
+  }
+
+  const after = await session.port.trustLine(session.roster.supplier.address, {
+    currency: TEST_TOKEN_CURRENCY,
+    issuer: session.roster.issuer.address,
+  });
+  record(rows, {
+    step: 'P0 recipient balance unchanged by rejected bypass',
+    expected: 'unchanged test-token balance',
+    actual: before?.balance === after?.balance ? 'unchanged test-token balance' : 'changed',
+    pass: before?.balance !== undefined && before.balance === after?.balance,
+  });
+}
+
 async function main(): Promise<void> {
   const command = process.argv[2] ?? '';
-  if (command !== 'prepare' && command !== 'health' && command !== 'b1' && command !== 'b8') {
-    process.stderr.write('usage: gate-b <prepare|health|b1|b8>\n');
+  if (!['prepare', 'health', 'b1', 'b8', 'p0-stop'].includes(command)) {
+    process.stderr.write('usage: gate-b <prepare|health|b1|b8|p0-stop>\n');
     process.exitCode = 2;
     return;
   }
@@ -724,8 +831,10 @@ async function main(): Promise<void> {
     const rows: Row[] = [];
     if (command === 'b1') {
       await runB1(rows, session);
-    } else {
+    } else if (command === 'b8') {
       await runB8(rows, session);
+    } else {
+      await runP0Stop(rows, session);
     }
     const failed = rows.filter((row) => row.result === 'FAIL').length;
     process.stdout.write(`${JSON.stringify({ command, rows: rows.length, failed })}\n`);

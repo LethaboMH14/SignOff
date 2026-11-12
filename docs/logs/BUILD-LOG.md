@@ -29,8 +29,8 @@ One entry per working session (rule R-19 in [RULES.md](../RULES.md)), newest fir
 ### 2026-11-10 — Sibusiso with Claude (Haiku 5.5) — D1W Warden operator read routes
 
 - Done: added read-only operator routes to the Warden (`/v1/ops/overview`, `/v1/ops/proposals`, `/v1/ops/proposals/{id}`, `/v1/ops/suppliers`), with views in `apps/warden/src/ops-view.ts` and 11 HTTP tests in `apps/warden/test/ops-routes.test.ts`. Branch `feat/D1W-warden-read`, stacked on `feat/D0-mockups`.
-- Changed decisions: D-072 (read routes and allowlisted views).
-- Evidence: T-089 in the test log; `npm run check` exit 0 (57 files, 795 tests).
+- Changed decisions: D-089 (read routes and allowlisted views).
+- Evidence: T-121 in the test log; `npm run check` exit 0 (57 files, 795 tests).
 - Problems / blockers: none in code. Issue IDs D1W, D3W and D7 are proposed and need the reviewer's approval before merge.
 - Next: D3W (second approver for limit increases), then D1 (console).
 
@@ -41,6 +41,22 @@ One entry per working session (rule R-19 in [RULES.md](../RULES.md)), newest fir
 - Evidence: T-095. `npm run check` exit 0 (58 files, 807 tests).
 - Problems / blockers: the 24-hour window is a proposed rule for review. The service tests were updated for the new return shape of setLimits. Lowerings behave as before.
 - Next: the console (D1), with the live agent map.
+
+### 2026-11-11 — Sibusiso with Claude (Haiku 5.5) — D8 agent map in the console
+
+- Done: an animated map of invoices moving between the agents, in the console. The server streams the agent's transition log over server-sent events on the loopback address. The browser moves a token to each agent as it acts, shows held moves on the hold lane, and shows paid only for a reconciled move. A feed lists the latest moves in words, with the plain reason for each hold. A replay fixture of the labelled set is labelled SIMULATED. Agent change: the evaluation can export each case's moves (`--transitions`), in commit 38b8717. Branch `feat/D8-agent-map`, stacked on `feat/D3W-second-approver`.
+- Changed decisions: D-075.
+- Evidence: T-096 (console and export tests) and T-097 (live check of the stream and the page headers). Dependencies recorded in S-042.
+- Problems / blockers: the replay is simulated, so it has no ledger or paid moves. Those appear only in a live run with the Warden, which has not run. Phone layout and the motion were not checked by eye. The plain texts for reason codes are drafted and need review.
+- Next: the Warden's events on the map, a live run with the Warden, and the payment desk (D1).
+
+### 2026-11-11 — GitHub integration review — Gate C onto latest Gate B
+
+- Done: reconciled the Gate C invoice-agent implementation and its shared `packages/warden-api` refactor against the latest Gate B branch (merge commit `6913189`). Retained the Warden's final-authorization signature boundary, the Gate B Testnet TST evidence, and the Gate C simulated 30-invoice evaluation. The Git history now contains both branch heads rather than dropping either implementation.
+- Evidence integrity: fixed colliding review IDs without overwriting records — Gate C D-061 to D-071 retained, Gate B boundary note moved to D-072; Gate C S-032 to S-037 retained, Gate B P0 note moved to S-038; Gate C T-076 to T-088 retained, later Gate B regression rows moved to T-089 to T-091.
+- Changed decisions: none accepted as production ready. The RLUSD live transaction (A3), live Agent-to-Warden Testnet run (C7) and live model evaluation (C5) are still unverified. The new feature-branch merge does not constitute Gate B or Gate C release acceptance.
+- CI: not yet verified on the new combined head at the time of this entry. Require exact-head `npm run check` and dependency audit, plus independent review before any merge to main.
+- Next: inspect the resulting GitHub CI for any semantic/type-test regressions and repair; integrate the individually reviewed Gate A5 and Gate B P0/B2/B5/B8 follow-up PRs in dependency order.
 
 ### 2026-11-10 — Sibusiso with Claude (Haiku 5.5) — Gate C issues created and linked
 - Done: created issues #37 to #43 for C1 to C7, titled as in docs/ISSUES.md. Each carries its acceptance criteria, dependencies, status, evidence and branch, with the live runs marked UNVERIFIED where they have not been run. Linked them in the GH column of docs/ISSUES.md.
@@ -87,6 +103,14 @@ One entry per working session (rule R-19 in [RULES.md](../RULES.md)), newest fir
 - Problems / blockers: (1) A3 needs a testnet RLUSD payment, and the spending account holds no testnet RLUSD. The only source found is a faucet that requires a sign-in, so the RLUSD run is BLOCKED until an operator funds the account. A test-issued token ran instead (D-042). (2) The first run of `npm run check` exited 2 at the type check: two test lines set LastLedgerSequence to undefined, which exactOptionalPropertyTypes rejects. The Vitest run had passed, because Vitest does not type-check. Fixed; the rerun passed (T-050). (3) The primary Testnet endpoint did not answer during the first provisioning run; the cause is unknown (S-019). (4) The logger redacted the token code in trust-line events; the field is renamed (S-018). (5) T-051 predates the logging changes in S-018 and S-019; T-060 re-ran provisioning on the final build. (6) The pre-commit check refused the first commit because a test file held a seed-shaped literal; it is generated at run time now (S-021).
 - Next: commit the Gate A work and open a pull request against main. It shares the phase-close files with the phase-close pull request ([LethaboMH14/SignOff#17](https://github.com/LethaboMH14/SignOff/pull/17)), so the logs will conflict when it merges; the size bend is disclosed in D-045. Fund the spending account with testnet RLUSD, then run A3 with `npm run testnet:pay-rlusd`. Create GitHub issues for A1 to A7 as ISSUES.md asks. Write the phase report (R-24) after review and merge.
 
+### 2026-11-10 — Sibusiso with Claude (Haiku 5.5) — merge of the F5 review into the phase close
+
+- Done: merged `feat/F5-log-redaction` (head `3812f4b`, with the independent review fixes) into `docs/phase-close-gate-0` to clear the conflicts on the phase-close pull request. The conflicts were only in BUILD-LOG and TEST-LOG; the code merged without conflicts. Renumbered the phase-close IDs, which had collided with the review's: TEST-LOG T-040 to T-044 became T-043 to T-047, and SECURITY-LOG S-012 became S-014. Removed a stray blank line in the review's security rows so they render in the event table. Re-ran the full check on the merged tree (T-048).
+- Changed decisions: none.
+- Evidence: T-047 (the phase-close check before the merge), T-048 (the check on the merged tree), T-049 (CI on the current F5 head). Security log: S-014 (CI) and S-015 (an open finding on obligation identity).
+- Problems / blockers: S-015 must be fixed before any multi-buyer use. Best-effort logs are not a durable audit trail; Gates B and C must build that.
+- Next: retarget the phase-close pull request to main, because its base branch has merged as #16. The remaining items are in PHASE-REPORTS.md.
+
 ### 2026-11-10 — independent code review — F5 log redaction
 
 - Done: reviewed the latest stacked F5 implementation and its prerequisite CI and scanner contracts. Repaired two paths missing from the original tests: unredacted service value in a failing-sink fallback and sensitive tokens/PII embedded in JSON property names. Added regression tests, re-ran GitHub CI successfully on exact head `0eba60f` (run #42835936809).
@@ -94,6 +118,14 @@ One entry per working session (rule R-19 in [RULES.md](../RULES.md)), newest fir
 - Evidence: T-040 to T-042; security findings S-012 and S-013.
 - Problems / blockers: best-effort operational logging is not a durable financial audit store; Gate B and C still must build the independent evidence trail. F4 obligation IDs are not buyer-scoped yet; this must be corrected before multi-buyer payment use.
 - Next: review and merge the dependency stack in order with checks, then validate GitHub CI on main. Actual Warden and Testnet functionality remain unimplemented.
+
+### Phase close: Gate 0 — 2026-11-10
+
+- Gate criteria met: F1 (T-001 to T-008); F4 (T-023 to T-032); F5 (T-033 to T-041, including the two review fixes, T-040 and T-041); F2's checks run on every pull request and passed on GitHub (T-043). F3's pre-commit check and its true and false positive tests are met (T-013 to T-019). Not met: F2's "must pass to merge" and F3's GitHub secret scanning need repository settings only the owner can change (S-005). The full acceptance table is in [PHASE-REPORTS.md](PHASE-REPORTS.md).
+- Not met / carried over: the repository settings in S-005; the review's open finding that obligation IDs are not scoped to the buyer (S-015); the retarget of the phase-close pull request to main, then its merge. #5 (escaped backticks) is still open against main. Gate 0 closes when its pull requests are merged, this one included (D-038).
+- Documents updated: README (banner, logs row); ENGINEERING (layout, tests, Gate 0 row); PRD (section 10); ISSUES (status note and statuses); RULES (R-24 and its checklist row); CONTRIBUTING (phase-report link); COMPLIANCE (personal-information row); DECISION-JOURNAL (D-037, D-038); TEST-LOG (T-043 to T-049); SECURITY-LOG (T-08, T-09, T-13, T-16, T-21 rows; S-014, S-015); PHASE-REPORTS (new). No change: BUILD-BRIEF (Gate 0 uses the stack it proposes), TRUST, SOLUTION, SERVICE-LEVELS, AGENT-RELIABILITY, HACKATHON, decision records 0001 to 0005, PROBLEM, BUSINESS, WORKSHOP.
+- README status table updated: no. No product claim changed; the banner changed. Whether Gate 0 belongs in the table is a decision for the team (R-18).
+- Reviewed by: F5 was reviewed independently by Lethabo (the review entry above). This phase report is pending review by the other team member.
 
 ### 2026-11-10 — Sibusiso with Claude (Haiku 5.5) — F5 log redaction
 
@@ -151,6 +183,112 @@ One entry per working session (rule R-19 in [RULES.md](../RULES.md)), newest fir
 - Evidence: desk research only.
 - Next: team review of the reframe.
 
+### 2026-11-11 — Sibusiso with Claude (Haiku 5.5) — D1 payment desk and operator sign-in
+
+- Done: the desk shows the Warden state (running or paused, limits, usage, a waiting raised limit) and the invoice queue with state, plain reason and model-call count. Paid appears only when the Warden attempt is paid, the ledger is validated and reconciliation is recorded. Password sign-in with roles, a lockout, sessions, a five-minute step-up before any change, form-token and origin checks on every change, and an operator command. Branch `feat/D1-payment-desk`, stacked on `feat/D1-agent-map`, which carries D1W and D3W.
+- Changed decisions: D-076 (sign-in), D-077 (display rule).
+- Evidence: T-098 (104 console tests; repository check exit 0: 912 tests); T-099 (browser and DOM check).
+- Lenses. Prompt engineering: not applicable; the console calls no model, and reasons come from codes. Context engineering: each Warden view and agent record is reduced to the fields the desk shows, by allowlist. Swarm engineering: the desk shows each invoice's model-call count (at most three) from the agent's evidence record and runs no agent. Graph engineering: the display state is a function of the agent's log and the Warden's attempt, joined by attempt id.
+- Problems / blockers: the daily chart from the mockups is not built (it is not in the done-when list). The final build's phone check is UNVERIFIED because the built-in browser pane was hidden after the model-call line was added. No accessibility scan has run (D5). The reason texts are drafts. The operator accounts are set up by the team with the operator command; nothing is deployed (D6).
+- Next: the held-invoice view (D2).
+
+
+### 2026-11-11 — Sibusiso with Claude (Haiku 5.5) — D2 held-invoice view
+
+- Done: an invoice opens into its held-invoice view: the state, the failed rule with its catalogue sentence, the next step, the Warden's decision, the payout change (approval disabled, with the reason), the masked enrolled account, and the evidence path move by move with reason words and SHA-256 hashes. The path is the audit export's own selection. Branch `feat/D2-held-invoice`, stacked on `feat/D1-payment-desk`.
+- Changed decisions: D-078.
+- Evidence: T-102 (126 console tests; repository check exit 0: 934 tests). The browser check is not run (T-103).
+- Lenses. Prompt engineering: not applicable; no model is called and the next steps are authored text. Context engineering: the view gets only the Warden fields it shows and only the agent moves for the obligation. Swarm engineering: each move names the actor that made it (intake, screen, extractor, verifier, matcher, warden, signer, submitter, reconciler), and the view does not present a model call as a decision. Graph engineering: the evidence path is a walk through the transition log for one obligation, selected by the export's own function.
+- Problems / blockers: the browser check is not run (the pane was hidden). Payout approval is not available in the console, by design for this version. The next-step texts are drafts. Test IDs T-101 and D-081 belong to feat/S3-watchdog, so this stack continues from T-102 and D-078; the two stacks need renumbering at merge.
+- Next: the limits and pause panel (D3), then the receipt (D4).
+
+
+### 2026-11-11 — Sibusiso with Claude (Haiku 5.5) — D3 limits and pause in the console
+
+- Done: the desk's Warden section has a limits form and a panel for a raised limit that waits. A lowering applies at once; a higher limit waits; the requester cannot approve it. Each change, approval included, asks for the password when the last confirmation is more than five minutes old, and is sent again once it is given. Branch `feat/D3-limits-pause`, stacked on `feat/D2-held-invoice`.
+- Changed decisions: D-079.
+- Evidence: T-104 (152 console tests; repository check exit 0: 960 tests; coverage above the thresholds). The browser check is not run (T-103).
+- Lenses. Prompt engineering: not applicable; no model is called. Context engineering: each change carries the operator's own Warden principal, so the Warden records who asked and who approved, and the desk names the requester only as "you" or by username. Graph engineering: a limit change becomes a new policy version when it applies, and the desk shows the raise as a waiting state until then.
+- Problems / blockers: the browser check of the form is not run (the pane was hidden). The 24-hour raise window and the 30-second watchdog are proposed settings for review. The Warden suite covers the limit rules (T-095); the console adds the requester check and the confirmation. The function-coverage threshold was met by testing the browser state rules directly (web/actions.ts) and the browser client with a stubbed fetch, not by changing the threshold. Test IDs T-101 and D-081 belong to feat/S3-watchdog; this stack uses T-102 to T-104 and D-078 to D-079, and the two stacks need renumbering at merge.
+- Next: the receipt (D4).
+
+
+### 2026-11-11 — Sibusiso with Claude (Haiku 5.5) — D4 receipt
+
+- Done: a paid payment opens a receipt with the explorer link (a full hash and a fixed base), the amount the ledger delivered, the asset name (decided from configuration), and a rand figure only as a SIMULATED placeholder. The receipt re-reads the transaction from the ledger; any doubt is shown as Not confirmed on the ledger, with its reason, and no receipt. Branch `feat/D4-receipt`, stacked on `feat/D3-limits-pause`.
+- Changed decisions: D-082.
+- Evidence: T-105 (172 console tests; repository check exit 0: 980 tests). The live Testnet receipt is not run (T-106).
+- Lenses. Prompt engineering: not applicable; no model is called. Context engineering: the receipt re-reads the ledger rather than trusting its own record, and it sends the browser only the answer it shows. Graph engineering: the receipt is the end of the path, linking the invoice, the attempt, the transaction hash and the reconciliation the desk shows as Paid.
+- Problems / blockers: no live receipt has been checked against Testnet (T-106). No RLUSD payment has run (A3 is blocked, T-059), so receipts are for the test-issued token and are labelled that way. The rand rate is a placeholder from configuration, and no market rate is claimed. The browser check of the receipt is not run (the pane was hidden). Test IDs: T-101 and D-081 belong to feat/S3-watchdog, D-080 to the keys branch; this stack uses T-102 to T-106, D-078 to D-079 and D-082, and the stacks need renumbering at merge.
+- Next: the accessibility and phone check (D5), then the health checks and deployment configuration (D6).
+
+
+### 2026-11-11 — Sibusiso with Claude (Haiku 5.5) — D5 accessibility and keyboard checks
+
+- Done: an axe-core scan over the sign-in, payment desk (plain and with a waiting raise), held-invoice and receipt screens, with no serious or critical problem, and keyboard checks on the held-invoice screen. Dev dependencies axe-core, jsdom and @types/jsdom, pinned exactly. Branch `feat/D5-mobile-a11y`, stacked on `feat/D4-receipt`.
+- Changed decisions: D-083.
+- Evidence: T-107 (7 of 7 pass; repository check exit 0: 987 tests). The browser layout check of the held-invoice, receipt and limits screens is UNVERIFIED (T-108), because the built-in browser pane was hidden.
+- Lenses. Prompt engineering: not applicable; no model is called. Context engineering: the scan runs over the same markup the browser receives, so the review and the tests agree. Swarm engineering: not applicable.
+- Problems / blockers: the phone and desktop layout of the three later screens is not measured (T-108). Colour contrast is not checked by the scan. The agent map (SVG) scrolls inside its own box at 375 px; that is the existing design, not a page scroll, and it is not a D5 screen. Axe-core is run in jsdom, so it does not see layout-dependent rules.
+- Next: the motion layer (D7), then the health checks and deployment configuration (D6).
+
+
+### 2026-11-11 — Sibusiso with Claude (Haiku 5.5) — D7 motion
+
+- Done: the desk's tiles rise in a staggered opening, the KPI numbers climb to their values, the screens crossfade with a small slide, the password sheet slides up and takes focus (Escape closes it), and the Paid tick is drawn only on a Paid chip. Reduced motion replaces every animation with its final state. Branch `feat/D7-motion`, stacked on `feat/D5-mobile-a11y`.
+- Changed decisions: D-084.
+- Evidence: T-109 (187 console tests; repository check exit 0: 995 tests). The runtime checks are not run (T-110).
+- Lenses. Prompt engineering: not applicable. Context engineering: the motion carries no information on its own; every change has its words. Graph engineering: not applicable.
+- Problems / blockers: the opening time is computed (700 ms), not measured; the frame check and the sheet's runtime behaviour are UNVERIFIED (T-110), because the browser pane was hidden. The function-coverage margin is narrow (90.88% against 90%).
+- Next: the health checks and deployment configuration (D6).
+
+
+### 2026-11-11 — Sibusiso with Claude (Haiku 5.5) — D6 health checks and deployment preparation
+
+- Done: the Warden's health answer carries its version and readiness; a read-only synthetic Testnet check (`npm run testnet:synthetic`) reads the validated ledger and, when set up, the spending account and the Warden; Dockerfiles for the Warden and the console, a root .dockerignore, and deploy/README.md. Nothing is deployed. Branch `feat/D6-deploy-health`, stacked on `feat/D7-motion`; the issue body says it is stacked on D5, so the order on this stack is D5, D7, D6.
+- Changed decisions: D-085.
+- Evidence: T-111 (215 Warden and script tests); T-112 (live ledger read OK; account and Warden UNVERIFIED); T-113 and T-114 UNVERIFIED.
+- Lenses. Prompt engineering: not applicable. Context engineering: the health answer and the synthetic check see only what they need, and the images see no secrets. Graph engineering: the synthetic check walks the read path of a payment (ledger, account, Warden) without submitting one.
+- Problems / blockers: the images are not built; the console-down test is not run as a process test; the account and Warden checks need SIGNOFF_SPENDING_ADDRESS and SIGNOFF_WARDEN_URL; no hosting account or budget is confirmed. Test IDs T-101 and D-081 belong to feat/S3-watchdog, D-080 to the keys branch; this stack uses T-102 to T-114 and D-078 to D-085.
+- Next: the README status table and the judge check script (E2 and E3), then the attempt at the Testnet credential check (S5).
+
+
+### 2026-11-11 — Sibusiso with Claude (Haiku 5.5) — E3 judge check
+
+- Done: `npm run judge:check` runs the payment tests (29 tests in 2 files) and the injection tests (35 tests in 1 file), re-runs the simulated labelled set into a temporary folder and compares it field for field with the committed result, reads the live result files that are committed on this branch, and reports Testnet payments as UNVERIFIED. The report rules and their 17 tests are in `scripts/lib/judge-check.ts`. Branch `feat/E3-judge-check`, stacked on `feat/D6-deploy-health`.
+- Changed decisions: D-086.
+- Evidence: T-115 (unit tests and checks); T-116 (the offline run, exit 0). Live results and Testnet payments are UNVERIFIED on this branch.
+- Lenses. Prompt engineering: not applicable; no prompt changed, and the judge check calls no model. Context engineering: the report carries only check names, statuses and headline numbers, not the text of the labelled cases. Graph engineering: the simulated re-run walks the evaluation from the labelled set through the pipeline and the baseline to the scores, and compares the result with the committed one. Swarm engineering: not applicable.
+- Problems / blockers: the live result files are not in this branch's history (they are on feat/C5-live-providers and feat/keys-dotenv), so the judge reports them UNVERIFIED here until the owner decides on a merge. The judge check does not run the Testnet payments, which need the operator keys.
+- Next: the README status table (E2), then the Testnet credential attempt (S5).
+
+
+### 2026-11-11 — Sibusiso with Claude (Haiku 5.5) — S5 XRPL credential check
+
+- Done: `npm run testnet:credential` issues, accepts, reads back and deletes one XRPL credential between two test accounts on the Testnet, after it confirms that the Credentials amendment is enabled there. Branch `feat/S5-testnet-credentials`, stacked on `feat/E3-judge-check`.
+- Changed decisions: D-087.
+- Evidence: T-117 (gates); T-118 (the live run, with its three hashes, read back as validated). The lifecycle is proven between test accounts only. Applying it to the provisioned supplier accounts is not done, so that part is UNVERIFIED.
+- Lenses. Prompt engineering: not applicable; no model is called. Context engineering: the credential is read back from the ledger, so the check reports what the ledger holds, not what the script expects. Graph engineering: the run walks the credential through issue, accept, check and delete as a chain of ledger states, and a step that does not pass blocks the steps after it. Swarm engineering: not applicable.
+- Problems / blockers: an earlier probe found `s.altnet.rippletest.net:51233` timing out from this machine and used `testnet.xrpl-labs.com`; the live run then connected to `s.altnet.rippletest.net:51233` directly. The provisioned supplier accounts are not used. Test IDs T-117, D-087 and S-050 may collide with the keys branch (S-050 is used there); renumber on merge.
+- Next: the README status table (E2).
+
+
+### 2026-11-11 — Sibusiso with Claude (Haiku 5.5) — E2 README status
+
+- Done: the root README banner, status table and hackathon scoring now state the real state of every claim, including the branches that are not merged here. Each row has a state and a link, or an explicit "Not claimed" or "Not built". One honest-limits bullet records the live model runs. Branch `feat/E2-readme-status`, stacked on `feat/S5-testnet-credentials`.
+- Changed decisions: D-088.
+- Evidence: T-119 (72 of 72 relative links resolve; 24 of 24 status rows complete). The live model runs and the S3 watchdog are on other branches and are marked as not merged.
+- Lenses. Prompt engineering: not applicable; no prompt changed. Context engineering: each claim carries the smallest evidence that supports it, so a reader sees the state without opening the logs. Graph engineering: each row links to the log entry that holds its evidence, and the judge check reproduces the simulated rows. Swarm engineering: not applicable.
+- Problems / blockers: the README names feature branches for the live model runs (feat/C5-live-providers) and the watchdog (feat/S3-watchdog). Those branches are not merged, so the README needs updating when they are. Nothing is deployed.
+- Next: npm run check on the final branch, then the Gamma deck of the final state.
+
+### 2026-11-11 — Sibusiso with Claude — Console stack merged with the latest Gate C
+
+- Done: merged origin/feat/gate-c-agent-reliability (28abf3f) into the console stack on feat/integrate-gate-c. The Warden now returns unsigned terms, the agent signs only its half, and the Warden rechecks pause, policy, limits, payee and the ledger before it signs and submits (issue #45). The console read routes, the second approver and health are kept on top.
+- Evidence integrity: our colliding IDs were renumbered because the Gate C ones are already on GitHub: D-072 to D-089, T-089 to T-121, S-038 to S-052. S-051 stays reserved for the watchdog branch.
+- Evidence: T-122, T-123, T-124.
+- Problems / blockers: the live P0 negative proof (#54), the RLUSD payment (A3) and a live agent-to-Warden run are still not run. Not pushed.
+- Next: review PRs #47 to #54.
 ### 2026-11-11 — Sibusiso with Claude (Haiku 5.5) — S3 armed-mode watchdog, server side
 
 - Done: an armed Warden pauses itself when no operator heartbeat arrives within 30 seconds (a proposed setting). A heartbeat keeps it running and never resumes it. Arm, disarm and heartbeat are operator routes. A restart of an armed Warden starts paused. Branch `feat/S3-watchdog`, stacked on `feat/D3W-second-approver`.

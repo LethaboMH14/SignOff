@@ -17,6 +17,8 @@ export const WardenReasonCode = z.enum([
   'UNSUPPORTED_TRANSACTION',
   'SIGNER_CHANGE_NOT_APPROVED',
   'INVARIANT_FAILED',
+  'ACCOUNT_BUSY',
+  'RECEIVING_CAPACITY',
 ]);
 
 export type WardenReasonCode = z.infer<typeof WardenReasonCode>;

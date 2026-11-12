@@ -12,7 +12,7 @@ export interface ProposeResult {
   /** Null only when the proposal did not parse, so there is no attempt to name. */
   readonly attemptId: string | null;
   readonly decision: WardenDecision;
-  /** The Warden-signed transaction the agent must co-sign. Present only for an ALLOW that is still awaiting. */
+  /** Unsigned Warden-prepared transaction; Warden's signature is NEVER sent before final authorization. */
   readonly toCoSign: string | null;
 }
 
@@ -24,8 +24,10 @@ export interface CoSignResult {
   readonly engineResult: string | null;
 }
 
-/** The Warden's health answer. It reports pause state and the policy version in force. */
+/** The Warden's health answer. It reports pause state, the policy version in force, the Warden's version and readiness. */
 export interface HealthResult {
   readonly paused: boolean;
   readonly policyVersion: string;
+  readonly version: string;
+  readonly ready: boolean;
 }
