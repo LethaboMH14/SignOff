@@ -135,7 +135,9 @@ describe('attacks on the controls and the ledger', { timeout: 30_000 }, () => {
     const next = entry({ invoiceNumber: 'INV-301', fingerprint: sha256Hex('invoice-301') });
     const service = await openService(base, config, evidenceFrom([STANDARD, next]), { clock });
     await activeSupplier(service, base.supplierAccount.address, generateSupplierKey().publicKey);
-    const version = await service.setLimits({ perPaymentMinor: 500 }, 'operator-a');
+    const outcome = await service.setLimits({ perPaymentMinor: 500 }, 'operator-a');
+    if (!outcome.applied) throw new Error('a lowered limit must apply at once');
+    const version = outcome.policyVersion;
 
     const reply = await service.propose({
       ...proposalFor(newAttemptId(), next, config, clock.now),

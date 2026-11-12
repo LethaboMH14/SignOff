@@ -66,8 +66,9 @@ describe('P0 earlier artifacts are useless after later operator and ledger chang
     expect(answer.decision.decision).toBe('ALLOW');
     const agentOnly = coSignAsAgent(base.agentWallet, answer.toCoSign ?? '');
 
-    const version = await service.setLimits({ perPaymentMinor: 500 }, 'first-operator');
-    expect(version).not.toBe(config.policyVersion);
+    const outcome = await service.setLimits({ perPaymentMinor: 500 }, 'first-operator');
+    expect(outcome.applied).toBe(true);
+    expect(outcome.applied && outcome.policyVersion).not.toBe(config.policyVersion);
 
     await expect(service.coSign(attemptId, agentOnly)).rejects.toThrow('policy changed');
     expect(service.attempt(attemptId)?.status).toBe('awaiting');
