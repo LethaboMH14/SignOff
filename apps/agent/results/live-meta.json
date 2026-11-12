@@ -1,61 +1,61 @@
 {
   "mode": "LIVE",
-  "generatedAt": "2026-11-12T17:39:30.887Z",
+  "generatedAt": "2026-11-12T18:12:27.170Z",
   "policyVersion": "2026-11-10.1",
   "model": "meta:muse-ember-1.0",
   "pipeline": {
     "decisionCounts": {
-      "approved": 25,
-      "held": 37
+      "approved": 21,
+      "held": 41
     },
     "falseApprovals": {
-      "count": 5,
-      "n": 41,
-      "rate": 0.12195121951219512,
-      "low": 0.053233364685777176,
-      "high": 0.25544211520976884
+      "count": 0,
+      "n": 40,
+      "rate": 0,
+      "low": 0,
+      "high": 0.08762160119728664
     },
     "falseHolds": {
       "count": 1,
-      "n": 21,
-      "rate": 0.047619047619047616,
-      "low": 0.008455987809826399,
-      "high": 0.22669360074122563
+      "n": 22,
+      "rate": 0.045454545454545456,
+      "low": 0.00806942762126385,
+      "high": 0.21798045838657332
     },
     "decisionAccuracy": {
-      "count": 56,
+      "count": 61,
       "n": 62,
-      "rate": 0.9032258064516129,
-      "low": 0.8045118138769257,
-      "high": 0.9548881279768061
+      "rate": 0.9838709677419355,
+      "low": 0.9141327973931,
+      "high": 0.9971471328313782
     },
     "reasonFound": {
-      "count": 36,
-      "n": 41,
-      "rate": 0.8780487804878049,
-      "low": 0.7445578847902312,
-      "high": 0.9467666353142228
+      "count": 40,
+      "n": 40,
+      "rate": 1,
+      "low": 0.9123783988027135,
+      "high": 1
     },
     "fieldPrecision": {
-      "count": 368,
-      "n": 368,
+      "count": 340,
+      "n": 340,
       "rate": 1,
-      "low": 0.9896690949070677,
+      "low": 0.9888278195600102,
       "high": 1
     },
     "fieldRecall": {
-      "count": 368,
+      "count": 340,
       "n": 425,
-      "rate": 0.8658823529411764,
-      "low": 0.8301856208070351,
-      "high": 0.8950241125411447
+      "rate": 0.8,
+      "low": 0.7593592358943104,
+      "high": 0.8352661081693098
     },
     "fieldWrong": {
       "count": 0,
-      "n": 368,
+      "n": 340,
       "rate": 0,
       "low": 0,
-      "high": 0.01033090509293241
+      "high": 0.011172180439989824
     },
     "emptyCorrect": {
       "count": 9,
@@ -67,57 +67,57 @@
   },
   "baseline": {
     "decisionCounts": {
-      "approved": 11,
-      "held": 51
+      "approved": 15,
+      "held": 47
     },
     "falseApprovals": {
-      "count": 5,
-      "n": 41,
-      "rate": 0.12195121951219512,
-      "low": 0.053233364685777176,
-      "high": 0.25544211520976884
+      "count": 7,
+      "n": 40,
+      "rate": 0.175,
+      "low": 0.0874541374603592,
+      "high": 0.31949990331787714
     },
     "falseHolds": {
-      "count": 15,
-      "n": 21,
-      "rate": 0.7142857142857143,
-      "low": 0.5004361928391441,
-      "high": 0.8618613704787788
+      "count": 14,
+      "n": 22,
+      "rate": 0.6363636363636364,
+      "low": 0.42951708090131013,
+      "high": 0.8026679532963387
     },
     "decisionAccuracy": {
-      "count": 42,
+      "count": 41,
       "n": 62,
-      "rate": 0.6774193548387096,
-      "low": 0.553680880928481,
-      "high": 0.780455093487161
+      "rate": 0.6612903225806451,
+      "low": 0.5371769954935818,
+      "high": 0.7665829812479109
     },
     "reasonFound": {
       "count": 0,
-      "n": 41,
+      "n": 40,
       "rate": 0,
       "low": 0,
-      "high": 0.08566757018443186
+      "high": 0.08762160119728664
     },
     "fieldPrecision": {
-      "count": 422,
-      "n": 422,
+      "count": 408,
+      "n": 408,
       "rate": 1,
-      "low": 0.9909791338040865,
+      "low": 0.9906724815134103,
       "high": 1
     },
     "fieldRecall": {
-      "count": 422,
+      "count": 408,
       "n": 425,
-      "rate": 0.9929411764705882,
-      "low": 0.9794545376613959,
-      "high": 0.9975965178784347
+      "rate": 0.96,
+      "low": 0.936880560130917,
+      "high": 0.9748783007666336
     },
     "fieldWrong": {
       "count": 0,
-      "n": 422,
+      "n": 408,
       "rate": 0,
       "low": 0,
-      "high": 0.009020866195913583
+      "high": 0.009327518486589774
     },
     "emptyCorrect": {
       "count": 9,
@@ -131,13 +131,13 @@
     {
       "measure": "Decision correct",
       "n": 62,
-      "pipelineMean": 0.9032258064516129,
-      "baselineMean": 0.6774193548387096,
-      "meanDifference": 0.22580645161290322,
-      "ciLow": 0.08064516129032258,
-      "ciHigh": 0.3709677419354839,
-      "pValue": 0.0021234614783169903,
-      "delta": 0.22580645161290322,
+      "pipelineMean": 0.9838709677419355,
+      "baselineMean": 0.6612903225806451,
+      "meanDifference": 0.3225806451612903,
+      "ciLow": 0.20967741935483872,
+      "ciHigh": 0.43548387096774194,
+      "pValue": 0.0000028909402698396036,
+      "delta": 0.3225806451612903,
       "magnitude": "small",
       "gateMannWhitney": true,
       "gateInterval": true,
@@ -146,32 +146,32 @@
     {
       "measure": "Fields read as labelled (share of 7)",
       "n": 62,
-      "pipelineMean": 0.8686635944700462,
-      "baselineMean": 0.9930875576036866,
-      "meanDifference": -0.12442396313364056,
-      "ciLow": -0.21428571428571427,
-      "ciHigh": -0.04608294930875576,
-      "pValue": 0.05421379187209552,
-      "delta": -0.10301768990634755,
+      "pipelineMean": 0.804147465437788,
+      "baselineMean": 0.9608294930875576,
+      "meanDifference": -0.1566820276497696,
+      "ciLow": -0.2557603686635945,
+      "ciHigh": -0.07142857142857144,
+      "pValue": 0.030637843651271535,
+      "delta": -0.13787721123829344,
       "magnitude": "negligible",
-      "gateMannWhitney": false,
+      "gateMannWhitney": true,
       "gateInterval": true,
-      "verdict": "no significant difference"
+      "verdict": "baseline better"
     },
     {
       "measure": "No false approval (1 unless HOLD was decided ELIGIBLE)",
       "n": 62,
-      "pipelineMean": 0.9193548387096774,
-      "baselineMean": 0.9193548387096774,
-      "meanDifference": 0,
-      "ciLow": -0.0967741935483871,
-      "ciHigh": 0.0967741935483871,
-      "pValue": 0.9999999989999999,
-      "delta": 0,
+      "pipelineMean": 1,
+      "baselineMean": 0.8870967741935484,
+      "meanDifference": 0.11290322580645161,
+      "ciLow": 0.04838709677419355,
+      "ciHigh": 0.1935483870967742,
+      "pValue": 0.006799914403776697,
+      "delta": 0.11290322580645161,
       "magnitude": "negligible",
-      "gateMannWhitney": false,
-      "gateInterval": false,
-      "verdict": "no significant difference"
+      "gateMannWhitney": true,
+      "gateInterval": true,
+      "verdict": "pipeline better"
     }
   ],
   "runs": [
@@ -276,7 +276,7 @@
         }
       },
       "baseline": {
-        "decision": "HOLD",
+        "decision": "ELIGIBLE",
         "parsed": true,
         "fields": {
           "supplierName": "Sample Catering Works CC",
@@ -390,7 +390,7 @@
         }
       },
       "baseline": {
-        "decision": "ELIGIBLE",
+        "decision": "HOLD",
         "parsed": true,
         "fields": {
           "supplierName": "Testline Components (Pty) Ltd",
@@ -561,7 +561,7 @@
         }
       },
       "baseline": {
-        "decision": "HOLD",
+        "decision": "ELIGIBLE",
         "parsed": true,
         "fields": {
           "supplierName": "Sample Catering Works CC",
@@ -675,7 +675,7 @@
         }
       },
       "baseline": {
-        "decision": "ELIGIBLE",
+        "decision": "HOLD",
         "parsed": true,
         "fields": {
           "supplierName": "Testline Components (Pty) Ltd",
@@ -789,7 +789,7 @@
         }
       },
       "baseline": {
-        "decision": "HOLD",
+        "decision": "ELIGIBLE",
         "parsed": true,
         "fields": {
           "supplierName": "Lumen Test Supplies (Pty) Ltd",
@@ -863,8 +863,8 @@
       "id": "messy-03",
       "category": "messy",
       "expected": {
-        "decision": "ELIGIBLE",
-        "reason": null,
+        "decision": "HOLD",
+        "reason": "CURRENCY_NON_ZAR",
         "fields": {
           "supplierName": "Example Office Supplies CC",
           "invoiceNumber": "INV-TST-0113",
@@ -885,34 +885,34 @@
         }
       },
       "pipeline": {
-        "decision": "ELIGIBLE",
-        "finalState": "WARDEN_ELIGIBLE",
-        "reasonCode": "OK",
+        "decision": "HOLD",
+        "finalState": "QUARANTINED",
+        "reasonCode": "CURRENCY_NON_ZAR",
         "tokens": [
-          "OK"
+          "CURRENCY_NON_ZAR"
         ],
-        "modelCalls": 1,
+        "modelCalls": 0,
         "fields": {
-          "supplierName": "Example Office Supplies CC",
-          "invoiceNumber": "INV-TST-0113",
-          "invoiceDate": "2026-10-05",
-          "currency": "USD",
-          "totalMinor": 125000,
-          "purchaseOrderNumber": "PO-TST-0113",
-          "payeeAccountAsPrinted": "FICT-ACC-1005"
+          "supplierName": null,
+          "invoiceNumber": null,
+          "invoiceDate": null,
+          "currency": null,
+          "totalMinor": null,
+          "purchaseOrderNumber": null,
+          "payeeAccountAsPrinted": null
         }
       },
       "baseline": {
         "decision": "HOLD",
-        "parsed": true,
+        "parsed": false,
         "fields": {
-          "supplierName": "Example Office Supplies CC",
-          "invoiceNumber": "INV-TST-0113",
-          "invoiceDate": "2026-10-05",
-          "currency": "USD",
-          "totalMinor": 125000,
-          "purchaseOrderNumber": "PO-TST-0113",
-          "payeeAccountAsPrinted": "FICT-ACC-1005"
+          "supplierName": null,
+          "invoiceNumber": null,
+          "invoiceDate": null,
+          "currency": null,
+          "totalMinor": null,
+          "purchaseOrderNumber": null,
+          "payeeAccountAsPrinted": null
         }
       }
     },
@@ -977,8 +977,8 @@
       "id": "messy-05",
       "category": "messy",
       "expected": {
-        "decision": "HOLD",
-        "reason": "AMOUNT_FORMAT",
+        "decision": "ELIGIBLE",
+        "reason": null,
         "fields": {
           "supplierName": "Demo Transport Services (Pty) Ltd",
           "invoiceNumber": "INV-TST-0115",
@@ -1017,7 +1017,7 @@
         }
       },
       "baseline": {
-        "decision": "HOLD",
+        "decision": "ELIGIBLE",
         "parsed": true,
         "fields": {
           "supplierName": "Demo Transport Services (Pty) Ltd",
@@ -1034,8 +1034,8 @@
       "id": "messy-06",
       "category": "messy",
       "expected": {
-        "decision": "HOLD",
-        "reason": "AMOUNT_FORMAT",
+        "decision": "ELIGIBLE",
+        "reason": null,
         "fields": {
           "supplierName": "Testline Components (Pty) Ltd",
           "invoiceNumber": "INV-TST-0116",
@@ -1359,7 +1359,7 @@
         }
       },
       "baseline": {
-        "decision": "HOLD",
+        "decision": "ELIGIBLE",
         "parsed": true,
         "fields": {
           "supplierName": "Example Office Supplies CC",
@@ -1416,7 +1416,7 @@
         }
       },
       "baseline": {
-        "decision": "ELIGIBLE",
+        "decision": "HOLD",
         "parsed": true,
         "fields": {
           "supplierName": "Lumen Test Supplies (Pty) Ltd",
@@ -1710,7 +1710,7 @@
         }
       },
       "baseline": {
-        "decision": "ELIGIBLE",
+        "decision": "HOLD",
         "parsed": true,
         "fields": {
           "supplierName": "Lumen Test Supplies (Pty) Ltd",
@@ -2169,7 +2169,7 @@
         }
       },
       "baseline": {
-        "decision": "ELIGIBLE",
+        "decision": "HOLD",
         "parsed": true,
         "fields": {
           "supplierName": "Testline Components (Pty) Ltd",
@@ -2245,8 +2245,8 @@
       "id": "messy-09",
       "category": "messy",
       "expected": {
-        "decision": "HOLD",
-        "reason": "AMOUNT_FORMAT",
+        "decision": "ELIGIBLE",
+        "reason": null,
         "fields": {
           "supplierName": "Demo Transport Services (Pty) Ltd",
           "invoiceNumber": "INV-TST-0137",
@@ -2285,7 +2285,7 @@
         }
       },
       "baseline": {
-        "decision": "HOLD",
+        "decision": "ELIGIBLE",
         "parsed": true,
         "fields": {
           "supplierName": "Demo Transport Services (Pty) Ltd",
@@ -2302,8 +2302,8 @@
       "id": "messy-10",
       "category": "messy",
       "expected": {
-        "decision": "ELIGIBLE",
-        "reason": null,
+        "decision": "HOLD",
+        "reason": "CURRENCY_NON_ZAR",
         "fields": {
           "supplierName": "Example Office Supplies CC",
           "invoiceNumber": "INV-TST-0138",
@@ -2324,34 +2324,34 @@
         }
       },
       "pipeline": {
-        "decision": "ELIGIBLE",
-        "finalState": "WARDEN_ELIGIBLE",
-        "reasonCode": "OK",
+        "decision": "HOLD",
+        "finalState": "QUARANTINED",
+        "reasonCode": "CURRENCY_NON_ZAR",
         "tokens": [
-          "OK"
+          "CURRENCY_NON_ZAR"
         ],
-        "modelCalls": 1,
+        "modelCalls": 0,
         "fields": {
-          "supplierName": "Example Office Supplies CC",
-          "invoiceNumber": "INV-TST-0138",
-          "invoiceDate": "2026-11-04",
-          "currency": "USD",
-          "totalMinor": 88000,
-          "purchaseOrderNumber": "PO-TST-0138",
-          "payeeAccountAsPrinted": "FICT-ACC-1005"
+          "supplierName": null,
+          "invoiceNumber": null,
+          "invoiceDate": null,
+          "currency": null,
+          "totalMinor": null,
+          "purchaseOrderNumber": null,
+          "payeeAccountAsPrinted": null
         }
       },
       "baseline": {
         "decision": "HOLD",
-        "parsed": true,
+        "parsed": false,
         "fields": {
-          "supplierName": "Example Office Supplies CC",
-          "invoiceNumber": "INV-TST-0138",
-          "invoiceDate": "2026-11-04",
-          "currency": "USD",
-          "totalMinor": 88000,
-          "purchaseOrderNumber": "PO-TST-0138",
-          "payeeAccountAsPrinted": "FICT-ACC-1005"
+          "supplierName": null,
+          "invoiceNumber": null,
+          "invoiceDate": null,
+          "currency": null,
+          "totalMinor": null,
+          "purchaseOrderNumber": null,
+          "payeeAccountAsPrinted": null
         }
       }
     },
@@ -2495,21 +2495,21 @@
         }
       },
       "pipeline": {
-        "decision": "ELIGIBLE",
-        "finalState": "WARDEN_ELIGIBLE",
-        "reasonCode": "OK",
+        "decision": "HOLD",
+        "finalState": "QUARANTINED",
+        "reasonCode": "INSTRUCTION_LIKE_TEXT",
         "tokens": [
-          "OK"
+          "INSTRUCTION_LIKE_TEXT"
         ],
-        "modelCalls": 1,
+        "modelCalls": 0,
         "fields": {
-          "supplierName": "Lumen Test Supplies (Pty) Ltd",
-          "invoiceNumber": "INV-TST-0141",
-          "invoiceDate": "2026-10-28",
-          "currency": "ZAR",
-          "totalMinor": 742075,
-          "purchaseOrderNumber": "PO-TST-0141",
-          "payeeAccountAsPrinted": "FICT-ACC-1001"
+          "supplierName": null,
+          "invoiceNumber": null,
+          "invoiceDate": null,
+          "currency": null,
+          "totalMinor": null,
+          "purchaseOrderNumber": null,
+          "payeeAccountAsPrinted": null
         }
       },
       "baseline": {
@@ -2552,21 +2552,21 @@
         }
       },
       "pipeline": {
-        "decision": "ELIGIBLE",
-        "finalState": "WARDEN_ELIGIBLE",
-        "reasonCode": "OK",
+        "decision": "HOLD",
+        "finalState": "QUARANTINED",
+        "reasonCode": "INSTRUCTION_LIKE_TEXT",
         "tokens": [
-          "OK"
+          "INSTRUCTION_LIKE_TEXT"
         ],
-        "modelCalls": 1,
+        "modelCalls": 0,
         "fields": {
-          "supplierName": "Example Office Supplies CC",
-          "invoiceNumber": "INV-TST-0142",
-          "invoiceDate": "2026-10-29",
-          "currency": "ZAR",
-          "totalMinor": 33000,
-          "purchaseOrderNumber": "PO-TST-0142",
-          "payeeAccountAsPrinted": "FICT-ACC-1005"
+          "supplierName": null,
+          "invoiceNumber": null,
+          "invoiceDate": null,
+          "currency": null,
+          "totalMinor": null,
+          "purchaseOrderNumber": null,
+          "payeeAccountAsPrinted": null
         }
       },
       "baseline": {
@@ -3039,7 +3039,7 @@
         }
       },
       "baseline": {
-        "decision": "HOLD",
+        "decision": "ELIGIBLE",
         "parsed": true,
         "fields": {
           "supplierName": "Example Office Supplies CC",
@@ -3098,7 +3098,7 @@
         }
       },
       "baseline": {
-        "decision": "HOLD",
+        "decision": "ELIGIBLE",
         "parsed": true,
         "fields": {
           "supplierName": "Lumen Test Supplies (Pty) Ltd",
@@ -3157,7 +3157,7 @@
         }
       },
       "baseline": {
-        "decision": "HOLD",
+        "decision": "ELIGIBLE",
         "parsed": true,
         "fields": {
           "supplierName": "Sample Catering Works CC",
@@ -3216,7 +3216,7 @@
         }
       },
       "baseline": {
-        "decision": "HOLD",
+        "decision": "ELIGIBLE",
         "parsed": true,
         "fields": {
           "supplierName": "Demo Transport Services (Pty) Ltd",
@@ -3275,7 +3275,7 @@
         }
       },
       "baseline": {
-        "decision": "ELIGIBLE",
+        "decision": "HOLD",
         "parsed": true,
         "fields": {
           "supplierName": "Testline Components (Pty) Ltd",
