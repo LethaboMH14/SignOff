@@ -10,8 +10,6 @@ import {
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { Jimp, loadFont } from 'jimp';
-import { SANS_32_BLACK } from 'jimp/fonts';
 import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { sha256OfBytes } from '../../../../packages/shared/src/node.js';
@@ -26,7 +24,9 @@ import {
   type IntakeOutcome,
 } from '../../src/intake/intake.js';
 import { extractPdfText, type PdfTextResult } from '../../src/intake/pdf-text.js';
+import { encodeGreyPng } from '../../src/text/image-io.js';
 import { OcrError, closeOcr, type ImageRecogniser } from '../../src/text/ocr.js';
+import { renderPage } from '../../tools/lib/glyph-page.js';
 import { writeTextPdf } from '../../tools/lib/pdf-writer.js';
 
 let dir = '';
@@ -74,12 +74,18 @@ function pngHeader(width: number, height: number): Buffer {
   return header;
 }
 
-/** A real PNG of printed text, drawn with the bitmap font, for the OCR path. */
-async function renderPng(lines: readonly string[]): Promise<Buffer> {
-  const font = await loadFont(SANS_32_BLACK);
-  const image = new Jimp({ width: 1240, height: 400, color: 0xffffffff });
-  lines.forEach((line, index) => image.print({ font, x: 80, y: 80 + index * 60, text: line }));
-  return Buffer.from(await image.getBuffer('image/png'));
+/** A real PNG of printed text, drawn with Roboto Regular, for the OCR path. */
+function renderPng(lines: readonly string[]): Buffer {
+  const page = renderPage(lines, {
+    width: 1240,
+    height: 400,
+    fontSize: 36,
+    marginX: 80,
+    marginY: 80,
+    lineHeight: 60,
+  });
+  expect(page.unsupported).toEqual([]);
+  return encodeGreyPng(page.image);
 }
 
 const SCAN_TIMEOUT_MS = 120_000;
@@ -269,7 +275,7 @@ describe('intakeFile', () => {
   it(
     'reads a photographed invoice through OCR and keeps the confidence of the reading',
     async () => {
-      const png = await renderPng([
+      const png = renderPng([
         'Invoice number: INV-TST-0100',
         'Currency: ZAR',
         'Total due: 1500.00',

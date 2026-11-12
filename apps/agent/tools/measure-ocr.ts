@@ -1,32 +1,33 @@
 /* eslint-disable security/detect-non-literal-fs-filename, security/detect-object-injection -- the tool reads its fixed fixture folder; pixel buffers are indexed by bounded loop counters */
 /**
  * Measures OCR on rendered invoice pages. The reference text is the text layer of three labelled fixtures, read by the
- * same PDF parser the agent uses. Each page is drawn as an image with a bitmap font, once straight and once turned by
- * 1.5 degrees, and read back by the OCR module. The output is the character error rate and the run time per page, for
- * English alone and for English with Afrikaans. Nothing here is estimated: every number is a measured run.
+ * same PDF parser the agent uses. Each page is drawn with the repository's bitmap font (tools/lib/glyph-page.ts), once
+ * straight, once turned by 1.5 degrees and once degraded (blur, noise, lower contrast). Each render is read back by the
+ * OCR module with English alone and with English and Afrikaans. The output is the character error rate and the run time
+ * per page. Nothing here is estimated: every number is a measured run.
  *
  * Run: npx tsx apps/agent/tools/measure-ocr.ts
  */
 import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-
-import { loadFont } from 'jimp';
-import { SANS_32_BLACK } from 'jimp/fonts';
-import { Jimp } from 'jimp';
+import { fileURLToPath } from 'node:url';
 
 import { extractPdfText } from '../src/intake/pdf-text.js';
 import { characterErrorRate } from '../src/text/cer.js';
+import { encodeGreyPng } from '../src/text/image-io.js';
 import { closeOcr, recogniseImage, type OcrLanguages } from '../src/text/ocr.js';
 import { rotateGrey, type GreyImage } from '../src/text/preprocess.js';
+import { renderPage } from './lib/glyph-page.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const FIXTURES = join(here, '..', 'fixtures', 'labelled', 'invoices');
 const FILES = ['clean-01.pdf', 'clean-02.pdf', 'clean-03.pdf'];
 const WIDTH = 1240;
-const LINE_HEIGHT = 40;
+const LINE_HEIGHT = 44;
 const MARGIN = 80;
-const WRAP = 62;
+const FONT_SIZE = 32;
+/** Sixty characters at 18 pixels a character is 1080 pixels, which leaves a margin on the right of an A4 width. */
+const WRAP = 60;
 const SKEW_DEGREES = 1.5;
 
 function wrap(text: string): string[] {
@@ -44,29 +45,34 @@ function wrap(text: string): string[] {
   return lines;
 }
 
-async function renderPage(
-  text: string,
-): Promise<{ straight: Buffer; turned: Buffer; degraded: Buffer; reference: string }> {
+interface RenderedPage {
+  readonly straight: Buffer;
+  readonly turned: Buffer;
+  readonly degraded: Buffer;
+  readonly reference: string;
+}
+
+function renderInvoicePage(text: string): RenderedPage {
   const lines = wrap(text);
   const height = Math.max(1754, MARGIN * 2 + lines.length * LINE_HEIGHT);
-  const font = await loadFont(SANS_32_BLACK);
-  const image = new Jimp({ width: WIDTH, height, color: 0xffffffff });
-  lines.forEach((line, index) => {
-    image.print({ font, x: MARGIN, y: MARGIN + index * LINE_HEIGHT, text: line });
-  });
-  const grey: GreyImage = {
+  const page = renderPage(lines, {
     width: WIDTH,
     height,
-    data: new Uint8Array(WIDTH * height),
-  };
-  for (let index = 0; index < WIDTH * height; index += 1) {
-    grey.data[index] = image.bitmap.data[index * 4] ?? 255;
+    fontSize: FONT_SIZE,
+    marginX: MARGIN,
+    marginY: MARGIN,
+    lineHeight: LINE_HEIGHT,
+  });
+  if (page.unsupported.length > 0) {
+    // A character the font does not draw would be read as a blank, and the measurement would be wrong. Stop instead.
+    throw new Error(`the font has no glyph for: ${page.unsupported.join(' ')}`);
   }
+  const grey = page.image;
   const turned = rotateGrey(grey, SKEW_DEGREES);
   return {
-    straight: await encodeGrey(grey),
-    turned: await encodeGrey(turned),
-    degraded: await encodeGrey(degrade(turned)),
+    straight: encodeGreyPng(grey),
+    turned: encodeGreyPng(turned),
+    degraded: encodeGreyPng(degrade(turned)),
     reference: text,
   };
 }
@@ -105,17 +111,6 @@ function degrade(image: GreyImage): GreyImage {
   return { width, height, data: out };
 }
 
-async function encodeGrey(image: GreyImage): Promise<Buffer> {
-  const out = new Jimp({ width: image.width, height: image.height, color: 0xffffffff });
-  for (let index = 0; index < image.width * image.height; index += 1) {
-    const value = image.data[index] ?? 255;
-    out.bitmap.data[index * 4] = value;
-    out.bitmap.data[index * 4 + 1] = value;
-    out.bitmap.data[index * 4 + 2] = value;
-  }
-  return Buffer.from(await out.getBuffer('image/png'));
-}
-
 interface Row {
   readonly page: string;
   readonly languages: OcrLanguages;
@@ -128,20 +123,13 @@ interface Row {
 }
 
 async function main(): Promise<void> {
-  const pages: {
-    name: string;
-    reference: string;
-    straight: Buffer;
-    turned: Buffer;
-    degraded: Buffer;
-  }[] = [];
+  const pages: (RenderedPage & { name: string })[] = [];
   for (const file of FILES) {
     const parsed = await extractPdfText(readFileSync(join(FIXTURES, file)));
     if (!parsed.ok) {
       throw new Error(`fixture ${file} did not parse`);
     }
-    const rendered = await renderPage(parsed.pages.join('\n'));
-    pages.push({ name: file, ...rendered });
+    pages.push({ name: file, ...renderInvoicePage(parsed.pages.join('\n')) });
   }
 
   const rows: Row[] = [];

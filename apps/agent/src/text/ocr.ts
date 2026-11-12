@@ -1,14 +1,14 @@
-/* eslint-disable security/detect-non-literal-fs-filename, security/detect-object-injection -- the data folder is set by the agent (or a test), and the pixel buffers are indexed by bounded loop counters */
+/* eslint-disable security/detect-non-literal-fs-filename -- the data folder is set by the agent (or a test) */
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { Jimp } from 'jimp';
 import { createWorker, type Worker } from 'tesseract.js';
 
 import { imageSizeOf, MAX_IMAGE_PIXELS, MAX_IMAGE_SIDE } from '../intake/sniff.js';
-import { greyFromRgba, prepareGrey, type GreyImage } from './preprocess.js';
+import { decodeImage, encodeGreyPng, type RgbaImage } from './image-io.js';
+import { greyFromRgba, prepareGrey } from './preprocess.js';
 
 /**
  * OCR for scanned and photographed invoices (PNG and JPEG). The engine is Tesseract.js, pinned to an exact version.
@@ -123,20 +123,15 @@ export function createOcrRecogniser(dataDir: string = TESSDATA_DIR): {
     ) {
       throw new OcrError('OCR_IMAGE_TOO_LARGE');
     }
-    let decoded: Awaited<ReturnType<typeof Jimp.read>>;
+    let decoded: RgbaImage;
     try {
-      decoded = await Jimp.read(Buffer.from(bytes));
+      decoded = decodeImage(bytes, format);
     } catch {
       throw new OcrError('OCR_IMAGE_UNREADABLE');
     }
-    const { width, height, data } = decoded.bitmap;
-    const grey = greyFromRgba(
-      new Uint8Array(data.buffer, data.byteOffset, data.byteLength),
-      width,
-      height,
-    );
+    const grey = greyFromRgba(decoded.rgba, decoded.width, decoded.height);
     const prepared = prepareGrey(grey);
-    const png = await encodeGrey(prepared.image);
+    const png = encodeGreyPng(prepared.image);
 
     let worker: Worker;
     try {
@@ -174,16 +169,4 @@ export const recogniseImage: ImageRecogniser = defaultRecogniser.recognise;
 /** Stops the warm workers of the default recogniser. The evaluation and the tests call it when they finish. */
 export async function closeOcr(): Promise<void> {
   await defaultRecogniser.close();
-}
-
-async function encodeGrey(image: GreyImage): Promise<Buffer> {
-  const out = new Jimp({ width: image.width, height: image.height, color: 0xffffffff });
-  for (let index = 0; index < image.width * image.height; index += 1) {
-    const value = image.data[index] ?? 255;
-    out.bitmap.data[index * 4] = value;
-    out.bitmap.data[index * 4 + 1] = value;
-    out.bitmap.data[index * 4 + 2] = value;
-    out.bitmap.data[index * 4 + 3] = 255;
-  }
-  return Buffer.from(await out.getBuffer('image/png'));
 }

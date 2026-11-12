@@ -1,16 +1,15 @@
-/* eslint-disable security/detect-object-injection -- pixel buffers are indexed by bounded loop counters */
 /* eslint-disable security/detect-non-literal-fs-filename -- the tests create their own folders */
 import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { Jimp, loadFont } from 'jimp';
-import { SANS_32_BLACK } from 'jimp/fonts';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { characterErrorRate } from '../../src/text/cer.js';
+import { decodeImage, encodeGreyPng } from '../../src/text/image-io.js';
 import { createOcrRecogniser, OCR_ENGINE, OcrError, TESSDATA_DIR } from '../../src/text/ocr.js';
 import { greyFromRgba, rotateGrey } from '../../src/text/preprocess.js';
+import { renderPage } from '../../tools/lib/glyph-page.js';
 
 const LINES = ['Invoice number: INV-TST-0100', 'Currency: ZAR', 'Total due: 1500.00'];
 const OCR_TIMEOUT_MS = 120_000;
@@ -25,11 +24,18 @@ afterAll(() => {
   rmSync(scratch, { recursive: true, force: true });
 });
 
-async function renderPng(lines: readonly string[]): Promise<Buffer> {
-  const font = await loadFont(SANS_32_BLACK);
-  const image = new Jimp({ width: 1240, height: 400, color: 0xffffffff });
-  lines.forEach((line, index) => image.print({ font, x: 80, y: 80 + index * 60, text: line }));
-  return Buffer.from(await image.getBuffer('image/png'));
+/** The same font page as the intake tests: printed lines on white paper, as a PNG. */
+function renderPng(lines: readonly string[]): Buffer {
+  const page = renderPage(lines, {
+    width: 1240,
+    height: 400,
+    fontSize: 36,
+    marginX: 80,
+    marginY: 80,
+    lineHeight: 60,
+  });
+  expect(page.unsupported).toEqual([]);
+  return encodeGreyPng(page.image);
 }
 
 describe('the pinned OCR engine', () => {
@@ -58,7 +64,7 @@ describe('recognition with the vendored data', () => {
   it(
     'reads a rendered invoice page word for word, and reports its confidence and language set',
     async () => {
-      const reading = await recogniser.recognise(await renderPng(LINES), 'PNG', 'eng+afr');
+      const reading = await recogniser.recognise(renderPng(LINES), 'PNG', 'eng+afr');
       expect(reading.languages).toBe('eng+afr');
       expect(characterErrorRate(LINES.join('\n'), reading.text)).toBe(0);
       expect(reading.confidence).toBeGreaterThan(70);
@@ -71,26 +77,10 @@ describe('recognition with the vendored data', () => {
     'corrects a page turned by 2 degrees before it reads the page',
     async () => {
       // The page is turned with the module's own rotation over white paper, then encoded as a PNG.
-      const straight = await Jimp.read(await renderPng(LINES));
-      const { width, height, data } = straight.bitmap;
-      const grey = greyFromRgba(
-        new Uint8Array(data.buffer, data.byteOffset, data.byteLength),
-        width,
-        height,
-      );
+      const straight = decodeImage(renderPng(LINES), 'PNG');
+      const grey = greyFromRgba(straight.rgba, straight.width, straight.height);
       const turned = rotateGrey(grey, 2);
-      const out = new Jimp({ width, height, color: 0xffffffff });
-      for (let index = 0; index < width * height; index += 1) {
-        const value = turned.data[index] ?? 255;
-        out.bitmap.data[index * 4] = value;
-        out.bitmap.data[index * 4 + 1] = value;
-        out.bitmap.data[index * 4 + 2] = value;
-      }
-      const reading = await recogniser.recognise(
-        Buffer.from(await out.getBuffer('image/png')),
-        'PNG',
-        'eng',
-      );
+      const reading = await recogniser.recognise(encodeGreyPng(turned), 'PNG', 'eng');
       expect(reading.correctedDegrees).toBeCloseTo(2, 6);
       expect(characterErrorRate(LINES.join('\n'), reading.text)).toBeLessThan(0.1);
     },
@@ -120,7 +110,7 @@ describe('fail closed when the language data is not the data that was pinned', (
     mkdirSync(empty);
     const recogniser = createOcrRecogniser(empty);
     const rejection = await recogniser
-      .recognise(await renderPng(LINES), 'PNG', 'eng')
+      .recognise(renderPng(LINES), 'PNG', 'eng')
       .catch((error: unknown) => error);
     expect(rejection).toBeInstanceOf(OcrError);
     expect((rejection as OcrError).reason).toBe('OCR_LANGUAGE_DATA_MISSING');
@@ -139,12 +129,12 @@ describe('fail closed when the language data is not the data that was pinned', (
       writeFileSync(join(altered, 'eng.traineddata.gz'), changed);
       const recogniser = createOcrRecogniser(altered);
       const rejection = await recogniser
-        .recognise(await renderPng(LINES), 'PNG', 'eng')
+        .recognise(renderPng(LINES), 'PNG', 'eng')
         .catch((error: unknown) => error);
       expect((rejection as OcrError).reason).toBe('OCR_LANGUAGE_DATA_MISMATCH');
       // The refusal is remembered: a second page gets the same answer without a second check.
       const again = await recogniser
-        .recognise(await renderPng(LINES), 'PNG', 'eng')
+        .recognise(renderPng(LINES), 'PNG', 'eng')
         .catch((error: unknown) => error);
       expect((again as OcrError).reason).toBe('OCR_LANGUAGE_DATA_MISMATCH');
     },
