@@ -148,6 +148,7 @@ describe('processInvoice holds and quarantines', () => {
       fingerprint: FP,
       bytes: 10,
       reason: 'NO_TEXT_LAYER',
+      reasons: ['NO_TEXT_LAYER'],
     });
     expect(result.finalState).toBe('QUARANTINED');
     expect(result.reasonCode).toBe('NO_TEXT_LAYER');

@@ -73,6 +73,11 @@ describe('the committed labelled set', () => {
       const set = loadLabelledSet(FIXTURES);
       for (const item of set.cases) {
         const outcome = await intakeFile(`${FIXTURES}/${item.file}`);
+        if (item.expected.decision === 'HOLD' && item.expected.reason === 'CURRENCY_NON_ZAR') {
+          // A non-ZAR invoice is held at intake by the classifier, so it has no text to check against the spans.
+          expect(outcome, item.id).toMatchObject({ kind: 'held', reason: 'CURRENCY_NON_ZAR' });
+          continue;
+        }
         expect(outcome.kind, item.id).toBe('text-pdf');
         if (outcome.kind !== 'text-pdf') continue;
         const text = outcome.pages.join('\n');

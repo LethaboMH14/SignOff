@@ -94,7 +94,13 @@ export const SUPPLIER_LIST: readonly SupplierMaster[] = parseSupplierMaster({
 });
 
 export function intakeOk(pages: readonly string[] = PAGES): IntakeOutcome {
-  return { kind: 'text-pdf', fingerprint: FP, bytes: 1024, pages };
+  return {
+    kind: 'text-pdf',
+    fingerprint: FP,
+    bytes: 1024,
+    pages,
+    extras: { annotations: [], metadata: [] },
+  };
 }
 
 export interface Canned extends ModelClient {
