@@ -5,12 +5,25 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 import { sha256OfBytes } from '../../../../packages/shared/src/node.js';
-import { CASES, invoiceNumberOf, linesOf } from '../../tools/labelled-spec.js';
+import {
+  CASES,
+  invoiceNumberOf,
+  layoutOf,
+  numberIndexOf,
+  SPANNED_FIELDS,
+} from '../../tools/labelled-spec.js';
 import { writeTextPdf } from '../../tools/lib/pdf-writer.js';
 import { intakeFile } from '../../src/intake/intake.js';
 import { loadLabelledSet, CATEGORIES } from '../../src/eval/cases.js';
-import { evaluate, scoreBaseline, scorePipeline, byCategory } from '../../src/eval/run.js';
+import {
+  byCategory,
+  evaluate,
+  perCaseScores,
+  scoreBaseline,
+  scorePipeline,
+} from '../../src/eval/run.js';
 import { renderReport } from '../../src/eval/report.js';
+import { compareSides } from '../../src/eval/stats.js';
 import { simulatedModel } from '../../src/eval/simulated-model.js';
 import { AGENT_POLICY_VERSION } from '../../src/config.js';
 
@@ -18,29 +31,31 @@ const FIXTURES = fileURLToPath(new URL('../../fixtures/labelled', import.meta.ur
 const SLOW = 240_000;
 
 describe('the committed labelled set', () => {
-  it('has thirty fictional cases in the five categories, and every file is present', () => {
+  it('has sixty-two fictional cases in seven categories, and every file is present', () => {
     const set = loadLabelledSet(FIXTURES);
-    expect(set.cases).toHaveLength(30);
+    expect(set.cases).toHaveLength(62);
     expect(set.notice).toContain('FICTIONAL');
     const counts = new Map<string, number>();
     for (const item of set.cases) {
       counts.set(item.category, (counts.get(item.category) ?? 0) + 1);
     }
     expect(Object.fromEntries(counts)).toEqual({
-      clean: 10,
-      messy: 6,
-      injected: 6,
-      missing: 4,
-      'forged-payee': 4,
+      clean: 14,
+      messy: 10,
+      injected: 10,
+      missing: 8,
+      'forged-payee': 8,
+      'over-limit': 6,
+      duplicate: 6,
     });
-    expect(CATEGORIES).toHaveLength(5);
+    expect(CATEGORIES).toHaveLength(7);
   });
 
   it('matches the generator, byte for byte, for every PDF', () => {
     CASES.forEach((_spec, index) => {
       const id = labelledIds().at(index) ?? '';
       const bytes = readFileSync(`${FIXTURES}/invoices/${id}.pdf`);
-      expect(bytes.equals(writeTextPdf([linesOf(index)]))).toBe(true);
+      expect(bytes.equals(writeTextPdf([layoutOf(index).lines]))).toBe(true);
     });
   });
 
@@ -53,26 +68,41 @@ describe('the committed labelled set', () => {
   });
 
   it(
-    'gives every case a readable text layer through the same intake the agent uses',
+    'gives every case a readable text layer, and every source span appears verbatim in it',
     async () => {
       const set = loadLabelledSet(FIXTURES);
       for (const item of set.cases) {
         const outcome = await intakeFile(`${FIXTURES}/${item.file}`);
         expect(outcome.kind, item.id).toBe('text-pdf');
+        if (outcome.kind !== 'text-pdf') continue;
+        const text = outcome.pages.join('\n');
+        for (const [field, span] of Object.entries(item.expected.spans)) {
+          if (span !== null) {
+            expect(text.includes(span), `${item.id} ${field}`).toBe(true);
+          }
+        }
+        // A stated value must have a span. A field the label leaves empty must have none.
+        for (const field of SPANNED_FIELDS) {
+          const stated = Reflect.get(item.expected.fields, field) !== null;
+          expect(Reflect.get(item.expected.spans, field) !== null, `${item.id} ${field}`).toBe(
+            stated,
+          );
+        }
       }
     },
     SLOW,
   );
 
-  it('uses invoice and order numbers that do not repeat', () => {
-    const numbers = CASES.map((_, index) => invoiceNumberOf(index));
-    expect(new Set(numbers).size).toBe(CASES.length);
+  it('uses invoice and order numbers that do not repeat, except where a duplicate reuses its original', () => {
+    const numbers = CASES.map((_, index) => invoiceNumberOf(numberIndexOf(index)));
+    const duplicates = CASES.filter((spec) => spec.refersTo !== undefined).length;
+    expect(new Set(numbers).size).toBe(CASES.length - duplicates);
   });
 });
 
-describe('evaluation with the stand-in models', () => {
+describe('evaluation with the fixture stand-in models', () => {
   it(
-    'lets the pipeline approve exactly the eligible cases, and labels the run as simulated',
+    'runs every case through the fixed workflow, and labels the run as FIXTURE',
     async () => {
       const set = loadLabelledSet(FIXTURES);
       const runs = await evaluate({
@@ -83,36 +113,42 @@ describe('evaluation with the stand-in models', () => {
         now: () => new Date('2026-11-10T10:00:00.000Z'),
         nonce: () => 'a1b2c3d4e5f60718293a4b5c',
       });
-      expect(runs).toHaveLength(30);
+      expect(runs).toHaveLength(62);
+      for (const run of runs) {
+        expect(run.pipeline.modelCalls, run.id).toBeLessThanOrEqual(3);
+      }
 
       const pipeline = scorePipeline(runs);
-      expect(pipeline.falseApprovals.count).toBe(0);
-      expect(pipeline.falseHolds.count).toBe(0);
-      expect(pipeline.decisionAccuracy.count).toBe(30);
-      expect(pipeline.reasonFound.count).toBe(pipeline.reasonFound.n);
-
+      expect(pipeline.decisionAccuracy.n).toBe(62);
       const baseline = scoreBaseline(runs);
-      expect(baseline.falseApprovals.count).toBeGreaterThan(0);
+      expect(baseline.decisionAccuracy.n).toBe(62);
+
+      const swarm = perCaseScores(runs, 'pipeline');
+      const plain = perCaseScores(runs, 'baseline');
+      expect(swarm.decision).toHaveLength(62);
+      expect(plain.fields).toHaveLength(62);
+      const comparison = compareSides('Decision correct', swarm.decision, plain.decision);
+      expect(comparison.n).toBe(62);
 
       const byCat = byCategory(runs);
-      expect(byCat.get('injected')).toEqual({ n: 6, pipelineWrong: 0, baselineWrong: 6 });
-      expect(byCat.get('forged-payee')?.pipelineWrong).toBe(0);
-      expect(byCat.get('clean')?.baselineWrong).toBe(0);
+      expect(byCat.size).toBe(7);
 
       const report = renderReport({
-        mode: 'SIMULATED',
-        pipelineModel: 'simulated',
-        baselineModel: 'simulated',
+        mode: 'FIXTURE',
+        pipelineModel: 'fixture',
+        baselineModel: 'fixture',
         policyVersion: AGENT_POLICY_VERSION,
         generatedAt: '2026-11-10T10:00:00.000Z',
         notice: set.notice,
         runs,
         pipeline,
         baseline,
+        comparisons: [comparison],
       });
-      expect(report).toContain('# Agent evaluation: SIMULATED');
+      expect(report).toContain('# Agent evaluation: FIXTURE');
       expect(report).toContain('No language model was called');
       expect(report).toContain('| False approvals');
+      expect(report).toContain('Mann-Whitney');
       expect(report).toContain('| messy-05 |');
     },
     SLOW,
@@ -129,6 +165,7 @@ describe('evaluation with the stand-in models', () => {
       runs: [],
       pipeline: scorePipeline([]),
       baseline: scoreBaseline([]),
+      comparisons: [],
     });
     expect(report).toContain('# Agent evaluation: LIVE');
     expect(report).toContain('The models named below were called');

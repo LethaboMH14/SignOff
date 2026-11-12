@@ -21,10 +21,20 @@ import { parseSupplierMaster, type SupplierMaster } from '../match/supplier-mast
  * or a missing record stops the run before any number is produced.
  */
 
-export const CATEGORIES = ['clean', 'messy', 'injected', 'missing', 'forged-payee'] as const;
+export const CATEGORIES = [
+  'clean',
+  'messy',
+  'injected',
+  'missing',
+  'forged-payee',
+  'over-limit',
+  'duplicate',
+] as const;
 export type Category = (typeof CATEGORIES)[number];
 
 const Text = z.string().min(1).max(200);
+/** The exact line of the PDF text that states a field. Null when the field is not stated. */
+const Span = z.string().min(1).max(200).nullable();
 
 export const LabelledCase = z.strictObject({
   id: z.string().regex(/^[a-z-]+-\d{2}$/),
@@ -45,6 +55,15 @@ export const LabelledCase = z.strictObject({
       totalMinor: MinorUnits.nullable(),
       purchaseOrderNumber: Text.nullable(),
       payeeAccountAsPrinted: Text.nullable(),
+    }),
+    spans: z.strictObject({
+      supplierName: Span,
+      invoiceNumber: Span,
+      invoiceDate: Span,
+      currency: Span,
+      totalMinor: Span,
+      purchaseOrderNumber: Span,
+      payeeAccountAsPrinted: Span,
     }),
   }),
   note: z.string().max(300),
