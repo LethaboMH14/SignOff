@@ -356,3 +356,11 @@ One entry per working session (rule R-19 in [RULES.md](../RULES.md)), newest fir
 - Evidence: T-151 to T-153; S-059 closed in code.
 - Problems / blockers: the public demo's desk no longer shows limits or pause state, because those came from the Warden. A stale console process from an earlier browser check was still listening on port 4180. I stopped it after confirming it by its process, so the browser check ran against the new server. The browser console shows a CSP error for `data:` font URIs from @fontsource; that is pre-existing and not changed. The browser pane cannot set reduced motion or run a screen reader. Not committed, nothing pushed, no reply on #57.
 - Next: on Sibusiso's go, commit with the R-22 trailer (Claude Haiku 5.5) and push. Reply on #57 only on his go.
+
+### 2026-11-12 SAST — Sibusiso with Claude (Haiku 5.5) — live rerun, Testnet proof and agent run
+
+- Done: committed the failure-cause change (c5cf977) on fix/model-call-detail and pushed it as a new branch. Reran the 30-case labelled set live on Groq, Gemini and OpenRouter (T-155). Ran a fresh two-signature Testnet payment and the single-key rejections under a new run ID, checked on the ledger (T-156, T-157). Started the Warden and ran the agent on one clean invoice (T-158, T-159). Deployed the static simulated fixture page to Vercel (T-160).
+- Changed decisions: none.
+- Evidence: T-155 to T-160; reports in apps/agent/results/live-rerun-2026-11-12/.
+- Problems and blockers: the agent-to-Warden-to-Testnet payment was not reached. Gemini was rate-limited (MODEL_HTTP_429), and Groq failed verification on the invoice date (FIELD_NOT_STATED). OpenRouter's reasoning model ran out of tokens in 23 cases (MODEL_CUT_OFF). Killing the agent or the Warden leaves a run.lock behind (both need the lock cleared by hand). The Warden's caller secret is stored as base64, but the agent README asks for hex. The Vercel deployment is the static fixture page only: the server-backed replay needs stateless sessions and polling before it can run on Vercel.
+- Next: decide on the date rule for the invoice, the token limit for reasoning models, and the Warden host.

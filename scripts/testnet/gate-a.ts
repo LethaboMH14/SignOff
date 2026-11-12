@@ -87,22 +87,38 @@ async function rlusdTransfer(deps: Deps, paymentId: string, value: string): Prom
   return { paymentId, from, to, amount };
 }
 
+/**
+ * A proof's payment id. A payment id that is already in the journal is never sent again, so a new run names a new id
+ * with SIGNOFF_PROOF_RUN (lower-case letters, digits and hyphens). Without it the id is the one the earlier runs used.
+ */
+function proofId(base: string): string {
+  const run = process.env['SIGNOFF_PROOF_RUN'];
+  if (run === undefined || run === '') {
+    return base;
+  }
+  if (!/^[a-z0-9][a-z0-9-]{0,31}$/.test(run)) {
+    throw new RangeError('SIGNOFF_PROOF_RUN must be lower-case letters, digits and hyphens');
+  }
+  return `${base}.${run}`;
+}
+
 const RUNNERS: ReadonlyMap<string, Runner> = new Map<string, Runner>([
   ['provision', (deps) => provisionTestnet(deps)],
   ['signers', (deps) => configureSigners(deps)],
   [
     'pay',
-    async (deps) => sendTwoSignatureTransfer(deps, await tokenTransfer(deps, 'pay.proof', '10')),
+    async (deps) =>
+      sendTwoSignatureTransfer(deps, await tokenTransfer(deps, proofId('pay.proof'), '10')),
   ],
   [
     'pay-rlusd',
     async (deps) =>
-      sendTwoSignatureTransfer(deps, await rlusdTransfer(deps, 'pay-rlusd.proof', '10')),
+      sendTwoSignatureTransfer(deps, await rlusdTransfer(deps, proofId('pay-rlusd.proof'), '10')),
   ],
   [
     'rejections',
     async (deps) =>
-      demonstrateRejections(deps, await tokenTransfer(deps, 'rejections.proof', '10')),
+      demonstrateRejections(deps, await tokenTransfer(deps, proofId('rejections.proof'), '10')),
   ],
   ['timeout', async (deps) => timeoutDrill(deps, await tokenTransfer(deps, 'timeout.proof', '4'))],
   [
