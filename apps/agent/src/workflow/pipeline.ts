@@ -20,6 +20,7 @@ import {
   type TransitionRecord,
 } from '../log/transition-log.js';
 
+import type { UsdConversion } from './fx-convert.js';
 import { DefinitiveRefusal, type WardenPort } from './warden-port.js';
 import type { State } from './states.js';
 
@@ -48,6 +49,11 @@ export interface PipelineDeps {
   readonly now: () => Date;
   readonly newAttemptId: () => string;
   readonly nonce?: () => string;
+  /**
+   * Converts a rand amount (cents) to the Warden's USD minor units at a live rate. Absent means a rand invoice is
+   * held with FX_UNAVAILABLE. Rejected conversions hold the invoice too.
+   */
+  readonly convert?: (zarMinor: number) => Promise<UsdConversion>;
   /** Null for a run that stops at eligibility, which is how the evaluation runs. */
   readonly warden: WardenPort | null;
   readonly signer: AgentSigner | null;
@@ -69,6 +75,8 @@ export interface RunResult {
   readonly finalState: State;
   readonly reasonCode: string;
   readonly reasons: readonly string[];
+  /** The rand-to-USD conversion the Warden was asked to pay, with its rate and source; null for USD invoices. */
+  readonly fx: UsdConversion | null;
   readonly obligationKey: string | null;
   readonly attemptId: string | null;
   readonly wardenDecision: WardenDecision['decision'] | null;
@@ -93,6 +101,7 @@ interface RunState {
   screenCodes: string[];
   verified: VerifiedInvoice | null;
   screen: ScreenResult | null;
+  fx: UsdConversion | null;
 }
 
 const WARDEN_CODE = (code: string): string => `WARDEN_${code}`;
@@ -147,6 +156,7 @@ export async function processInvoice(
   const { correlationId, outcome } = input;
   const fileSha256 = outcome.fingerprint;
   const run: RunState = {
+    fx: null,
     reasonCode: 'OK',
     reasons: [],
     obligationKey: null,
@@ -197,6 +207,7 @@ export async function processInvoice(
     finalState: deps.log.stateOf(correlationId) ?? 'RECEIVED',
     reasonCode: run.reasonCode,
     reasons: run.reasons,
+    fx: run.fx,
     obligationKey: run.obligationKey,
     attemptId: run.attemptId,
     wardenDecision: run.wardenDecision,
@@ -357,9 +368,56 @@ interface Payable {
   readonly fileSha256: string;
 }
 
+type Priced =
+  | {
+      readonly kind: 'ok';
+      readonly payable: Payable;
+      readonly conversion: UsdConversion | null;
+    }
+  | { readonly kind: 'held'; readonly code: string; readonly reason: string };
+
+/**
+ * The amount the Warden is asked to pay, in its payable currency. USD passes unchanged. ZAR is converted at the
+ * live rate (fx-convert.ts); the conversion, with its rate and source, is kept on the run result. Any other
+ * currency, or a failed conversion, holds the invoice: nothing is guessed.
+ */
+async function priceInPayableCurrency(input: Payable, deps: PipelineDeps): Promise<Priced> {
+  if (input.currency === 'USD') {
+    return { kind: 'ok', payable: input, conversion: null };
+  }
+  if (input.currency !== 'ZAR') {
+    return {
+      kind: 'held',
+      code: 'CURRENCY_NOT_PAYABLE',
+      reason: `the invoice currency ${input.currency} has no payable asset`,
+    };
+  }
+  if (deps.convert === undefined) {
+    return {
+      kind: 'held',
+      code: 'FX_UNAVAILABLE',
+      reason: 'no live USD/ZAR rate is configured for this run',
+    };
+  }
+  try {
+    const conversion = await deps.convert(input.amountMinor);
+    return {
+      kind: 'ok',
+      payable: { ...input, currency: conversion.currency, amountMinor: conversion.amountMinor },
+      conversion,
+    };
+  } catch (error) {
+    return {
+      kind: 'held',
+      code: 'FX_UNAVAILABLE',
+      reason: error instanceof Error ? error.message : 'the rate could not be obtained',
+    };
+  }
+}
+
 /** Steps 6 to 9: get unsigned Warden terms, agent-sign, request final Warden authorization, reconcile. */
 async function submit(
-  payable: Payable,
+  input: Payable,
   deps: PipelineDeps,
   run: RunState,
   move: (
@@ -375,6 +433,15 @@ async function submit(
     move('HELD', 'matcher', 'INTERNAL_STATE');
     return finish();
   }
+
+  // The Warden pays USD (RLUSD). A rand invoice is converted at a live rate here, or it is held.
+  const priced = await priceInPayableCurrency(input, deps);
+  if (priced.kind === 'held') {
+    move('HELD', 'matcher', priced.code, [priced.reason]);
+    return finish();
+  }
+  const payable = priced.payable;
+  run.fx = priced.conversion;
 
   const attemptId = deps.newAttemptId();
   const proposed = PaymentProposal.safeParse({

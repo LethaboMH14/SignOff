@@ -5,8 +5,10 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import { TransitionLog } from '../../src/log/transition-log.js';
-import { processInvoice, type RunResult } from '../../src/workflow/pipeline.js';
+import { processInvoice, type PipelineDeps, type RunResult } from '../../src/workflow/pipeline.js';
 import { DefinitiveRefusal } from '../../src/workflow/warden-port.js';
+import { zarMinorToUsdMinor } from '../../src/workflow/fx-convert.js';
+import { fixtureUsdZarRate } from '../../../../packages/shared/src/fx/index.js';
 import {
   ATTEMPT,
   cannedModel,
@@ -81,6 +83,10 @@ describe('processInvoice, the whole path', () => {
     await run(deps);
     expect(warden.proposals).toHaveLength(1);
     const [proposal] = warden.proposals;
+    expect(proposal).toMatchObject({
+      currency: 'USD',
+      amountMinor: zarMinorToUsdMinor(1_234_567, fixtureUsdZarRate()),
+    });
     expect(Object.keys(proposal ?? {}).sort()).toEqual(
       [
         'amountMinor',
@@ -97,8 +103,6 @@ describe('processInvoice, the whole path', () => {
     );
     expect(proposal).toMatchObject({
       supplierId: 'SUP-TST001',
-      currency: 'ZAR',
-      amountMinor: 1_234_567,
       invoiceFingerprint: FP,
       proposedBy: 'agent',
     });
@@ -209,6 +213,27 @@ describe('processInvoice holds and quarantines', () => {
     expect(result.reasonCode).toBe('MATCH_FAILED');
     expect(result.reasons).toContain('AMOUNT_MISMATCH');
     expect(result.obligationKey).toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  it('proposes a rand invoice to the Warden in USD at the converted amount', async () => {
+    const warden = fakeWarden();
+    const result = await run(depsWith({ warden }));
+    expect(result.fx).toMatchObject({ currency: 'USD', rate: fixtureUsdZarRate().rate });
+    expect(warden.proposals).toHaveLength(1);
+    expect(warden.proposals[0]?.currency).toBe('USD');
+    expect(warden.proposals[0]?.amountMinor).toBe(
+      zarMinorToUsdMinor(1_234_567, fixtureUsdZarRate()),
+    );
+  });
+
+  it('holds a rand invoice when no live rate is configured (FX_UNAVAILABLE), without proposing', async () => {
+    const warden = fakeWarden();
+    // Remove the converter rather than set it to undefined (exactOptionalPropertyTypes).
+    const deps = { ...depsWith({ warden }), convert: undefined } as unknown as PipelineDeps;
+    const result = await run(deps);
+    expect(result.finalState).toBe('HELD');
+    expect(result.reasonCode).toBe('FX_UNAVAILABLE');
+    expect(warden.proposals).toHaveLength(0);
   });
 
   it('holds a payable that may already have reached the ledger', async () => {

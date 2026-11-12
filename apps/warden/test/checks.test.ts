@@ -95,6 +95,10 @@ const CLEAN_FACTS: PreSigningFacts = {
   spendingLine: { balance: '100', limit: '1000', frozenByIssuer: false, frozenByHolder: false },
   destinationExists: true,
   destinationLine: { balance: '0', limit: '100', frozenByIssuer: false, frozenByHolder: false },
+  issuerRequiresAuth: false,
+  destinationRequiresAuth: false,
+  destinationRequiresDestTag: false,
+  enrolledDestinationTag: null,
 };
 
 describe('day, identity and tolerance helpers', () => {
@@ -243,6 +247,32 @@ describe('spending limits', () => {
 describe('the pre-signing ledger check', () => {
   it('passes when every fact is as expected', () => {
     expect(preSigningVerdict(CLEAN_FACTS, '10')).toBeNull();
+  });
+
+  it('holds when the payee requires a destination tag and none is enrolled', () => {
+    const verdict = preSigningVerdict(
+      { ...CLEAN_FACTS, destinationRequiresDestTag: true, enrolledDestinationTag: null },
+      '10',
+    );
+    expect(verdict).toMatchObject({ decision: 'HOLD' });
+  });
+
+  it('allows a payee that requires a destination tag when one is enrolled', () => {
+    expect(
+      preSigningVerdict(
+        { ...CLEAN_FACTS, destinationRequiresDestTag: true, enrolledDestinationTag: 7 },
+        '10',
+      ),
+    ).toBeNull();
+  });
+
+  it('holds when the payee or the issuer requires trust-line authorization, which is not performed', () => {
+    expect(
+      preSigningVerdict({ ...CLEAN_FACTS, destinationRequiresAuth: true }, '10'),
+    ).toMatchObject({ decision: 'HOLD' });
+    expect(preSigningVerdict({ ...CLEAN_FACTS, issuerRequiresAuth: true }, '10')).toMatchObject({
+      decision: 'HOLD',
+    });
   });
 
   it('holds when the spending account is missing from the ledger', () => {

@@ -45,7 +45,7 @@ const PaymentView = z.object({
   supplierId: z.string().min(1).max(40),
   currency: z.string().min(1).max(10),
   /** The code the ledger knows the amount by. Optional here so older answers still parse; a receipt needs it. */
-  ledgerCurrency: z.string().min(1).max(10).optional(),
+  ledgerCurrency: z.string().min(1).max(40).optional(),
   amountMinor: z.number().int().nonnegative(),
   ledgerIndex: z.number().int().nonnegative().nullable(),
   engineResult: z.string().max(40).nullable(),

@@ -6,6 +6,8 @@ import type { IntakeOutcome } from '../../src/intake/intake.js';
 import type { ModelClient, ModelRequest } from '../../src/model/types.js';
 import { parseSupplierMaster, type SupplierMaster } from '../../src/match/supplier-master.js';
 import type { PipelineDeps, AgentSigner } from '../../src/workflow/pipeline.js';
+import { conversionOf } from '../../src/workflow/fx-convert.js';
+import { fixtureUsdZarRate } from '../../../../packages/shared/src/fx/index.js';
 import type { WardenPort } from '../../src/workflow/warden-port.js';
 import { TransitionLog } from '../../src/log/transition-log.js';
 
@@ -192,6 +194,8 @@ export function depsWith(overrides: Partial<PipelineDeps> = {}): PipelineDeps {
     nonce: () => 'a1b2c3d4e5f60718293a4b5c',
     warden: fakeWarden(),
     signer: SIGNER,
+    // The committed fixture rate, so tests never call the network.
+    convert: (zarMinor) => Promise.resolve(conversionOf(zarMinor, fixtureUsdZarRate())),
     ...overrides,
   };
 }
