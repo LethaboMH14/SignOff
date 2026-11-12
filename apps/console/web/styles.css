@@ -3,19 +3,21 @@
  * paid and coral for held. Every state also has a symbol and words, so colour is never the only signal.
  */
 :root {
-  --stage: #d8d7cf;
-  --paper: #e8e7e0;
-  --panel: #eeede7;
-  --card: #fbfbf8;
-  --ink: #151515;
-  --ink-2: #4d4d48;
-  --ink-3: #66665f;
-  --line: rgba(21, 21, 21, 0.12);
-  --track: #c4c1b4;
-  --lime: #d9f24f;
-  --lime-ink: #1f2600;
-  --coral: #f4877a;
-  --coral-ink: #4a120b;
+  --stage: #e2d9c4;
+  --paper: #f3ecdb;
+  --panel: #efe6d1;
+  --card: #fbf7ec;
+  --ink: #14213d;
+  --ink-2: #33405f;
+  --ink-3: #56607a;
+  --line: rgba(20, 33, 61, 0.14);
+  --track: #c9bfa6;
+  /* Cobalt: verified progress, validated and paid. White text on it is above 6:1. */
+  --verified: #2453c7;
+  --verified-ink: #ffffff;
+  /* Amber: exceptions, holds and anything a person must look at. Ink text on it is above 9:1. */
+  --exception: #f2b33d;
+  --exception-ink: #2b1d00;
   --focus: #1f5fbf;
   --font-body:
     'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
@@ -139,15 +141,15 @@ button.quiet:hover:not(:disabled) {
 }
 
 .badge-live {
-  background: var(--lime);
-  color: var(--lime-ink);
+  background: var(--verified);
+  color: var(--verified-ink);
   border-color: transparent;
 }
 
 .badge-reconnecting,
 .badge-warn {
-  background: var(--coral);
-  color: var(--coral-ink);
+  background: var(--exception);
+  color: var(--exception-ink);
   border-color: transparent;
 }
 
@@ -204,8 +206,8 @@ button.quiet:hover:not(:disabled) {
 }
 
 .node-hold .node-disc {
-  fill: var(--coral);
-  stroke: var(--coral-ink);
+  fill: var(--exception);
+  stroke: var(--exception-ink);
   stroke-width: 3;
 }
 
@@ -215,7 +217,7 @@ button.quiet:hover:not(:disabled) {
 }
 
 .node-paid .node-disc {
-  fill: var(--lime);
+  fill: var(--verified);
   stroke: var(--ink);
 }
 
@@ -288,17 +290,17 @@ button.quiet:hover:not(:disabled) {
 }
 
 .tone-hold .token-disc {
-  fill: var(--coral);
-  stroke: var(--coral-ink);
+  fill: var(--exception);
+  stroke: var(--exception-ink);
   stroke-width: 3;
 }
 
 .tone-hold .token-glyph {
-  fill: var(--coral-ink);
+  fill: var(--exception-ink);
 }
 
 .tone-paid .token-disc {
-  fill: var(--lime);
+  fill: var(--verified);
   stroke: var(--ink);
   stroke-width: 2;
 }
@@ -366,7 +368,7 @@ button.quiet:hover:not(:disabled) {
 
 .tone-hold .feed-tone,
 .tone-failed .feed-tone {
-  color: var(--coral-ink);
+  color: var(--exception-ink);
 }
 
 .feed-reason {
