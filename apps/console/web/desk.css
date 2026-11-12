@@ -31,7 +31,7 @@
 }
 
 .mark-decides {
-  fill: var(--lime);
+  fill: var(--verified);
   stroke: var(--ink);
   stroke-width: 2;
 }
@@ -175,9 +175,9 @@
 }
 
 .notice {
-  background: #fbe1da;
-  color: var(--coral-ink);
-  border-left: 4px solid var(--coral-ink);
+  background: #fbe7b5;
+  color: var(--exception-ink);
+  border-left: 4px solid var(--exception);
   padding: 10px 12px;
   margin-top: 10px;
   border-radius: 12px;
@@ -319,15 +319,15 @@
 }
 
 .chip-paid {
-  background: var(--lime);
-  color: var(--lime-ink);
+  background: var(--verified);
+  color: var(--verified-ink);
 }
 
 .chip-held,
 .chip-needs-a-person,
 .chip-quarantined {
-  background: var(--coral);
-  color: var(--coral-ink);
+  background: var(--exception);
+  color: var(--exception-ink);
 }
 
 .chip-refused,
@@ -388,12 +388,12 @@
 }
 
 .tile-paid {
-  border-top-color: var(--lime);
+  border-top-color: var(--verified);
 }
 
 .tile-held,
 .tile-needs-a-person {
-  border-top-color: var(--coral);
+  border-top-color: var(--exception);
 }
 
 .tile-number {
@@ -768,7 +768,7 @@ input {
 
 .flow-token {
   fill: var(--ink);
-  stroke: var(--lime);
+  stroke: var(--verified);
   stroke-width: 3;
 }
 

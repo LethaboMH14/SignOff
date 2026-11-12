@@ -58,10 +58,15 @@ export function ReceiptView({ receipt, error, onBack }: ReceiptViewProps) {
             </a>
           </p>
           {receipt.rand === null ? null : (
-            <p className="notice">
-              <strong>{receipt.rand.label}</strong>: about R{receipt.rand.amount} at a placeholder
-              rate of {receipt.rand.rate} per unit. No market rate is claimed.
-            </p>
+            <section className="simulated-payout" aria-labelledby="sim-payout-title">
+              <h3 id="sim-payout-title">
+                <span className="tag-simulated">{receipt.rand.label}</span> ZAR payout
+              </h3>
+              <p>
+                About R{receipt.rand.amount}, at a placeholder rate of {receipt.rand.rate} per unit.
+                No money moved to a bank account, and no market rate is claimed.
+              </p>
+            </section>
           )}
         </>
       ) : (

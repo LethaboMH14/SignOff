@@ -7,6 +7,7 @@ import { Intro } from './Intro.js';
 import { Login } from './Login.js';
 import { MapView } from './MapView.js';
 import './desk.css';
+import './views.css';
 
 type View = 'desk' | 'map';
 

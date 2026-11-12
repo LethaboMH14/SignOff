@@ -2,6 +2,7 @@ import { type SubmitEvent, useState } from 'react';
 
 import { type DeskData, type LimitValues, type PendingAction } from './api.js';
 import { DISPLAY_STATES, type DeskRow, type DisplayState } from '../src/model/desk.js';
+import { limitChangeOf, limitEffectOf, limitSymbolOf } from '../src/model/limits.js';
 import { nextActionOf } from '../src/model/next-action.js';
 import { AgentFlow } from './Brand.js';
 import { CountUp } from './CountUp.js';
@@ -169,14 +170,57 @@ function StepUp({
   );
 }
 
-interface CurrentLimits {
+export interface CurrentLimits {
   readonly perPaymentMinor: number;
   readonly supplierDailyMinor: number;
   readonly dailyTotalMinor: number;
 }
 
+/**
+ * One limit field: the label, the amount typed, and the effect of the change in words beside it. The effect is shown as
+ * a symbol and words, so it does not depend on colour.
+ */
+function LimitField({
+  name,
+  label,
+  current,
+  text,
+  onText,
+}: {
+  readonly name: string;
+  readonly label: string;
+  readonly current: number;
+  readonly text: string;
+  readonly onText: (text: string) => void;
+}) {
+  const requested = minorOf(text);
+  const change = requested === null ? null : limitChangeOf(current, requested);
+  const effectId = `${name}-effect`;
+  return (
+    <div className="limit-field">
+      <label>
+        {label}
+        <span className="limit-current">Now {moneyOf(current, null)}</span>
+        <input
+          name={name}
+          inputMode="decimal"
+          value={text}
+          aria-describedby={effectId}
+          onChange={(event) => {
+            onText(event.target.value);
+          }}
+        />
+      </label>
+      <small id={effectId} className={`limit-effect limit-${change ?? 'unknown'}`}>
+        <span aria-hidden="true">{change === null ? '?' : limitSymbolOf(change)}</span>{' '}
+        {limitEffectOf(change)}
+      </small>
+    </div>
+  );
+}
+
 /** The limits form. A lower limit applies at once; a higher one waits for a second operator. */
-function LimitsForm({
+export function LimitsForm({
   current,
   busy,
   onSubmit,
@@ -216,40 +260,31 @@ function LimitsForm({
         });
       }}
     >
-      <p>A lower limit applies at once. A higher one waits for a second operator.</p>
-      <label>
-        Per payment
-        <input
-          name="perPayment"
-          inputMode="decimal"
-          value={perPayment}
-          onChange={(event) => {
-            setPerPayment(event.target.value);
-          }}
-        />
-      </label>
-      <label>
-        Per supplier, per day
-        <input
-          name="perSupplier"
-          inputMode="decimal"
-          value={perSupplier}
-          onChange={(event) => {
-            setPerSupplier(event.target.value);
-          }}
-        />
-      </label>
-      <label>
-        Total, per day
-        <input
-          name="total"
-          inputMode="decimal"
-          value={total}
-          onChange={(event) => {
-            setTotal(event.target.value);
-          }}
-        />
-      </label>
+      <p className="limits-rule">
+        <b>Lower</b> a limit and it applies at once. <b>Raise</b> a limit and a second operator must
+        approve it.
+      </p>
+      <LimitField
+        name="perPayment"
+        label="Per payment"
+        current={current.perPaymentMinor}
+        text={perPayment}
+        onText={setPerPayment}
+      />
+      <LimitField
+        name="perSupplier"
+        label="Per supplier, per day"
+        current={current.supplierDailyMinor}
+        text={perSupplier}
+        onText={setPerSupplier}
+      />
+      <LimitField
+        name="total"
+        label="Total, per day"
+        current={current.dailyTotalMinor}
+        text={total}
+        onText={setTotal}
+      />
       {problem === null ? null : (
         <p role="alert" className="notice">
           {problem}
