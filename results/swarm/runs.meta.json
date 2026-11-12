@@ -1,0 +1,13 @@
+{
+  "notice": "Live paired run on the FICTIONAL labelled set. Every call is a real provider call.",
+  "provider": "groq",
+  "model": "openai/gpt-oss-120b",
+  "minIntervalMs": 40000,
+  "arms": [
+    "single",
+    "placebo",
+    "swarm"
+  ],
+  "cases": 62,
+  "startedAt": "2026-11-12T16:28:31.479Z"
+}
