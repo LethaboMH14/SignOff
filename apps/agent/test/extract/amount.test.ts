@@ -65,3 +65,22 @@ describe('amountTokensIn', () => {
     expect(amountTokensIn('Currency: ZAR')).toEqual([]);
   });
 });
+
+describe('the owner decision on D-101 ("read them", 2026-11-12)', () => {
+  it.each([
+    ['R 12 345,67', 1_234_567],
+    ['12.345,67', 1_234_567],
+    ['R 2 500,00', 250_000],
+  ])('reads the labelled South African amount %j as the labelled total', (printed, minor) => {
+    const reading = canonicalAmount(printed);
+    expect(reading.ok).toBe(true);
+    if (reading.ok) {
+      expect(Math.round(Number(reading.canonical) * 100)).toBe(minor);
+    }
+  });
+
+  it('still holds an amount that is genuinely ambiguous: a comma or dot followed by exactly three digits', () => {
+    expect(canonicalAmount('12,345')).toEqual({ ok: false, reason: 'AMOUNT_AMBIGUOUS' });
+    expect(canonicalAmount('12.345')).toEqual({ ok: false, reason: 'AMOUNT_AMBIGUOUS' });
+  });
+});
