@@ -50,10 +50,10 @@ Build the web app once:
 npm run build -w @signoff/console
 ```
 
-Start the server on the replay, with the Warden it should call:
+Start the server on the replay, with the Warden it should call. The replay is a developer fixture: it runs only when `SIGNOFF_CONSOLE_DEV_FIXTURES=1` is also set, it is labelled SIMULATED on the page, and it is never the default:
 
 ```bash
-SIGNOFF_WARDEN_URL=http://127.0.0.1:8080 SIGNOFF_CONSOLE_MODE=simulated SIGNOFF_CONSOLE_TRANSITIONS=apps/console/fixtures/simulated-transitions.jsonl npm run console:serve
+SIGNOFF_WARDEN_URL=http://127.0.0.1:8080 SIGNOFF_CONSOLE_DEV_FIXTURES=1 SIGNOFF_CONSOLE_MODE=simulated SIGNOFF_CONSOLE_TRANSITIONS=apps/console/fixtures/simulated-transitions.jsonl npm run console:serve
 ```
 
 For a live run, point it at the agent's log and set the mode to `live`:
@@ -69,7 +69,8 @@ Then open http://127.0.0.1:4180 and sign in.
 | `SIGNOFF_WARDEN_URL` | none (required) | The Warden's address. The console refuses to start without it. |
 | `SIGNOFF_CONSOLE_OPERATORS` | `console/operators.json` in the local SignOff folder | The operator file. It must be outside the repository. |
 | `SIGNOFF_WARDEN_READER_ID` and `SIGNOFF_WARDEN_READER_SECRET_FILE` | none | An optional read-only Warden principal for viewers. Without it, viewers see no desk. |
-| `SIGNOFF_CONSOLE_MODE` | `live` | `simulated` or `live`. Shown on the page. |
+| `SIGNOFF_CONSOLE_MODE` | `live` | `simulated` or `live`. Shown on the page. `simulated` is refused unless `SIGNOFF_CONSOLE_DEV_FIXTURES=1`. |
+| `SIGNOFF_CONSOLE_DEV_FIXTURES` | off | Set to `1` only for a developer's fixture replay. It also enables the placeholder rand rate. |
 | `SIGNOFF_CONSOLE_TRANSITIONS` | `apps/agent/state/agent-log.jsonl` | The agent's transition log to read. |
 | `SIGNOFF_CONSOLE_PORT` | `4180` | The port. |
 | `SIGNOFF_CONSOLE_HOST` | `127.0.0.1` | Only a loopback address is accepted. |

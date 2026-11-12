@@ -326,3 +326,18 @@ describe('limit changes over HTTP', () => {
     expect(response.status).toBe(404);
   });
 });
+
+describe('two operators at once', () => {
+  it('serialises two simultaneous raises server-side: exactly one is held, the other is refused', async () => {
+    const h = await harness();
+    const results = await Promise.allSettled([
+      h.service.setLimits({ perPaymentMinor: 200_000 }, OPERATOR_A),
+      h.service.setLimits({ supplierDailyMinor: 900_000 }, OPERATOR_B),
+    ]);
+    const fulfilled = results.filter((r) => r.status === 'fulfilled');
+    const rejected = results.filter((r) => r.status === 'rejected');
+    expect(fulfilled).toHaveLength(1);
+    expect(rejected).toHaveLength(1);
+    expect((rejected[0] as PromiseRejectedResult).reason).toMatchObject({ status: 409 });
+  });
+});

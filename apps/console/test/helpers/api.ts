@@ -225,6 +225,7 @@ export async function harnessOf(transitionsPath: string): Promise<Harness> {
       explorerBase: TESTNET_EXPLORER,
       demoRandPerUnit: '18.50',
     },
+    agentUpload: null,
   };
   return {
     ctx,

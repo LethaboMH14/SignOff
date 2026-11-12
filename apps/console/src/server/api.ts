@@ -12,6 +12,12 @@ import type { ConsoleMode } from './app.js';
 import { invoiceDetailOf } from './invoice-view.js';
 import { receiptOf, type ReceiptConfig, type ReceiptLedger } from './receipt.js';
 import {
+  type AgentUploadConfig,
+  CONSOLE_UPLOAD_MAX_BYTES,
+  forwardUpload,
+  readRawBody,
+} from './upload.js';
+import {
   ApprovalAnswer,
   latestInvoicesOf,
   LimitsAnswer,
@@ -35,7 +41,41 @@ const SESSION_MAX_AGE_SECONDS = 8 * 60 * 60;
 const BODY_LIMIT_BYTES = 4096;
 const REQUEST_ID = /^[0-9a-f-]{36}$/;
 const APPROVE_PATH = /^\/api\/limits\/([0-9a-f-]{36})\/approve$/;
-const INVOICE_PATH = /^\/api\/invoices\/([0-9a-f]{64}|[0-9a-f-]{36})$/;
+export const UPLOAD_UNAVAILABLE =
+  'upload is not configured: start the agent upload endpoint and set SIGNOFF_AGENT_UPLOAD_URL and SIGNOFF_AGENT_UPLOAD_TOKEN_FILE';
+
+/** A signed-in operator sends one invoice file. The console forwards its bytes to the agent and shows the agent's reply. */
+async function upload(request: IncomingMessage, response: ServerResponse, ctx: ApiContext): Promise<void> {
+  const caller = callerOf(request, ctx);
+  if (caller === null) {
+    notSignedIn(response);
+    return;
+  }
+  if (!formAllowed(request, response, ctx, caller)) {
+    return;
+  }
+  if (caller.operator.role === 'viewer') {
+    sendJson(response, 403, { error: 'this account cannot upload invoices' });
+    return;
+  }
+  if (ctx.agentUpload === null) {
+    sendJson(response, 501, { error: UPLOAD_UNAVAILABLE });
+    return;
+  }
+  const name = request.headers['x-file-name'];
+  if (typeof name !== 'string' || name.length === 0) {
+    sendJson(response, 400, { error: 'the file name header is missing' });
+    return;
+  }
+  const bytes = await readRawBody(request, CONSOLE_UPLOAD_MAX_BYTES);
+  if (bytes === null) {
+    sendJson(response, 413, { error: 'the file is over the 10 MiB limit' });
+    return;
+  }
+  const reply = await forwardUpload(ctx.agentUpload, name, bytes);
+  sendJson(response, reply.status, reply.body);
+}
+const INVOICE_PATH =/^\/api\/invoices\/([0-9a-f]{64}|[0-9a-f-]{36})$/;
 const RECEIPT_PATH = /^\/api\/receipts\/([0-9a-f-]{36})$/;
 
 /** The Warden calls the console makes for one person. Each method returns the Warden's answer, unparsed. */
@@ -66,6 +106,8 @@ export interface ApiContext {
   readonly ledger: ReceiptLedger | null;
   /** The receipt's settings: the token issuer, the explorer, and the placeholder rate for the SIMULATED rand figure. */
   readonly receipts: ReceiptConfig;
+  /** The agent's upload endpoint and token. Null means no agent is configured, and uploads answer 501. */
+  readonly agentUpload: AgentUploadConfig | null;
 }
 
 export interface Caller {
@@ -546,6 +588,10 @@ export async function handleApi(
   const approve = APPROVE_PATH.exec(pathname);
   if (approve !== null && method === 'POST') {
     await approveLimit(request, response, ctx, approve[1] ?? '');
+    return;
+  }
+  if (pathname === '/api/invoices/upload' && method === 'POST') {
+    await upload(request, response, ctx);
     return;
   }
   const invoice = INVOICE_PATH.exec(pathname);
