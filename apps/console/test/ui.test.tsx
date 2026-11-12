@@ -75,6 +75,13 @@ describe('the feed', () => {
     expect(markup).toContain('Held');
   });
 
+  it('can take keyboard focus, because the list scrolls inside its own box', () => {
+    const movements = [toMovement(eventOf(1, HASH_OK, 'RECEIVED', 'intake', 'OK'))];
+    expect(renderToStaticMarkup(<Feed movements={movements} />)).toMatch(
+      /<ol class="feed"[^>]*tabindex="0"/,
+    );
+  });
+
   it('says so when there is nothing to show yet', () => {
     expect(renderToStaticMarkup(<Feed movements={[]} />)).toContain('No moves yet');
   });
