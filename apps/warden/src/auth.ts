@@ -1,12 +1,20 @@
-import { createHmac, timingSafeEqual } from 'node:crypto';
+import { timingSafeEqual } from 'node:crypto';
 
-import { sha256Hex } from './canonical.js';
+import {
+  signatureFor,
+  signingText,
+  type SignedHeaders,
+} from '../../../packages/warden-api/src/signing.js';
 
 /**
- * Request authentication for the agent and operator routes. Each caller has its own secret. A request
- * carries a timestamp and a nonce, and the signature covers the method, path, timestamp, nonce and body, so
- * a captured request cannot be replayed or moved to another route.
+ * Request authentication for the agent and operator routes. Each caller has its own secret. A request carries a
+ * timestamp and a nonce, and the signature covers the method, path, timestamp, nonce and body, so a captured
+ * request cannot be replayed or moved to another route. The signing functions are shared with the callers (see
+ * packages/warden-api); this module holds the Warden's side, which verifies.
  */
+
+export { signatureFor, signingText };
+export type { SignedHeaders };
 
 export type Role = 'agent' | 'operator';
 
@@ -21,28 +29,6 @@ export class AuthError extends Error {
     super(message);
     this.name = 'AuthError';
   }
-}
-
-export interface SignedHeaders {
-  readonly principal: string;
-  readonly timestamp: string;
-  readonly nonce: string;
-  readonly signature: string;
-}
-
-/** The text that is signed. Any change to a field changes the signature. */
-export function signingText(
-  method: string,
-  path: string,
-  timestamp: string,
-  nonce: string,
-  body: string,
-): string {
-  return [method, path, timestamp, nonce, sha256Hex(body)].join('\n');
-}
-
-export function signatureFor(secret: Buffer, text: string): string {
-  return createHmac('sha256', secret).update(text, 'utf8').digest('hex');
 }
 
 /** Checks a request. Throws AuthError with a generic message: the reason is never sent to the caller. */

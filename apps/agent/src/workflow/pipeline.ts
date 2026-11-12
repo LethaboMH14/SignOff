@@ -1,0 +1,415 @@
+import type { EvidenceRegister } from '../../../../packages/shared/src/evidence-register.js';
+import { PaymentProposal } from '../../../../packages/shared/src/schemas/proposal.js';
+import type { WardenDecision } from '../../../../packages/shared/src/schemas/warden-decision.js';
+import type { CoSignResult, ProposeResult } from '../../../../packages/warden-api/src/contract.js';
+import { extractInvoice } from '../extract/extract.js';
+import { holdReasonsOf, verifyInvoice, type VerifiedInvoice } from '../extract/verify.js';
+import type { IntakeOutcome } from '../intake/intake.js';
+import { budgetedModel, ModelBudget } from '../model/budget.js';
+import type { ModelClient } from '../model/types.js';
+import { matchInvoice, type VerifiedValues } from '../match/match.js';
+import type { SupplierMaster } from '../match/supplier-master.js';
+import { screenPages, type ScreenResult } from '../screen/injection.js';
+import {
+  type Actor,
+  type Evidence,
+  type TransitionLog,
+  type TransitionRecord,
+} from '../log/transition-log.js';
+
+import { DefinitiveRefusal, type WardenPort } from './warden-port.js';
+import type { State } from './states.js';
+
+/**
+ * The workflow. Its order is fixed in code: intake, screen, extract, verify, match, Warden, sign, submit, reconcile.
+ * The model is called at one point only, and never chooses a step. Each move is written to the log before the next
+ * step runs, and a move the state table does not allow cannot be written at all.
+ *
+ * Anything the pipeline cannot be sure of is held or put into reconciliation, never retried blind. A lost answer
+ * from the Warden after a payment was sent is an unknown outcome, and only a person reconciles it.
+ */
+
+export const WORKFLOW_VERSION = 'workflow-v1';
+
+/** Signs the prepared unsigned transaction with the agent key only. Warden adds the final signature later. */
+export interface AgentSigner {
+  readonly coSign: (toCoSign: string) => string;
+}
+
+export interface PipelineDeps {
+  readonly model: ModelClient;
+  readonly evidence: EvidenceRegister;
+  readonly suppliers: readonly SupplierMaster[];
+  readonly log: TransitionLog;
+  readonly policyVersion: string;
+  readonly now: () => Date;
+  readonly newAttemptId: () => string;
+  readonly nonce?: () => string;
+  /** Null for a run that stops at eligibility, which is how the evaluation runs. */
+  readonly warden: WardenPort | null;
+  readonly signer: AgentSigner | null;
+}
+
+export interface RunResult {
+  readonly correlationId: string;
+  readonly finalState: State;
+  readonly reasonCode: string;
+  readonly reasons: readonly string[];
+  readonly obligationKey: string | null;
+  readonly attemptId: string | null;
+  readonly wardenDecision: WardenDecision['decision'] | null;
+  readonly ledgerHash: string | null;
+  readonly modelCalls: number;
+  /** The verified fields, in memory only. They are never written to the log, which holds hashes. */
+  readonly verified: VerifiedInvoice | null;
+  readonly screen: ScreenResult | null;
+}
+
+interface RunState {
+  reasonCode: string;
+  reasons: readonly string[];
+  obligationKey: string | null;
+  attemptId: string | null;
+  wardenDecision: WardenDecision['decision'] | null;
+  ledgerHash: string | null;
+  modelCalls: number;
+  modelLabel: string | null;
+  recordSha256s: string[];
+  quoteSha256s: string[];
+  screenCodes: string[];
+  verified: VerifiedInvoice | null;
+  screen: ScreenResult | null;
+}
+
+const WARDEN_CODE = (code: string): string => `WARDEN_${code}`;
+
+function quoteHashesOf(verified: VerifiedInvoice): string[] {
+  const fields = [
+    verified.supplierName,
+    verified.invoiceNumber,
+    verified.invoiceDate,
+    verified.currency,
+    verified.total,
+    verified.purchaseOrderNumber,
+    verified.payeeAccountAsPrinted,
+  ];
+  const hashes = fields.flatMap((field) => (field.quoteSha256 === null ? [] : [field.quoteSha256]));
+  return [...new Set(hashes)];
+}
+
+function valuesOf(verified: VerifiedInvoice): VerifiedValues | null {
+  const {
+    supplierName,
+    invoiceNumber,
+    currency,
+    total,
+    purchaseOrderNumber,
+    payeeAccountAsPrinted,
+  } = verified;
+  if (
+    supplierName.value === null ||
+    invoiceNumber.value === null ||
+    currency.value === null ||
+    total.value === null ||
+    purchaseOrderNumber.value === null
+  ) {
+    return null;
+  }
+  return {
+    supplierName: supplierName.value,
+    invoiceNumber: invoiceNumber.value,
+    currency: currency.value,
+    totalMinor: total.value.minor,
+    purchaseOrderNumber: purchaseOrderNumber.value,
+    payeeAccountAsPrinted: payeeAccountAsPrinted.value,
+  };
+}
+
+/** Runs one invoice through the fixed sequence and returns where it ended. */
+export async function processInvoice(
+  input: { readonly correlationId: string; readonly outcome: IntakeOutcome },
+  deps: PipelineDeps,
+): Promise<RunResult> {
+  const { correlationId, outcome } = input;
+  const fileSha256 = outcome.fingerprint;
+  const run: RunState = {
+    reasonCode: 'OK',
+    reasons: [],
+    obligationKey: null,
+    attemptId: null,
+    wardenDecision: null,
+    ledgerHash: null,
+    modelCalls: 0,
+    modelLabel: null,
+    recordSha256s: [],
+    quoteSha256s: [],
+    screenCodes: [],
+    verified: null,
+    screen: null,
+  };
+
+  const move = (
+    toState: State,
+    actor: Actor,
+    reasonCode: string,
+    reasons: readonly string[] = [],
+  ): TransitionRecord => {
+    run.reasonCode = reasonCode;
+    run.reasons = [...reasons];
+    const evidence: Evidence = {
+      fileSha256: fileSha256,
+      recordSha256s: [...run.recordSha256s],
+      quoteSha256s: [...run.quoteSha256s],
+      model: run.modelLabel,
+      modelCalls: run.modelCalls,
+      screenCodes: [...run.screenCodes],
+    };
+    return deps.log.append({
+      correlationId,
+      obligationKey: run.obligationKey,
+      toState,
+      actor,
+      reasonCode,
+      reasons,
+      policyVersion: deps.policyVersion,
+      attemptId: run.attemptId,
+      ledgerHash: run.ledgerHash,
+      evidence,
+    });
+  };
+
+  const finish = (): RunResult => ({
+    correlationId,
+    finalState: deps.log.stateOf(correlationId) ?? 'RECEIVED',
+    reasonCode: run.reasonCode,
+    reasons: run.reasons,
+    obligationKey: run.obligationKey,
+    attemptId: run.attemptId,
+    wardenDecision: run.wardenDecision,
+    ledgerHash: run.ledgerHash,
+    modelCalls: run.modelCalls,
+    verified: run.verified,
+    screen: run.screen,
+  });
+
+  // 1. Intake. A file that is not a readable text PDF is quarantined before anything else reads it.
+  move('RECEIVED', 'intake', 'OK');
+  if (outcome.kind === 'held') {
+    move('QUARANTINED', 'intake', outcome.reason);
+    return finish();
+  }
+
+  // 2. Screen. A document that carries steering text is quarantined, and no model reads it.
+  const screen = screenPages(outcome.pages);
+  run.screen = screen;
+  run.screenCodes = [...screen.codes];
+  if (screen.flagged) {
+    move('QUARANTINED', 'screen', screen.codes[0] ?? 'SCREEN_FLAGGED', screen.codes);
+    return finish();
+  }
+
+  // 3. Extract. The one model call site, budgeted to three calls per invoice.
+  const budget = new ModelBudget();
+  const extracted = await extractInvoice({
+    pages: outcome.pages,
+    model: budgetedModel(deps.model, budget),
+    budget,
+    ...(deps.nonce === undefined ? {} : { nonce: deps.nonce }),
+  });
+  run.modelCalls = budget.callsUsed;
+  run.modelLabel = extracted.model;
+  if (!extracted.ok) {
+    move(
+      extracted.reason === 'DOCUMENT_TOO_LONG' ? 'QUARANTINED' : 'HELD',
+      'extractor',
+      extracted.reason,
+    );
+    return finish();
+  }
+  move('EXTRACTED', 'extractor', 'OK');
+
+  // 4. Verify. Every required field must be verified against the document, or the invoice is held.
+  const verified = verifyInvoice(extracted.extraction, outcome.pages);
+  run.verified = verified;
+  run.quoteSha256s = quoteHashesOf(verified);
+  const verificationHolds = holdReasonsOf(verified);
+  if (verificationHolds.length > 0) {
+    move('HELD', 'verifier', 'VERIFICATION_FAILED', verificationHolds);
+    return finish();
+  }
+  move('EVIDENCE_VERIFIED', 'verifier', 'OK');
+  const values = valuesOf(verified);
+  if (values === null || fileSha256 === null) {
+    move('HELD', 'verifier', 'VERIFICATION_FAILED', ['internal:required-values']);
+    return finish();
+  }
+
+  // 5. Match. The invoice must agree with the buyer's own records, which the document cannot write.
+  const match = matchInvoice({
+    values,
+    fingerprint: fileSha256,
+    evidence: deps.evidence,
+    suppliers: deps.suppliers,
+    alreadyPaid: (key) => deps.log.blocksPayment(key),
+  });
+  run.recordSha256s = [...match.recordSha256s];
+  run.obligationKey = match.obligationKey;
+  if (!match.ok) {
+    move('HELD', 'matcher', 'MATCH_FAILED', match.reasons);
+    return finish();
+  }
+  move('WARDEN_ELIGIBLE', 'matcher', 'OK');
+  if (deps.warden === null) {
+    return finish();
+  }
+  return submit(
+    {
+      supplierId: match.supplierId,
+      currency: values.currency,
+      amountMinor: match.amountMinor,
+      fileSha256,
+    },
+    deps,
+    run,
+    move,
+    finish,
+  );
+}
+
+interface Payable {
+  readonly supplierId: string;
+  readonly currency: string;
+  readonly amountMinor: number;
+  readonly fileSha256: string;
+}
+
+/** Steps 6 to 9: get unsigned Warden terms, agent-sign, request final Warden authorization, reconcile. */
+async function submit(
+  payable: Payable,
+  deps: PipelineDeps,
+  run: RunState,
+  move: (
+    toState: State,
+    actor: Actor,
+    reasonCode: string,
+    reasons?: readonly string[],
+  ) => TransitionRecord,
+  finish: () => RunResult,
+): Promise<RunResult> {
+  const warden = deps.warden;
+  if (warden === null || run.obligationKey === null) {
+    move('HELD', 'matcher', 'INTERNAL_STATE');
+    return finish();
+  }
+
+  const attemptId = deps.newAttemptId();
+  const proposed = PaymentProposal.safeParse({
+    schemaVersion: 1,
+    obligationKey: run.obligationKey,
+    attemptId,
+    supplierId: payable.supplierId,
+    currency: payable.currency,
+    amountMinor: payable.amountMinor,
+    invoiceFingerprint: payable.fileSha256,
+    policyVersion: deps.policyVersion,
+    proposedBy: 'agent',
+    proposedAt: deps.now().toISOString(),
+  });
+  if (!proposed.success) {
+    move('HELD', 'matcher', 'PROPOSAL_INVALID');
+    return finish();
+  }
+
+  // 6. Warden. The agent proposes; the Warden decides.
+  let answer: ProposeResult;
+  try {
+    answer = await warden.propose(proposed.data);
+  } catch (error) {
+    if (error instanceof DefinitiveRefusal) {
+      run.attemptId = null;
+      move('HELD', 'warden', 'WARDEN_REFUSED_REQUEST');
+    } else {
+      run.attemptId = attemptId;
+      move('RECONCILIATION_EXCEPTION', 'warden', 'PROPOSE_OUTCOME_UNKNOWN');
+    }
+    return finish();
+  }
+  run.wardenDecision = answer.decision.decision;
+  if (answer.attemptId === null) {
+    run.attemptId = null;
+    move(
+      'HELD',
+      'warden',
+      WARDEN_CODE(answer.decision.decision),
+      answer.decision.reasons.map((reason) => WARDEN_CODE(reason.code)),
+    );
+    return finish();
+  }
+  run.attemptId = answer.attemptId;
+  if (answer.attemptId !== attemptId) {
+    move('RECONCILIATION_EXCEPTION', 'warden', 'ATTEMPT_ID_MISMATCH');
+    return finish();
+  }
+  if (answer.decision.decision !== 'ALLOW') {
+    move(
+      'HELD',
+      'warden',
+      WARDEN_CODE(answer.decision.decision),
+      answer.decision.reasons.map((reason) => WARDEN_CODE(reason.code)),
+    );
+    return finish();
+  }
+  if (answer.toCoSign === null || deps.signer === null) {
+    move('HELD', 'warden', 'WARDEN_NO_TRANSACTION');
+    return finish();
+  }
+
+  // 7. Sign. The agent signs only its own half of Warden's unsigned transaction. A signing failure leaves Warden's attempt
+  // open, so it goes to reconciliation rather than being retried.
+  let blob: string;
+  try {
+    blob = deps.signer.coSign(answer.toCoSign);
+  } catch {
+    move('RECONCILIATION_EXCEPTION', 'signer', 'SIGNING_FAILED');
+    return finish();
+  }
+  move('SIGNED', 'signer', 'OK');
+
+  // 8. Submit. The state is written before the request leaves, so a crash in between is visible on restart.
+  move('SUBMITTED', 'submitter', 'SENT');
+  let result: CoSignResult;
+  try {
+    result = await warden.coSign(attemptId, blob);
+  } catch (error) {
+    if (error instanceof DefinitiveRefusal) {
+      move('HELD', 'warden', 'WARDEN_REFUSED_COSIGN');
+    } else {
+      move('RECONCILIATION_EXCEPTION', 'submitter', 'OUTCOME_UNKNOWN');
+    }
+    return finish();
+  }
+  run.ledgerHash = /^[0-9A-F]{64}$/.test(result.hash) ? result.hash : null;
+
+  // 9. Reconcile. The answer must name this attempt, and a paid answer must carry a ledger hash.
+  if (result.attemptId !== attemptId) {
+    move('RECONCILIATION_EXCEPTION', 'reconciler', 'RESULT_MISMATCH');
+  } else if (result.outcome === 'paid') {
+    if (run.ledgerHash === null) {
+      move('RECONCILIATION_EXCEPTION', 'reconciler', 'RESULT_UNREADABLE');
+    } else {
+      move('VALIDATED', 'warden', 'PAID');
+      move('RECONCILED', 'reconciler', 'MATCHED');
+    }
+  } else if (
+    result.outcome === 'failed' ||
+    result.outcome === 'rejected' ||
+    result.outcome === 'expired'
+  ) {
+    move('FAILED', 'warden', result.outcome.toUpperCase());
+  } else if (result.outcome === 'held') {
+    move('HELD', 'warden', 'WARDEN_HELD_AT_SUBMISSION');
+  } else {
+    move('RECONCILIATION_EXCEPTION', 'warden', 'OUTCOME_PENDING');
+  }
+  return finish();
+}

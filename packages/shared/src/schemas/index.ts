@@ -1,3 +1,4 @@
+export * from './evidence.js';
 export * from './invoice.js';
 export * from './obligation.js';
 export * from './primitives.js';

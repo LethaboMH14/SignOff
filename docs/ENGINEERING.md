@@ -1,17 +1,18 @@
 # Engineering plan
 
-How this repository is built, reviewed, tested and released. **Gate 0 code is merged and CI-tested (owner settings remain open). Gate A's ledger implementation and Testnet TST proofs are built but under integration review; the required live RLUSD payment remains BLOCKED. Later gates are not merged.** It is sized for the four days before the deadline. Items marked *stretch* are done only if the core flow works first.
+How this repository is built, reviewed, tested and released. **Gate 0 and incremental Gate A are merged and CI-tested (owner settings remain open). Gate B (Warden) and Gate C (invoice agent) are implemented and offline-tested on feature branches but not merged. Gate C's labelled evaluation is SIMULATED. The live RLUSD proof and model-to-Warden Testnet run remain BLOCKED/UNVERIFIED.** It is sized for the four days before the deadline. Items marked *stretch* are done only if the core flow works first.
 
 ## Repository layout
 
-As built in Gate 0, with Gate A ledger implementation under review. Other gates remain unmerged.
+As built on the merged foundation and feature branches; only Gate 0 and incremental Gate A are merged.
 
 ```
 packages/shared/  money rules, Zod contracts, security (base58, XRPL seeds, secret patterns),
                   logging and redaction, obligation key; entries "." (neutral) and "./node"
 packages/xrpl/    Gate A Testnet ledger implementation, signing, reliable send, failover and rebuild (under review)
-apps/warden/      planned, Gate B: rules service, Warden key, pause route
-apps/agent/       planned, Gate C: intake, extraction, matching, proposals
+apps/warden/      Gate B feature branch: rules, Warden final signature, pause (not merged)
+apps/agent/       Gate C feature branch: invoice extraction, matching, proposals (not merged)
+packages/warden-api/ Gate C feature branch: signed requests, contracts, caller client
 apps/console/     planned, Gate D: operator console
 docs/             problem, solution, business, decisions, logs, runbooks
 scripts/          secret scanner, hook installer, configuration guard tests; Gate A Testnet commands
@@ -43,7 +44,9 @@ Warden lives in the same repository but deploys as its own service with its own 
 
 **Gate 0 tooling as built:** Vitest 5.1.0 with v8 coverage (90% of statements, functions and lines; 85% of branches). TypeScript 6.0.3 with every strict flag. ESLint 10 with typescript-eslint strict and stylistic type-checked rules and eslint-plugin-security. Prettier for code. `npm run check` runs every check, including the secret scan of tracked files. At the close of Gate 0: 211 tests in 17 files.
 
-**Gate A evidence status:** Testnet transactions using a *test-issued token* are recorded in [TEST-LOG T-053 to T-058](logs/TEST-LOG.md). Single-key rejections are recorded in T-054. A validated RLUSD Testnet transaction is **not** demonstrated (T-059 and T-061 remain BLOCKED); these offline and TST results do not count as RLUSD proof. The Gate A PR is still subject to independent review and post-integration CI.
+**Gate A evidence status:** Testnet transactions using a *test-issued token* are recorded in [TEST-LOG T-053 to T-058](logs/TEST-LOG.md). Single-key rejections are recorded in T-054. A validated RLUSD Testnet transaction is **not** demonstrated (T-059 and T-061 remain BLOCKED); these offline and TST results do not count as RLUSD proof. Incremental Gate A PR #19 is merged with post-merge CI passing; issue #22 remains OPEN for the RLUSD live proof.
+
+**Gate C evidence boundary:** The labelled 30-case evaluation uses rule-based stand-ins and is **SIMULATED**. A live model evaluation (T-088) and live Agent → Warden → Testnet run (T-087) remain NOT RUN. Simulated 30/30 results are not measured model accuracy. The Warden signs only after its final policy and ledger checks.
 
 ### Attack suite
 

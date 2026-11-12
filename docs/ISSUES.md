@@ -48,19 +48,19 @@ The build sliced into small, reviewable issues. Each maps to a requirement in [P
 | B7 | Pause route | Authenticated pause independent of the console; tested with console stopped | B1 | S | Sibusiso (AI-assisted) | [#34](https://github.com/LethaboMH14/SignOff/issues/34) | Review (T-069, T-071) |
 | B8 | Pre-signing ledger read | Balance, trust line freeze state and issuer checked before signing; hold on surprise | B1, A5 | S | Sibusiso (AI-assisted) | [#35](https://github.com/LethaboMH14/SignOff/issues/35) | Review (T-069, T-072) |
 | B9 | Supplier enrolment and change | Enrolment with simulated identity check; changes need current key, cooling-off and second approval | B3 | M | Sibusiso (AI-assisted) | [#36](https://github.com/LethaboMH14/SignOff/issues/36) | Review (T-069; enrolment and approval live in T-071) |
-| P0 | Final Warden authorization (issue #45) | Proposal returns unsigned terms only; the agent signs; Warden rechecks pause, policy version, limits, payee, ledger and expiry, then signs and submits itself. Offline regression T-079: 3 of 3 pass on head, 3 of 3 fail on pre-fix code. Live Testnet negative proof reported as T-124 in PR #55, not verified here | B1, B5, B7 | M | | [#45](https://github.com/LethaboMH14/SignOff/issues/45) | Review |
+| P0 | Final Warden authorization (issue #45) | Proposal returns unsigned terms only; the agent signs; Warden rechecks pause, policy version, limits, payee, ledger and expiry, then signs and submits itself. Offline regression T-092: 3 of 3 pass on head, 3 of 3 fail on pre-fix code. Live Testnet negative proof reported as T-124 in PR #55, not verified here | B1, B5, B7 | M | | [#45](https://github.com/LethaboMH14/SignOff/issues/45) | Review |
 
 ## Gate C: agent reliability and evidence
 
 | ID | Title | Acceptance criteria | Depends | Size | Owner | GH | Status |
 |---|---|---|---|---|---|---|---|
-| C1 | Invoice intake | Watched folder or inbox triggers the workflow; file hashed; text PDF only; others held | F4 | S | | | Todo |
-| C2 | Extraction with source quotes | Strict structured output; each field quoted; code verifies quote and re-parses amount; abstains when unclear | C1 | M | | | Todo |
-| C3 | Prompt-injection handling | Invoice text passed as data; hidden-instruction fixtures cause holds, never actions | C2 | S | | | Todo |
-| C4 | Labelled test set | At least 30 invoices: clean, messy, injected, missing fields, forged payee; labels committed | C2 | M | | | Todo |
-| C5 | Evaluation and baseline | False approvals, false holds, field accuracy, sample size; compared with a single-prompt baseline | C4 | M | | | Todo |
-| C6 | Decision log and audit export | Every state transition with reason, actor, policy version, evidence; export per payment | B1 | M | | | Todo |
-| C7 | Workflow wiring | Fixed sequence: intake, extract, match, Warden, submit, reconcile; at most three model calls | C2, B4 | M | | | Todo |
+| C1 | Invoice intake | Watched folder or inbox triggers the workflow; file hashed; text PDF only; others held | F4 | S | | [#37](https://github.com/LethaboMH14/SignOff/issues/37) | Review (T-079) |
+| C2 | Extraction with source quotes | Strict structured output; each field quoted; code verifies quote and re-parses amount; abstains when unclear | C1 | M | | [#38](https://github.com/LethaboMH14/SignOff/issues/38) | Review (T-081) |
+| C3 | Prompt-injection handling | Invoice text passed as data; hidden-instruction fixtures cause holds, never actions | C2 | S | | [#39](https://github.com/LethaboMH14/SignOff/issues/39) | Review (T-080) |
+| C4 | Labelled test set | At least 30 invoices: clean, messy, injected, missing fields, forged payee; labels committed | C2 | M | | [#40](https://github.com/LethaboMH14/SignOff/issues/40) | Review (T-078) |
+| C5 | Evaluation and baseline | False approvals, false holds, field accuracy, sample size; compared with a single-prompt baseline | C4 | M | | [#41](https://github.com/LethaboMH14/SignOff/issues/41) | Review (T-084; live T-088 UNVERIFIED) |
+| C6 | Decision log and audit export | Every state transition with reason, actor, policy version, evidence; export per payment | B1 | M | | [#42](https://github.com/LethaboMH14/SignOff/issues/42) | Review (T-083) |
+| C7 | Workflow wiring | Fixed sequence: intake, extract, match, Warden, submit, reconcile; at most three model calls | C2, B4 | M | | [#43](https://github.com/LethaboMH14/SignOff/issues/43) | Review (T-082; live T-087 UNVERIFIED) |
 
 ## Gate D: operations and console
 

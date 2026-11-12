@@ -1,0 +1,154 @@
+import { assertModelAllowed, type ProviderDefinition } from './providers.js';
+import {
+  ModelError,
+  type ModelClient,
+  type ModelReply,
+  type ModelRequest,
+  type ReplySchema,
+} from './types.js';
+
+/**
+ * A client for OpenAI-compatible chat completions, written over fetch. It sends the request with the provider's key
+ * in the Authorization header only, never follows a redirect (which could carry the key elsewhere), and maps every
+ * failure to a ModelError whose message is safe to record.
+ */
+
+/** A reply larger than this is refused. A reply is one JSON object of a few hundred bytes. */
+export const MAX_REPLY_BYTES = 256 * 1024;
+
+const DEFAULT_TIMEOUT_MS = 60_000;
+
+export interface ChatClientOptions {
+  readonly provider: ProviderDefinition;
+  readonly model: string;
+  /** The provider key. It stays in memory for the run and is never logged, echoed or written to a file. */
+  readonly apiKey: string;
+  readonly timeoutMs?: number;
+  /** False for a model that does not accept a JSON Schema reply format. The reply is still validated in code. */
+  readonly jsonSchema?: boolean;
+  readonly fetchImpl?: typeof fetch;
+}
+
+export function createChatClient(options: ChatClientOptions): ModelClient {
+  assertModelAllowed(options.model);
+  if (options.apiKey.trim().length === 0) {
+    throw new RangeError('the provider key is empty');
+  }
+  const fetchImpl = options.fetchImpl ?? fetch;
+  const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+  const url = new URL('chat/completions', `${options.provider.baseUrl}/`);
+  const jsonSchema = options.jsonSchema ?? true;
+
+  return {
+    label: `${options.provider.id}:${options.model}`,
+    async complete(request: ModelRequest): Promise<ModelReply> {
+      const body = JSON.stringify({
+        model: options.model,
+        messages: request.messages,
+        max_tokens: request.maxTokens,
+        temperature: 0,
+        stream: false,
+        response_format: responseFormatOf(request.replySchema, jsonSchema),
+      });
+      const response = await send(fetchImpl, url, options.apiKey, body, timeoutMs);
+      return { text: await contentOf(response) };
+    },
+  };
+}
+
+function responseFormatOf(
+  replySchema: ReplySchema | null,
+  jsonSchema: boolean,
+): Readonly<Record<string, unknown>> {
+  if (replySchema !== null && jsonSchema) {
+    return {
+      type: 'json_schema',
+      json_schema: { name: replySchema.name, schema: replySchema.schema, strict: true },
+    };
+  }
+  return { type: 'json_object' };
+}
+
+async function send(
+  fetchImpl: typeof fetch,
+  url: URL,
+  apiKey: string,
+  body: string,
+  timeoutMs: number,
+): Promise<Response> {
+  let response: Response;
+  try {
+    response = await fetchImpl(url, {
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${apiKey}`,
+        'content-type': 'application/json',
+        accept: 'application/json',
+        'x-title': 'SignOFF',
+      },
+      body,
+      redirect: 'error',
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+  } catch (error) {
+    const name = nameOf(error);
+    throw new ModelError(
+      name === 'TimeoutError' || name === 'AbortError'
+        ? 'the model request timed out'
+        : 'the model request failed',
+    );
+  }
+  if (!response.ok) {
+    throw new ModelError(
+      `the model provider returned HTTP ${String(response.status)}`,
+      response.status,
+    );
+  }
+  return response;
+}
+
+/** Reads the first choice's text. Anything other than a complete, non-empty reply is an error. */
+async function contentOf(response: Response): Promise<string> {
+  const raw = await response.text().catch(() => null);
+  if (raw === null) {
+    throw new ModelError('the model reply could not be read');
+  }
+  if (Buffer.byteLength(raw, 'utf8') > MAX_REPLY_BYTES) {
+    throw new ModelError('the model reply is too large');
+  }
+  let payload: unknown;
+  try {
+    payload = JSON.parse(raw) as unknown;
+  } catch {
+    throw new ModelError('the model reply was not JSON');
+  }
+  const choices = fieldOf(payload, 'choices');
+  if (!Array.isArray(choices) || choices.length === 0) {
+    throw new ModelError('the model reply had no choices');
+  }
+  const choice: unknown = choices[0];
+  const content = fieldOf(fieldOf(choice, 'message'), 'content');
+  if (fieldOf(choice, 'finish_reason') === 'length') {
+    throw new ModelError('the model reply was cut off');
+  }
+  if (typeof content !== 'string' || content.trim().length === 0) {
+    throw new ModelError('the model reply was empty');
+  }
+  if (Buffer.byteLength(content, 'utf8') > MAX_REPLY_BYTES) {
+    throw new ModelError('the model reply is too large');
+  }
+  return content;
+}
+
+function fieldOf(value: unknown, key: string): unknown {
+  if (typeof value !== 'object' || value === null) {
+    return undefined;
+  }
+  const field: unknown = Reflect.get(value, key);
+  return field;
+}
+
+function nameOf(error: unknown): string {
+  const name = fieldOf(error, 'name');
+  return typeof name === 'string' ? name : '';
+}

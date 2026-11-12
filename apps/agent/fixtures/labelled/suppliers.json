@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "suppliers": [
+    {
+      "supplierId": "SUP-TST001",
+      "legalName": "Lumen Test Supplies (Pty) Ltd",
+      "enrolledPayeeAsPrinted": "FICT-ACC-1001",
+      "status": "approved"
+    },
+    {
+      "supplierId": "SUP-TST002",
+      "legalName": "Sample Catering Works CC",
+      "enrolledPayeeAsPrinted": "FICT-ACC-1002",
+      "status": "approved"
+    },
+    {
+      "supplierId": "SUP-TST003",
+      "legalName": "Demo Transport Services (Pty) Ltd",
+      "enrolledPayeeAsPrinted": "FICT-ACC-1003",
+      "status": "approved"
+    },
+    {
+      "supplierId": "SUP-TST004",
+      "legalName": "Testline Components (Pty) Ltd",
+      "enrolledPayeeAsPrinted": "FICT-ACC-1004",
+      "status": "approved"
+    },
+    {
+      "supplierId": "SUP-TST005",
+      "legalName": "Example Office Supplies CC",
+      "enrolledPayeeAsPrinted": "FICT-ACC-1005",
+      "status": "approved"
+    }
+  ]
+}

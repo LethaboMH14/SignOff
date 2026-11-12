@@ -27,6 +27,8 @@ import {
   type SendPlan,
 } from '../../../packages/xrpl/src/index.js';
 
+import type { CoSignResult, ProposeResult } from '../../../packages/warden-api/src/contract.js';
+
 import { canonicalJson, fingerprintOf } from './canonical.js';
 import {
   dailyUsage,
@@ -77,23 +79,11 @@ export interface WardenDeps {
   readonly newId: () => string;
 }
 
-export interface ProposeResult {
-  /** Null only when the proposal did not parse, so there is no attempt to name. */
-  readonly attemptId: string | null;
-  readonly decision: WardenDecision;
-  /** The UNSIGNED Warden-prepared transaction, never a Warden signature. A signature is issued only at finalization. */
-  readonly toCoSign: string | null;
-}
-
-export type Outcome = 'paid' | 'failed' | 'rejected' | 'expired' | 'held' | 'pending';
-
-export interface CoSignResult {
-  readonly attemptId: string;
-  readonly outcome: Outcome;
-  readonly hash: string;
-  readonly ledgerIndex: number | null;
-  readonly engineResult: string | null;
-}
+export type {
+  CoSignResult,
+  Outcome,
+  ProposeResult,
+} from '../../../packages/warden-api/src/contract.js';
 
 const LimitsPatch = z.strictObject({
   perPaymentMinor: z.int().min(1).max(1_000_000_000_000_000).optional(),
@@ -372,9 +362,9 @@ export class WardenService {
   }
 
   /**
-   * Final authorization: accept only the agent's signature, recheck current policy and ledger facts,
-   * then add the Warden's signature and submit from the trusted Warden process. No usable second
-   * signature ever leaves this service before the authorization checks.
+   * Verifies the agent-only signature against unsigned prepared terms, rechecks the
+   * current pause, policy, payee, limits and ledger state, then Warden signs
+   * and submits itself. No Warden co-signature leaves before authorization.
    */
   async coSign(attemptId: string, signedBlob: string): Promise<CoSignResult> {
     const submission = await this.exclusive(async () => {
@@ -882,7 +872,7 @@ export class WardenService {
     };
   }
 
-  /** Finalizes an agent-only signature with Warden's key AFTER the last policy checks. */
+  /** Finalize an agent-only signature; add Warden's signature only after all last-moment checks. */
   private finalizeAgentSignature(attempt: AttemptState, blob: string): string {
     const signed = decodeFields(blob);
     if (canonicalJson(boundFieldsOf(signed)) !== attempt.txFields) {

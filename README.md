@@ -4,7 +4,7 @@
 
 SignOff reads supplier invoices, checks them against purchasing records, and pays the routine ones without a human click. Every payment needs two signatures. The agent holds one. The second belongs to an independent rulebook service, called Warden, that the agent cannot read, edit or talk its way past. If a payment breaks a rule, Warden withholds its signature, and the XRP Ledger will not accept a payment with only one.
 
-> **Status, 11 November 2026: Gate 0 and incremental Gate A ledger implementation are merged; Gate B Warden code has passed offline security regressions but is still under review, not merged. Live payment evidence uses test-issued TST, not RLUSD. The required validated RLUSD transfer has not been demonstrated.**
+> **Status, 11 November 2026: Gate 0 and incremental Gate A ledger implementation are merged. Gates B (Warden) and C (invoice agent) are implemented on feature branches and are NOT merged; C's model evaluation is SIMULATED. Live Testnet evidence uses test-issued TST, not RLUSD. The required validated RLUSD payment and real agent-to-Warden run remain outstanding.**
 > The repository holds the Gate 0 foundation and the Gate A ledger layer, which runs on the XRP Ledger Testnet only. Payments so far use a test-issued token, not RLUSD. No customer has been interviewed, no partner is integrated, and no mockups exist. See [Status of every claim](#status-of-every-claim) below.
 
 Built for the [Node Engine Hackathon](https://w3node.io/node-engine) at W3Node, Cape Town, in the Agentic Finance track. Submissions close on Friday 13 November 2026 at 23:59 SAST.
@@ -92,7 +92,7 @@ This positioning was accepted by the team on 10 November 2026 ([ADR 0001](docs/d
 
 | Item | Planned | Live on Testnet | Simulated in demo | Validated with customers |
 |---|---|---|---|---|
-| Agent run on an invoice file | Yes | Not yet | | |
+| Agent run on an invoice file | Yes | Not yet: a live model run and the Warden integration are not run in the build ([TEST-LOG T-087, T-088](docs/logs/TEST-LOG.md)) | Built and tested in software: intake, source-quoted extraction, injection screen, matching, decision log and audit export ([TEST-LOG T-076 to T-086](docs/logs/TEST-LOG.md)). Simulated evaluation on 30 fictional invoices: the pipeline decides 30 of 30, with no false approvals; the stand-ins are not a model measurement ([simulated report](apps/agent/results/simulated-eval.md)) | |
 | Two-signature RLUSD payment | Yes | Not yet: blocked until testnet RLUSD is funded. The same two-signature path has run with a test-issued token ([TEST-LOG T-053](docs/logs/TEST-LOG.md)) | | |
 | Rejection of a single-key payment | Yes | Live on Testnet: agent alone and Warden alone refused with tefBAD_QUORUM ([TEST-LOG T-054](docs/logs/TEST-LOG.md)) | | |
 | Warden rules, holds and operator limits | Yes | Live on Testnet with a test-issued token, not RLUSD: refusals and holds for duplicates, payee, receipt and limit, concurrency, pause, lowered limit and a non-payment co-signature ([TEST-LOG T-071](docs/logs/TEST-LOG.md)); frozen line held, then paid ([T-072](docs/logs/TEST-LOG.md)) | | |
@@ -118,7 +118,7 @@ Judges score three areas, taken from the team's BuilderBase dashboard on 9 Novem
 | Criterion | Weight | Where the build stands today |
 |---|---|---|
 | Product design | 33% | Nothing to score: no screens or mockups |
-| Technical UX | 34% | Ledger implementation and Warden tests exist; no accepted end-to-end live agent/UI demo or RLUSD proof |
+| Technical UX | 34% | Ledger, Warden and agent code exists, but no real model-to-Warden-to-Testnet trace, RLUSD proof or deployed console |
 | Business/Market Fit | 33% | Narrative and evidence only, no customer validation |
 
 The track requires an autonomous transaction on XRPL Testnet or Devnet, limits enforced outside the agent's control, and a way for a human operator to change them. See [docs/HACKATHON.md](docs/HACKATHON.md).
