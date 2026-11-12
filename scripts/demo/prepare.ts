@@ -19,6 +19,7 @@ import { sha256OfBytes } from '../../packages/shared/src/node.js';
 import { resolveUsdZarRate } from '../../packages/shared/src/fx/index.js';
 import { EvidenceFile } from '../../packages/shared/src/schemas/evidence.js';
 import { writeTextPdf } from '../../apps/agent/tools/lib/pdf-writer.js';
+import { demoPortsOf } from './ports.js';
 import { AGENT_POLICY_VERSION } from '../../apps/agent/src/config.js';
 import { conversionOf } from '../../apps/agent/src/workflow/fx-convert.js';
 import { WardenConfigFile } from '../../apps/warden/src/config.js';
@@ -34,7 +35,7 @@ import {
  * held by the Warden with INVARIANT_FAILED because the demo used a different version (demo-attempt-2 folder).
  */
 export const DEMO_POLICY_VERSION = AGENT_POLICY_VERSION;
-export const DEMO_LISTEN = { host: '127.0.0.1', port: 8789 } as const;
+export const DEMO_LISTEN = { host: '127.0.0.1', port: demoPortsOf(process.env).warden } as const;
 /** Demo limits in USD minor units (cents). The spending account holds about USD 2.78 of RLUSD, so these cap every payment. */
 export const DEMO_LIMITS = {
   perPaymentMinor: 500,

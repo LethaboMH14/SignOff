@@ -29,11 +29,13 @@ import {
   fileRegistryStore,
 } from '../../packages/xrpl/src/node.js';
 import { DEMO_LISTEN, DEMO_INVOICE } from './prepare.js';
+import { demoPortsOf } from './ports.js';
+import { withInvoiceRecord } from './records.js';
 
 const repoRoot = resolve(fileURLToPath(new URL('.', import.meta.url)), '..', '..');
 const SUPPLIER_ID = DEMO_INVOICE.supplierId;
 const WARDEN_URL = `http://${DEMO_LISTEN.host}:${String(DEMO_LISTEN.port)}`;
-const CONSOLE_PORT = 4180;
+const CONSOLE_PORT = demoPortsOf(process.env).console;
 const CONSOLE_URL = `http://127.0.0.1:${String(CONSOLE_PORT)}`;
 
 /** Environment names that carry secrets. Each child process receives only the ones it needs. */
@@ -207,74 +209,42 @@ async function makeInvoice(
   mkdirSync(inbox, { recursive: true });
   writeFileSync(join(inbox, file), bytes);
 
-  const receivedAt = `${printedDate}T09:00:00.000Z`;
   const agentPath = join(localDir, 'demo', 'evidence-agent.json');
-  const agentEvidence = EvidenceFile.parse(JSON.parse(readFileSync(agentPath, 'utf8')) as unknown);
+  const wardenPath = join(localDir, 'warden', 'evidence.json');
+  const agentFile = EvidenceFile.parse(JSON.parse(readFileSync(agentPath, 'utf8')) as unknown);
+  const wardenFile = EvidenceFile.parse(JSON.parse(readFileSync(wardenPath, 'utf8')) as unknown);
+  const receivedAt = `${printedDate}T09:00:00.000Z`;
+  // Both buyer records are written before the Warden starts, so each process reads a file that already has the invoice.
+  // The agent's record is in the invoice's own currency (ZAR); the Warden's is in USD, at the live rate.
   writeFileSync(
     agentPath,
     `${JSON.stringify(
-      EvidenceFile.parse({
-        ...agentEvidence,
-        invoices: [
-          ...agentEvidence.invoices,
-          {
-            fingerprint,
-            supplierId: SUPPLIER_ID,
-            invoiceNumber: number,
-            currency: 'ZAR',
-            amountMinor: zarMinor,
-            purchaseOrderId: po,
-            payeeAccountAsPrinted: DEMO_INVOICE.payeeAccountPrinted,
-          },
-        ],
-        purchaseOrders: [
-          ...agentEvidence.purchaseOrders,
-          { purchaseOrderId: po, supplierId: SUPPLIER_ID, currency: 'ZAR', amountMinor: zarMinor },
-        ],
-        goodsReceipts: [
-          ...agentEvidence.goodsReceipts,
-          { purchaseOrderId: po, receivedMinor: zarMinor, receivedAt },
-        ],
+      withInvoiceRecord(agentFile, {
+        fingerprint,
+        supplierId: SUPPLIER_ID,
+        invoiceNumber: number,
+        currency: 'ZAR',
+        amountMinor: zarMinor,
+        purchaseOrderId: po,
+        payeeAccountAsPrinted: DEMO_INVOICE.payeeAccountPrinted,
+        receivedAt,
       }),
       null,
       2,
     )}\n`,
   );
-
-  const wardenPath = join(localDir, 'warden', 'evidence.json');
-  const wardenEvidence = EvidenceFile.parse(
-    JSON.parse(readFileSync(wardenPath, 'utf8')) as unknown,
-  );
   writeFileSync(
     wardenPath,
     `${JSON.stringify(
-      EvidenceFile.parse({
-        ...wardenEvidence,
-        invoices: [
-          ...wardenEvidence.invoices,
-          {
-            fingerprint,
-            supplierId: SUPPLIER_ID,
-            invoiceNumber: number,
-            currency: 'USD',
-            amountMinor: conversion.amountMinor,
-            purchaseOrderId: po,
-            payeeAccountAsPrinted: null,
-          },
-        ],
-        purchaseOrders: [
-          ...wardenEvidence.purchaseOrders,
-          {
-            purchaseOrderId: po,
-            supplierId: SUPPLIER_ID,
-            currency: 'USD',
-            amountMinor: conversion.amountMinor,
-          },
-        ],
-        goodsReceipts: [
-          ...wardenEvidence.goodsReceipts,
-          { purchaseOrderId: po, receivedMinor: conversion.amountMinor, receivedAt },
-        ],
+      withInvoiceRecord(wardenFile, {
+        fingerprint,
+        supplierId: SUPPLIER_ID,
+        invoiceNumber: number,
+        currency: 'USD',
+        amountMinor: conversion.amountMinor,
+        purchaseOrderId: po,
+        payeeAccountAsPrinted: null,
+        receivedAt,
       }),
       null,
       2,
@@ -366,8 +336,15 @@ async function main(): Promise<void> {
     }
   }
 
-  // 1. Warden: its own directory, its own keys, no agent or console variables.
-  start('warden', [join('apps', 'warden', 'src', 'main.ts')], envFor({}));
+  const invoice = await makeInvoice(zarMinor, localDir);
+
+  // 1. Warden: its own directory, its own keys, no agent or console variables. It starts after the invoice records are
+  // written, because it reads its evidence once, at start-up.
+  start(
+    'warden',
+    [join('apps', 'warden', 'src', 'main.ts')],
+    envFor({ SIGNOFF_LOCAL_DIR: localDir }),
+  );
   await waitFor(
     async () => {
       const health = await getJson(`${WARDEN_URL}/v1/health`).catch(() => null);
@@ -382,7 +359,6 @@ async function main(): Promise<void> {
   );
 
   // 2. The run's invoice and its evidence, then the agent, with only its identity and its provider key.
-  const invoice = await makeInvoice(zarMinor, localDir);
   process.stdout.write(
     `[demo] invoice ${invoice.file} R${(zarMinor / 100).toFixed(2)} = USD ${(invoice.usdMinor / 100).toFixed(2)} at USD/ZAR ${invoice.rate} (live)\n`,
   );
@@ -417,6 +393,7 @@ async function main(): Promise<void> {
       '1000',
     ],
     envFor({
+      SIGNOFF_LOCAL_DIR: localDir,
       SIGNOFF_AGENT_ID: identities.agentId,
       SIGNOFF_AGENT_SECRET: identities.agentSecretHex,
       SIGNOFF_AGENT_SEED: agent.seed,
@@ -434,6 +411,7 @@ async function main(): Promise<void> {
     'console',
     [join('apps', 'console', 'src', 'server', 'main.ts')],
     envFor({
+      SIGNOFF_LOCAL_DIR: localDir,
       SIGNOFF_WARDEN_URL: WARDEN_URL,
       SIGNOFF_CONSOLE_MODE: 'live',
       SIGNOFF_CONSOLE_TRANSITIONS: agentLog,
