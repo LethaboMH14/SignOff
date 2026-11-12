@@ -109,6 +109,9 @@ export type LimitsOutcome =
 /** A raised limit waits this long for a second operator, then lapses. A proposed rule, for review. */
 export const LIMIT_INCREASE_WINDOW_MS = 24 * 60 * 60 * 1000;
 
+/** An armed Warden pauses itself when no heartbeat has arrived for this long. A proposed setting, for review. */
+export const WATCHDOG_WINDOW_MS = 30_000;
+
 const PayeeInput = z.strictObject({
   address: z.string().refine((value) => isValidClassicAddress(value), 'not a classic address'),
   destinationTag: z.int().min(0).max(4_294_967_295).nullable(),
@@ -243,6 +246,8 @@ interface Evaluation {
  */
 export class WardenService {
   private chain: Promise<unknown> = Promise.resolve();
+  /** When the last heartbeat arrived, in milliseconds. Null after a restart, so an armed Warden starts paused. */
+  private lastHeartbeatMs: number | null = null;
 
   private constructor(
     private readonly deps: WardenDeps,
@@ -259,7 +264,17 @@ export class WardenService {
     for (const event of await deps.log.readAll()) {
       state.apply(event);
     }
-    return new WardenService(deps, state);
+    const service = new WardenService(deps, state);
+    if (state.armed && !state.paused) {
+      // A process restart loses the in-memory heartbeat. Fail closed before health or operator reads can say running.
+      await service.record({
+        type: 'pause.set',
+        at: deps.now().toISOString(),
+        paused: true,
+        changedBy: 'watchdog',
+      });
+    }
+    return service;
   }
 
   /** Finishes what a previous run left open: reconciles submitted attempts and expires attempts that lapsed. */
@@ -402,6 +417,7 @@ export class WardenService {
    */
   async coSign(attemptId: string, signedBlob: string): Promise<CoSignResult> {
     const submission = await this.exclusive(async () => {
+      await this.enforceWatchdog(this.deps.now());
       const attempt = this.state.attempts.get(attemptId);
       if (attempt === undefined) {
         throw new WardenError(404, 'no such payment attempt');
@@ -483,6 +499,36 @@ export class WardenService {
       );
     }
     return this.exclusive(() => this.settleDecision(attemptId, decision, submission.hash));
+  }
+
+  /**
+   * Arms or disarms the watchdog. Arming starts the heartbeat window from now. The change is recorded, so a restart
+   * keeps it.
+   */
+  async setArmed(armed: boolean, actorId: string): Promise<void> {
+    await this.exclusive(async () => {
+      await this.applyDueChanges();
+      const now = this.deps.now();
+      await this.record({
+        type: 'watchdog.armed',
+        at: now.toISOString(),
+        armed,
+        changedBy: actorId,
+      });
+      if (armed) {
+        this.lastHeartbeatMs = now.getTime();
+      }
+    });
+  }
+
+  /** A heartbeat from an operator's console. It is not logged each time, so the log stays readable. */
+  heartbeat(): Promise<void> {
+    return this.exclusive(async () => {
+      const now = this.deps.now();
+      // A late heartbeat must not erase the timeout before the watchdog has recorded a pause.
+      await this.enforceWatchdog(now);
+      this.lastHeartbeatMs = now.getTime();
+    });
   }
 
   async setPaused(paused: boolean, actorId: string): Promise<void> {
@@ -1052,9 +1098,30 @@ export class WardenService {
     }
   }
 
+  /**
+   * Pauses an armed Warden that has heard no heartbeat within the window. The pause is recorded as the watchdog's, and
+   * only an operator's resume lets payments continue. A heartbeat alone does not resume it.
+   */
+  private async enforceWatchdog(now: Date): Promise<void> {
+    if (!this.state.armed || this.state.paused) {
+      return;
+    }
+    const last = this.lastHeartbeatMs;
+    if (last !== null && now.getTime() - last <= WATCHDOG_WINDOW_MS) {
+      return;
+    }
+    await this.record({
+      type: 'pause.set',
+      at: now.toISOString(),
+      paused: true,
+      changedBy: 'watchdog',
+    });
+  }
+
   /** Moves any payout change whose cooling-off has ended into effect. Recorded, so a restart sees the same state. */
   private async applyDueChanges(): Promise<void> {
     const now = this.deps.now();
+    await this.enforceWatchdog(now);
     const pending = this.state.pendingLimits;
     if (pending !== null && Date.parse(pending.expiresAt) <= now.getTime()) {
       await this.record({

@@ -84,6 +84,8 @@ export function isUnresolved(status: AttemptStatus): boolean {
 export class WardenState {
   limits: LimitsState;
   paused = false;
+  /** Whether an operator has armed the watchdog. An armed Warden pauses itself when no heartbeat arrives in time. */
+  armed = false;
   /** The raised limits waiting for a second operator, or null. Any applied change to the limits clears it. */
   pendingLimits: PendingLimitChange | null = null;
   readonly approvals = new Map<string, Set<string>>();
@@ -138,6 +140,9 @@ export class WardenState {
           throw new Error('the event log refers to a limit change that is not pending');
         }
         this.pendingLimits = null;
+        return;
+      case 'watchdog.armed':
+        this.armed = event.armed;
         return;
       case 'pause.set':
         this.paused = event.paused;

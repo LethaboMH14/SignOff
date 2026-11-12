@@ -83,6 +83,12 @@ export const WardenEvent = z.discriminatedUnion('type', [
     reason: z.enum(['expired', 'superseded']),
   }),
   z.strictObject({
+    type: z.literal('watchdog.armed'),
+    at: Iso,
+    armed: z.boolean(),
+    changedBy: Operator,
+  }),
+  z.strictObject({
     type: z.literal('pause.set'),
     at: Iso,
     paused: z.boolean(),

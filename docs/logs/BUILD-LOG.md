@@ -215,7 +215,7 @@ One entry per working session (rule R-19 in [RULES.md](../RULES.md)), newest fir
 - Changed decisions: D-078.
 - Evidence: T-102 (126 console tests; repository check exit 0: 934 tests). The browser check is not run (T-103).
 - Lenses. Prompt engineering: not applicable; no model is called and the next steps are authored text. Context engineering: the view gets only the Warden fields it shows and only the agent moves for the obligation. Swarm engineering: each move names the actor that made it (intake, screen, extractor, verifier, matcher, warden, signer, submitter, reconciler), and the view does not present a model call as a decision. Graph engineering: the evidence path is a walk through the transition log for one obligation, selected by the export's own function.
-- Problems / blockers: the browser check is not run (the pane was hidden). Payout approval is not available in the console, by design for this version. The next-step texts are drafts. Test IDs T-101 and D-081 belong to feat/S3-watchdog, so this stack continues from T-102 and D-078; the two stacks need renumbering at merge.
+- Problems / blockers: the browser check is not run (the pane was hidden). Payout approval is not available in the console, by design for this version. The next-step texts are drafts. Test IDs T-101 and D-097 belong to feat/S3-watchdog, so this stack continues from T-102 and D-078; the two stacks need renumbering at merge.
 - Next: the limits and pause panel (D3), then the receipt (D4).
 
 
@@ -225,7 +225,7 @@ One entry per working session (rule R-19 in [RULES.md](../RULES.md)), newest fir
 - Changed decisions: D-079.
 - Evidence: T-104 (152 console tests; repository check exit 0: 960 tests; coverage above the thresholds). The browser check is not run (T-103).
 - Lenses. Prompt engineering: not applicable; no model is called. Context engineering: each change carries the operator's own Warden principal, so the Warden records who asked and who approved, and the desk names the requester only as "you" or by username. Graph engineering: a limit change becomes a new policy version when it applies, and the desk shows the raise as a waiting state until then.
-- Problems / blockers: the browser check of the form is not run (the pane was hidden). The 24-hour raise window and the 30-second watchdog are proposed settings for review. The Warden suite covers the limit rules (T-095); the console adds the requester check and the confirmation. The function-coverage threshold was met by testing the browser state rules directly (web/actions.ts) and the browser client with a stubbed fetch, not by changing the threshold. Test IDs T-101 and D-081 belong to feat/S3-watchdog; this stack uses T-102 to T-104 and D-078 to D-079, and the two stacks need renumbering at merge.
+- Problems / blockers: the browser check of the form is not run (the pane was hidden). The 24-hour raise window and the 30-second watchdog are proposed settings for review. The Warden suite covers the limit rules (T-095); the console adds the requester check and the confirmation. The function-coverage threshold was met by testing the browser state rules directly (web/actions.ts) and the browser client with a stubbed fetch, not by changing the threshold. Test IDs T-101 and D-097 belong to feat/S3-watchdog; this stack uses T-102 to T-104 and D-078 to D-079, and the two stacks need renumbering at merge.
 - Next: the receipt (D4).
 
 
@@ -235,7 +235,7 @@ One entry per working session (rule R-19 in [RULES.md](../RULES.md)), newest fir
 - Changed decisions: D-082.
 - Evidence: T-105 (172 console tests; repository check exit 0: 980 tests). The live Testnet receipt is not run (T-106).
 - Lenses. Prompt engineering: not applicable; no model is called. Context engineering: the receipt re-reads the ledger rather than trusting its own record, and it sends the browser only the answer it shows. Graph engineering: the receipt is the end of the path, linking the invoice, the attempt, the transaction hash and the reconciliation the desk shows as Paid.
-- Problems / blockers: no live receipt has been checked against Testnet (T-106). No RLUSD payment has run (A3 is blocked, T-059), so receipts are for the test-issued token and are labelled that way. The rand rate is a placeholder from configuration, and no market rate is claimed. The browser check of the receipt is not run (the pane was hidden). Test IDs: T-101 and D-081 belong to feat/S3-watchdog, D-080 to the keys branch; this stack uses T-102 to T-106, D-078 to D-079 and D-082, and the stacks need renumbering at merge.
+- Problems / blockers: no live receipt has been checked against Testnet (T-106). No RLUSD payment has run (A3 is blocked, T-059), so receipts are for the test-issued token and are labelled that way. The rand rate is a placeholder from configuration, and no market rate is claimed. The browser check of the receipt is not run (the pane was hidden). Test IDs: T-101 and D-097 belong to feat/S3-watchdog, D-080 to the keys branch; this stack uses T-102 to T-106, D-078 to D-079 and D-082, and the stacks need renumbering at merge.
 - Next: the accessibility and phone check (D5), then the health checks and deployment configuration (D6).
 
 
@@ -265,7 +265,7 @@ One entry per working session (rule R-19 in [RULES.md](../RULES.md)), newest fir
 - Changed decisions: D-085.
 - Evidence: T-111 (215 Warden and script tests); T-112 (live ledger read OK; account and Warden UNVERIFIED); T-113 and T-114 UNVERIFIED.
 - Lenses. Prompt engineering: not applicable. Context engineering: the health answer and the synthetic check see only what they need, and the images see no secrets. Graph engineering: the synthetic check walks the read path of a payment (ledger, account, Warden) without submitting one.
-- Problems / blockers: the images are not built; the console-down test is not run as a process test; the account and Warden checks need SIGNOFF_SPENDING_ADDRESS and SIGNOFF_WARDEN_URL; no hosting account or budget is confirmed. Test IDs T-101 and D-081 belong to feat/S3-watchdog, D-080 to the keys branch; this stack uses T-102 to T-114 and D-078 to D-085.
+- Problems / blockers: the images are not built; the console-down test is not run as a process test; the account and Warden checks need SIGNOFF_SPENDING_ADDRESS and SIGNOFF_WARDEN_URL; no hosting account or budget is confirmed. Test IDs T-101 and D-097 belong to feat/S3-watchdog, D-080 to the keys branch; this stack uses T-102 to T-114 and D-078 to D-085.
 - Next: the README status table and the judge check script (E2 and E3), then the attempt at the Testnet credential check (S5).
 
 
@@ -305,11 +305,12 @@ One entry per working session (rule R-19 in [RULES.md](../RULES.md)), newest fir
 - Evidence: T-122, T-123, T-124.
 - Problems / blockers: the live P0 negative proof (#54), the RLUSD payment (A3) and a live agent-to-Warden run are still not run. Not pushed.
 - Next: review PRs #47 to #54.
+### 2026-11-11 — Sibusiso with Claude (Haiku 5.5) — S3 armed-mode watchdog, server side
 
 ### 2026-11-11 — Sibusiso with Claude — Keys and live provider work merged onto the integration branch
 
 - Done: merged feat/keys-dotenv, which carries the C5 provider work and the three live labelled-set runs, onto feat/integrate-gate-c. The agent command line reads a local `.env`; the `--min-interval-ms` and `--transitions` options both stay in `apps/agent/src/main.ts`.
-- Evidence integrity: this side's IDs collided with Gate C's, so T-090 became T-125, T-091 became T-126 and S-050 became S-055. D-073 and D-080 and S-039 were free and keep their numbers. S-051, T-101 and D-081 stay reserved for the watchdog branch.
+- Evidence integrity: this side's IDs collided with Gate C's, so T-090 became T-125, T-091 became T-126 and S-050 became S-055. D-073 and D-080 and S-039 were free and keep their numbers. S-051, T-101 and D-097 stay reserved for the watchdog branch.
 - Evidence: T-127.
 - Problems / blockers: the live runs are the weak result already logged; no accuracy is claimed. RLUSD (A3) is still not funded.
 - Next: RLUSD payment once funded, then the re-review requests on #27 and #44.
@@ -331,3 +332,16 @@ One entry per working session (rule R-19 in [RULES.md](../RULES.md)), newest fir
 - Not committed. The work sits uncommitted on feat/console-redesign, branched from feat/keys-and-live-evidence.
 - Next: a visual review on a visible window, then a decision on committing.
 
+- Done: an armed Warden pauses itself when no operator heartbeat arrives within 30 seconds (a proposed setting). A heartbeat keeps it running and never resumes it. Arm, disarm and heartbeat are operator routes. A restart of an armed Warden starts paused. Branch `feat/S3-watchdog`, stacked on `feat/D3W-second-approver`.
+- Changed decisions: D-097.
+- Evidence: T-101. `npm run check` exit 0 (59 files, 816 tests).
+- Problems / blockers: the 30-second window is a proposed setting for review. The Arduino heartbeat (S1) is not connected, so the hardware path is UNVERIFIED.
+- Next: the payment desk (D1) on the console branch.
+
+
+### 2026-11-11 — Lethabo security review — S3 fail-closed correction
+
+- Done: prevent a late heartbeat from erasing the expired watchdog window; record pause immediately after replaying an armed Warden on restart. Added unit and authenticated HTTP regression coverage on PR #58.
+- Evidence: source changes and tests committed for CI; no local `npm run check` result claimed.
+- Blockers: PR #58 is behind its integration target and was unmergeable at review; exact-head CI and an independent timer are not yet verified. Only simulated development is authorised.
+- Next: run exact-head CI, reconcile the stack, and obtain independent review before merging.
