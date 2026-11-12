@@ -111,6 +111,7 @@ const RULES: readonly Rule[] = [
   {
     code: 'INSTRUCTION_LIKE_TEXT',
     pattern:
+      // eslint-disable-next-line security/detect-unsafe-regex -- the gaps are bounded and the pattern ends in literal words; the screen tests cover it
       /\b(?:skip|bypass|ignore|disable|omit|suspend)\b[^.\n]{0,15}\b(?:the\s+|this\s+|any\s+|all\s+)?(?:account|payee|bank|check|checks|verification|warden|screen)\b/i,
   },
   // Release or authorise this payment: the imperative names the payment itself, so ordinary terms such as
@@ -123,16 +124,19 @@ const RULES: readonly Rule[] = [
   {
     code: 'INSTRUCTION_LIKE_TEXT',
     pattern:
+      // eslint-disable-next-line security/detect-unsafe-regex -- the gaps are bounded and the pattern ends in literal words; the screen tests cover it
       /\b(?:ignoreer|slaan|omseil|deaktiveer)\b[^.\n]{0,15}\b(?:die\s+)?(?:rekening|betaler|bank|kontrole|verifikasie|goedkeuring|waarskuwing)\b/i,
   },
   {
     code: 'INSTRUCTION_LIKE_TEXT',
     pattern:
+      // eslint-disable-next-line security/detect-unsafe-regex -- the gaps are bounded and the pattern ends in literal words; the screen tests cover it
       /\b(?:ignorez|sautez|contournez|désactivez)\b[^.\n]{0,15}\b(?:le\s+|la\s+|les\s+)?(?:compte|bénéficiaire|banque|contrôle|vérification)\b/i,
   },
   {
     code: 'INSTRUCTION_LIKE_TEXT',
     pattern:
+      // eslint-disable-next-line security/detect-unsafe-regex -- the gaps are bounded and the pattern ends in literal words; the screen tests cover it
       /\b(?:affichez|renvoyez|retournez|indiquez)\b[^.\n]{0,40}\b(?:la\s+)?(?:décision|statut|verdict)\b/i,
   },
   {

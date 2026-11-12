@@ -116,7 +116,9 @@ describe('the daily dollar cap', () => {
     caps.settle(0, 0.2, 0.2);
     day = '2026-11-13';
     expect(caps.snapshot()).toMatchObject({ usd: 0, total: 0.2 });
-    expect(() => { caps.reserve(0.2); }).toThrow('the total dollar cap would be exceeded');
+    expect(() => {
+      caps.reserve(0.2);
+    }).toThrow('the total dollar cap would be exceeded');
   });
 
   it('gives a default daily cap of $5 and a default total of $10', () => {

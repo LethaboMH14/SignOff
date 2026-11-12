@@ -9,7 +9,15 @@
 // Prerequisites (one time): npm run testnet:provision, then npm run demo:prepare (see docs/DEMO-RUNBOOK.md).
 // The processes run in the foreground. Press Ctrl+C to stop all three.
 import { spawn, type ChildProcess } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  renameSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -91,10 +99,12 @@ const children: Child[] = [];
 
 /** Starts one process, keeps its last output lines for failure reports, and records when it exits. */
 function start(name: string, args: string[], env: NodeJS.ProcessEnv): Child {
-  const child = spawn('npx', ['tsx', ...args], {
+  // The tsx entry point is started directly, without a shell: a shell joins arguments with spaces unescaped, and the
+  // repository path on this machine contains a space.
+  const tsxCli = resolve(repoRoot, 'node_modules', 'tsx', 'dist', 'cli.mjs');
+  const child = spawn(process.execPath, [tsxCli, ...args], {
     cwd: repoRoot,
     env,
-    shell: true,
     windowsHide: true,
   });
   const entry: Child = { name, process: child, lines: [] };
@@ -283,6 +293,33 @@ async function makeInvoice(
   return { file, fingerprint, usdMinor: conversion.amountMinor, rate: conversion.rate };
 }
 
+/**
+ * Moves the invoices of earlier runs out of the inbox. The agent reads every file in the inbox at start-up, so an
+ * invoice left there would be processed again. The files are moved, not deleted, so their records stay on disk.
+ */
+function archiveInbox(localDir: string): void {
+  const inbox = join(localDir, 'demo', 'inbox');
+  if (!existsSync(inbox)) {
+    return;
+  }
+  const earlier = readdirSync(inbox).filter((name) => name.endsWith('.pdf'));
+  if (earlier.length === 0) {
+    return;
+  }
+  const stamp = new Date()
+    .toISOString()
+    .replace(/[-:TZ.]/g, '')
+    .slice(0, 14);
+  const archive = join(localDir, 'demo', `inbox-archive-${stamp}`);
+  mkdirSync(archive, { recursive: true });
+  for (const name of earlier) {
+    renameSync(join(inbox, name), join(archive, name));
+  }
+  process.stdout.write(
+    `[demo] moved ${String(earlier.length)} earlier invoice(s) out of the inbox to ${archive}\n`,
+  );
+}
+
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
   const zarIndex = args.indexOf('--zar');
@@ -366,6 +403,14 @@ async function main(): Promise<void> {
     }
   }
 
+  // The run's invoice and its evidence are written before the Warden starts. The Warden reads its evidence file only at
+  // start-up, so a record written after it started would be missing, and the new invoice would be held.
+  archiveInbox(localDir);
+  const invoice = await makeInvoice(zarMinor, localDir);
+  process.stdout.write(
+    `[demo] invoice ${invoice.file} R${(zarMinor / 100).toFixed(2)} = USD ${(invoice.usdMinor / 100).toFixed(2)} at USD/ZAR ${invoice.rate} (live)\n`,
+  );
+
   // 1. Warden: its own directory, its own keys, no agent or console variables.
   start('warden', [join('apps', 'warden', 'src', 'main.ts')], envFor({}));
   await waitFor(
@@ -381,11 +426,7 @@ async function main(): Promise<void> {
     60_000,
   );
 
-  // 2. The run's invoice and its evidence, then the agent, with only its identity and its provider key.
-  const invoice = await makeInvoice(zarMinor, localDir);
-  process.stdout.write(
-    `[demo] invoice ${invoice.file} R${(zarMinor / 100).toFixed(2)} = USD ${(invoice.usdMinor / 100).toFixed(2)} at USD/ZAR ${invoice.rate} (live)\n`,
-  );
+  // 2. The agent, with only its identity and its provider key.
   const wardenHealth = (await getJson(`${WARDEN_URL}/v1/health`)).body as {
     policyVersion?: string;
   };
