@@ -1,0 +1,182 @@
+[
+  {
+    "id": "SUP-GEN-001",
+    "code": "FYN",
+    "name": "Fyndra Logistics (Pty) Ltd",
+    "vatNumber": "4106800379",
+    "domain": "fyn.supplier.test",
+    "address": "67 Kiaat Road, Samplebrug, 8859",
+    "bank": {
+      "bankName": "Kestrel Test Savings Bank",
+      "branchCode": "993567",
+      "accountNumber": "9767192524",
+      "accountHolder": "Fyndra Logistics (Pty) Ltd"
+    },
+    "split": "dev"
+  },
+  {
+    "id": "SUP-GEN-002",
+    "code": "VEL",
+    "name": "Velora Catering CC",
+    "vatNumber": "4108231517",
+    "domain": "vel.supplier.test",
+    "address": "81 Kiaat Road, Mockdal, 5736",
+    "bank": {
+      "bankName": "Kestrel Test Savings Bank",
+      "branchCode": "995125",
+      "accountNumber": "9735188767",
+      "accountHolder": "Velora Catering CC"
+    },
+    "split": "dev"
+  },
+  {
+    "id": "SUP-GEN-003",
+    "code": "MOK",
+    "name": "Mokgadi Print Works (Pty) Ltd",
+    "vatNumber": "4107422537",
+    "domain": "mok.supplier.test",
+    "address": "73 Protea Avenue, Testville, 3343",
+    "bank": {
+      "bankName": "Kestrel Test Savings Bank",
+      "branchCode": "997347",
+      "accountNumber": "9129252117",
+      "accountHolder": "Mokgadi Print Works (Pty) Ltd"
+    },
+    "split": "dev"
+  },
+  {
+    "id": "SUP-GEN-004",
+    "code": "LIN",
+    "name": "Lindani Cleaning Services (Pty) Ltd",
+    "vatNumber": "4107311569",
+    "domain": "lin.supplier.test",
+    "address": "40 Mimosa Street, Mockdal, 7384",
+    "bank": {
+      "bankName": "Kestrel Test Savings Bank",
+      "branchCode": "994078",
+      "accountNumber": "9083939382",
+      "accountHolder": "Lindani Cleaning Services (Pty) Ltd"
+    },
+    "split": "dev"
+  },
+  {
+    "id": "SUP-GEN-005",
+    "code": "QUA",
+    "name": "Quarra IT Solutions (Pty) Ltd",
+    "vatNumber": "4107812477",
+    "domain": "qua.supplier.test",
+    "address": "3 Kiaat Road, Dummyfontein, 6212",
+    "bank": {
+      "bankName": "Kestrel Test Savings Bank",
+      "branchCode": "993812",
+      "accountNumber": "9348658595",
+      "accountHolder": "Quarra IT Solutions (Pty) Ltd"
+    },
+    "split": "dev"
+  },
+  {
+    "id": "SUP-GEN-006",
+    "code": "TSH",
+    "name": "Tshepo Stationery Wholesale CC",
+    "vatNumber": "4108086793",
+    "domain": "tsh.supplier.test",
+    "address": "45 Ysterhout Drive, Testville, 1966",
+    "bank": {
+      "bankName": "Kestrel Test Savings Bank",
+      "branchCode": "992091",
+      "accountNumber": "9509652813",
+      "accountHolder": "Tshepo Stationery Wholesale CC"
+    },
+    "split": "dev"
+  },
+  {
+    "id": "SUP-GEN-007",
+    "code": "NEX",
+    "name": "Nexarro Security Systems (Pty) Ltd",
+    "vatNumber": "4107486945",
+    "domain": "nex.supplier.test",
+    "address": "45 Mimosa Street, Testville, 2275",
+    "bank": {
+      "bankName": "Kestrel Test Savings Bank",
+      "branchCode": "991852",
+      "accountNumber": "9914395073",
+      "accountHolder": "Nexarro Security Systems (Pty) Ltd"
+    },
+    "split": "dev"
+  },
+  {
+    "id": "SUP-GEN-008",
+    "code": "BRI",
+    "name": "Brindle Facilities Management (Pty) Ltd",
+    "vatNumber": "4106405977",
+    "domain": "bri.supplier.test",
+    "address": "13 Fynbos Crescent, Dummyfontein, 3048",
+    "bank": {
+      "bankName": "Kestrel Test Savings Bank",
+      "branchCode": "997547",
+      "accountNumber": "9614944235",
+      "accountHolder": "Brindle Facilities Management (Pty) Ltd"
+    },
+    "split": "dev"
+  },
+  {
+    "id": "SUP-GEN-009",
+    "code": "KES",
+    "name": "Kestrelan Office Furniture (Pty) Ltd",
+    "vatNumber": "4107206809",
+    "domain": "kes.supplier.test",
+    "address": "42 Mimosa Street, Fictonia Park, 2731",
+    "bank": {
+      "bankName": "Kestrel Test Savings Bank",
+      "branchCode": "991848",
+      "accountNumber": "9152687911",
+      "accountHolder": "Kestrelan Office Furniture (Pty) Ltd"
+    },
+    "split": "heldout"
+  },
+  {
+    "id": "SUP-GEN-010",
+    "code": "SEK",
+    "name": "Sekela Tyre and Fleet CC",
+    "vatNumber": "4107951769",
+    "domain": "sek.supplier.test",
+    "address": "60 Mimosa Street, Testville, 4863",
+    "bank": {
+      "bankName": "Kestrel Test Savings Bank",
+      "branchCode": "993803",
+      "accountNumber": "9202010746",
+      "accountHolder": "Sekela Tyre and Fleet CC"
+    },
+    "split": "heldout"
+  },
+  {
+    "id": "SUP-GEN-011",
+    "code": "ORA",
+    "name": "Oraleigh Medical Supplies (Pty) Ltd",
+    "vatNumber": "4107617022",
+    "domain": "ora.supplier.test",
+    "address": "45 Kiaat Road, Samplebrug, 7583",
+    "bank": {
+      "bankName": "Kestrel Test Savings Bank",
+      "branchCode": "995931",
+      "accountNumber": "9032564020",
+      "accountHolder": "Oraleigh Medical Supplies (Pty) Ltd"
+    },
+    "split": "heldout"
+  },
+  {
+    "id": "SUP-GEN-012",
+    "code": "ZAN",
+    "name": "Zantera Events and Hire (Pty) Ltd",
+    "vatNumber": "4108592551",
+    "domain": "zan.supplier.test",
+    "address": "65 Mimosa Street, Placeholder Heights, 9165",
+    "bank": {
+      "bankName": "Kestrel Test Savings Bank",
+      "branchCode": "997787",
+      "accountNumber": "9440548219",
+      "accountHolder": "Zantera Events and Hire (Pty) Ltd"
+    },
+    "split": "heldout"
+  }
+]
