@@ -134,5 +134,6 @@ Findings, incidents and security-relevant changes. Newest at the bottom.
 
 
 
+| S-058 | 2026-11-11 | P0 review finding | A previous Warden proposal response exposed a usable Warden signature, allowing an agent that also signed to bypass later pause/limit checks. | T-29 | Code corrected in Gate B and Gate C feature branches to return unsigned terms, require final fresh Warden checks and server-side signing/submission. Exact-head offline regression CI succeeded in PRs #48 and #49; **new live Testnet bypass proof and independent review remain required**. | Regression T-154 (this PR): 3 of 3 pass on the current head and 3 of 3 fail on the pre-fix code. The live Testnet proof reported as T-124 in PR #55 is not on this branch and was not re-run here. Open until that proof is verified and issue #45 is accepted |
 
 **Types:** `Design review`, `Finding`, `Review finding`, `Incident`, `Dependency`, `Key rotation`, `Change`. An incident involving a real key or personal data also follows [SECURITY.md](../../SECURITY.md).
