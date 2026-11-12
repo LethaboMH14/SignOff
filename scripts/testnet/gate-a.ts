@@ -97,7 +97,10 @@ const RUNNERS: ReadonlyMap<string, Runner> = new Map<string, Runner>([
   [
     'pay-rlusd',
     async (deps) =>
-      sendTwoSignatureTransfer(deps, await rlusdTransfer(deps, 'pay-rlusd.proof', '10')),
+      sendTwoSignatureTransfer(
+        deps,
+        await rlusdTransfer(deps, 'pay-rlusd.proof', process.env['SIGNOFF_RLUSD_AMOUNT'] ?? '10'),
+      ),
   ],
   [
     'rejections',
