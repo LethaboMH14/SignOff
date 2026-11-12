@@ -7,7 +7,8 @@
 1. **Keep the design that is already in code:** text layer first (pdf.js), scanned PDFs held, one strict-schema model call per invoice with a repair budget of three, quote verification in code, and deterministic holds. This is sound. The gaps are in what it does not yet read or check.
 2. **Largest gap: the live model runs do not show a model working.** On the labelled set, the model call failed on 20 to 22 of 30 cases in each of three live runs ([TEST-LOG T-092 to T-094](#source-list)). The "0 false approvals" figures come from holding almost every invoice (T-094: "The pipeline's zero false approvals come from holding almost every invoice, not from judgement"). No accuracy claim is supported until the failure cause is isolated and a live run gets usable replies.
 3. **The schema has no line items, no tax and no arithmetic check.** Only the total is read and parsed ([packages/shared/src/schemas/invoice.ts](#source-list), `totalAsPrinted`). A demo that claims line-item or VAT checks would be overclaiming.
-4. **Open decision for the owner:** [BUILD-BRIEF.md](#source-list) says extraction uses "the Anthropic Messages API with Claude Haiku". [ADR 0006](#source-list) says Anthropic and Claude identifiers "are refused in code" on the user's instruction of 2026-11-10, and `providers.ts` says the same. These conflict. This lane does not resolve it; the brief and the ADR need one answer before the demo.
+4. **Extension (§8, added 12 Nov):** the owner's keys are Groq, Gemini, Meta, AI/ML API and OpenRouter. Tiered plan: test the free OpenRouter Llama 4 Scout and Groq first, use Groq gpt-oss-120b or Gemini 3.5 Flash for the live demo, keep every amount, date, payee and arithmetic decision in code (§8.5). The repo's Meta default `muse-spark-1.3` is not a Llama identifier.
+5. **Open decision for the owner:** [BUILD-BRIEF.md](#source-list) says extraction uses "the Anthropic Messages API with Claude Haiku". [ADR 0006](#source-list) says Anthropic and Claude identifiers "are refused in code" on the user's instruction of 2026-11-10, and `providers.ts` says the same. These conflict. This lane does not resolve it; the brief and the ADR need one answer before the demo.
 
 ---
 
@@ -294,12 +295,144 @@ Marks: **MUST-FOR-DEMO** · **SHOULD** · **LATER**.
 
 ---
 
+---
+
+## 8. Extension (2026-11-12): open models, classical CV, Meta models, cost, tiered plan
+
+**Owner decision (relayed 12 Nov 2026):** keys for Groq, Gemini, Meta, AI/ML API and free OpenRouter models; cheapest or free models while testing; Anthropic models stay excluded. So this section gives a tiered plan, not one provider.
+
+### 8.0 Sources added in this extension
+
+| Code | Source | Mark | Supports |
+|---|---|---|---|
+| S33 | https://huggingface.co/docs/inference-providers/pricing | **V** | HF router pricing and free-user credits |
+| S34 | https://huggingface.co/docs/inference-providers/index | **V** (partial) | OpenAI SDK compatibility; provider listing |
+| S35 | https://openrouter.ai/docs/limits | **V** (partial) | `free_model_daily_requests` field; limit table cells not rendered |
+| S36 | https://openrouter.ai/meta-llama/llama-4-scout:free | **V** | "Price Free", "Context 10.0M" |
+| S37 | https://huggingface.co/meta-llama/Llama-4-Scout-17B-16E-Instruct | **V** | licence tag; Scout and Maverick table |
+| S38 | https://huggingface.co/meta-llama/Llama-3.2-11B-Vision-Instruct | **V** | Llama 3.2 Community License; gated; "128k" |
+| S39 | https://github.com/meta-llama/llama-models/blob/main/models/llama3_2/MODEL_CARD_VISION.md | E | DocVQA 62.3 (11B), 70.7 (90B) |
+| S40 | https://build.nvidia.com/meta/llama-3.2-11b-vision-instruct/modelcard | E | DocVQA test 88.4 (11B) |
+| S41 | https://console.groq.com/docs/rate-limits | **V** (partial) | free/developer table header; Scout row **not rendered** |
+| S42 | https://huggingface.co/ibm-granite/granite-docling-258M | **V** | Apache 2.0; release 17 Sep 2025 |
+| S43 | https://huggingface.co/PaddlePaddle/PaddleOCR-VL | **V** (tags) | apache-2.0; 0.9B |
+| S44 | https://huggingface.co/rednote-hilab/dots.ocr | **V** (tags) | license MIT; "3B params" |
+| S45 | https://huggingface.co/allenai/olmOCR-2-7B-1025 | **V** | "licensed under Apache 2.0"; base Qwen2.5-VL-7B |
+| S46 | https://huggingface.co/Qwen/Qwen2.5-VL-3B-Instruct/blob/main/LICENSE | — | file exists; **text not read** |
+| S47 | https://inference-models.roboflow.com/models/florence2/ | E | Florence-2 MIT; base ~230M, large ~770M |
+| S48 | https://github.com/microsoft/table-transformer/blob/main/LICENSE | **V** | MIT |
+| S49 | https://github.com/microsoft/unilm/blob/master/layoutlmv3/README.md | **V** | "CC BY-NC-SA 4.0" text |
+| S50 | https://github.com/clovaai/donut | E | CORD "Score" 91.3 / 91.1 / 90.9 |
+| S51 | https://arxiv.org/abs/2111.15664 (Donut, ECCV 2022) | E | OCR-free document understanding |
+| S52 | https://arxiv.org/abs/2110.00061 (PubTables-1M) | E | DETR-based table detection and structure |
+| S53 | https://docs.aimlapi.com/api-overview | **V** (partial) | an "Free Tier" FAQ exists; **no prices on page** |
+| S54 | https://aimlapi.com | **V** | root page; no price figures found |
+| S55 | https://www.activepieces.com/blog/meta-llama-api-pricing-cost-per-million-tokens-2026 | E | aggregator Llama prices (conflicting) |
+| S56 | https://docling-project.github.io/docling/usage/gpu | E | Docling GPU/CPU guidance |
+| S57 | https://imagetotable.ai/blog/ocr-image-preprocessing-guide | E | Otsu vs adaptive; deskew pipeline |
+
+Also used from §1: S10 (Gemini prices), S31 (Groq gpt-oss, E), S7 (Textract), S8 (Google), S5 (Docling MIT), S12 (OWASP), S14/S30 (Tesseract).
+
+### 8.1 Hugging Face: open document and OCR models, and how to run them
+
+**Hosted route (HF Inference Providers).**
+- "router.huggingface.co/v1" is an OpenAI-compatible base URL (S33, S34, **V**: `base_url= "https://router.huggingface.co/v1"`).
+- Billing: "pay for what you use, with no markup from Hugging Face" (S33, **V**).
+- Free accounts: the official table shows "Free Users | None | yes (credits purchase required)" (S33, **V**). PRO: "$2.00" monthly. **Correction:** an earlier search excerpt said free users get $0.10 a month; the official table I read shows none. Trust the table.
+- Conclusion: the free hosted HF route is **not** a zero-cost test route. Budget a purchase or use another host.
+
+**Models (licence, size, evidence, failure modes; CPU feasibility on a laptop with no GPU).**
+
+| Model | Licence | Size | Invoice-relevant evidence | Failure modes | CPU on a Windows laptop |
+|---|---|---|---|---|---|
+| Granite-Docling-258M (IBM) | Apache 2.0 (S42, **V**) | 258M (name) | Designed for Docling pipeline; no invoice score found | VLM outputs DocTags; must be parsed | VLM CPU timing **not found**; GPU/Apple numbers only (search excerpt, E) |
+| Docling (library, standard pipeline) | MIT (S5, E) | layout + TableFormer | OmniDocBench v1.0 Docling 0.749 (lower is better, S1, E) | weak reading-order score in S1 (E) | "tens of seconds" per document, anecdotal (E, S56) |
+| PaddleOCR-VL | apache-2.0 (S43, **V**) | 0.9B (S43, **V**) | OmniDocBench v1.5 92.62 (S1, E); no invoice benchmark found | newer model; version drift | not measured here |
+| dots.ocr (rednote) | MIT tag (S44, **V**) | "3B params" (S44, **V**) | OmniDocBench EN edit distance 0.125 (README mirror, E) | ZH and EN numbers differ; a separate agreement file may exist (unverified) | not measured; 3B on CPU is slow |
+| olmOCR-2-7B-1025 (AI2) | Apache 2.0 (S45, **V**) | 7B, Qwen2.5-VL base (S45, **V**) | olmOCR benchmark is a different set (not in this lane) | research-use wording on card (S45, V) | not practical on CPU |
+| GOT-OCR2, InternVL, SmolVLM / SmolDocling | **not researched** | — | — | — | — |
+| Florence-2 (Microsoft) | MIT (S47, E) | base ~230M, large ~770M (S47, E) | general OCR; no invoice benchmark found | not a document-structure model | base model CPU-feasible (unmeasured) |
+| Qwen2.5-VL-7B | Apache 2.0 tag via olmOCR base (S45, V); Qwen-7B card not read | 7B | none for invoices found | — | not practical |
+| Qwen2.5-VL-3B | **licence not confirmed**: S46 file exists, text not read | 3B | none | check licence before use | slow on CPU |
+| Qwen3-VL 8B, 30B-A3B | Apache 2.0 (E, Roboflow pages, S47) | 8.8B; 30B | OCR up to 32 languages (E) | — | not practical |
+| Donut (NAVER) | MIT (E) | ~74M (E) | CORD Score 91.3 (S50, E; "Score" column, metric not stated as F1 in the excerpt) | needs fine-tuning for new layouts (E) | feasible on CPU for small inference (unmeasured) |
+| LayoutLMv3 | **CC BY-NC-SA 4.0** (S49, **V**) | base | DocILE baseline in the benchmark paper (S3, E) | **non-commercial licence** | — (exclude for commercial use) |
+| Table Transformer (TATR) | MIT (S48, **V**) | DETR | PubTables-1M detection and structure (S52, E) | table only; needs layout first | feasible on CPU (unmeasured) |
+| Surya | GPL-3.0 (E, S28 earlier) | — | vendor receipt CER 0.191 (S6, E) | copyleft: a legal review is needed | — |
+
+**Running them.** Local: Docling, PaddleOCR and Tesseract run without a GPU for the standard path; the VLM path for granite-docling and the 7B models needs a GPU or Apple Silicon by the evidence found (S56, E). Hosted: only the models that a provider lists can be called through the router. I did not check which of the OCR models above are listed on HF Inference Providers; **unverified**.
+
+**Accuracy evidence.** Benchmarks found: OmniDocBench (S1, S2, E), CORD (S50, E), SROIE (S4, E; vendor receipt numbers S6, E), DocVQA for Llama (S39, S40, E), DocILE (S3, E). **No published invoice-field accuracy was found for Granite-Docling, olmOCR, dots.ocr, Florence-2 or Qwen2.5-VL on DocILE, SROIE or CORD.** Say "NOT MEASURED" for them.
+
+### 8.2 Classical ML and computer vision
+
+- **Tesseract:** LSTM engine, TSV confidence (S14, E). Tesseract's own binarisation "may be suboptimal" with uneven background (S57, E, third-party). Runs on Windows CPU (**unverified** here).
+- **OpenCV preprocessing:** grayscale, denoise, threshold, deskew (S57, E). Otsu for uniform light; adaptive Gaussian for shadows (S57, E). The "55% to 95%" accuracy claim is a vendor blog citing DIBCO and was **not verified**. No official OpenCV page was read.
+- **Table Transformer:** MIT (S48, V); DETR-based detection and structure recognition, trained on PubTables-1M (S52, E). It is the right tool for line-item grids after a page image exists.
+- **Layout detection:** DocLayNet-trained layout (Docling, S5, E).
+
+**When classical CV beats or complements a VLM.** Scans with clean text, fixed invoice templates, and table grids: OCR plus Table Transformer is cheap and deterministic. VLMs help with unusual layouts, stamps and handwriting, but their output is not a bounding box unless asked, and it can drift.
+
+**Why code-side verification is still required.** Every route, classical or VLM, produces text that can be wrong. The quote-in-document check (`verify.ts`), amount parsing, arithmetic re-add, date rule and payee exact-match decide the outcome. A model or OCR engine never gets to decide.
+
+### 8.3 Can Meta's models do it?
+
+- **Repository default:** `apps/agent/src/model/providers.ts` line 56: `defaultModel: 'muse-spark-1.3'` for `meta` (**V**). That is not a Llama identifier. Whether Meta's API serves Llama, and what `muse-spark-1.3` is, was **not verified** here. Fix the default or document it before use.
+- **Llama 3.2 Vision 11B / 90B:** context 128k; "Text + Image" (S38, **V**: "11B (10.6) Text + Image Text 128k Yes"). Licence: Llama 3.2 Community License (S38, **V**). Gated on Hugging Face (S38, **V**). Benchmarks: DocVQA 62.3 / 70.7 on Meta's card (S39, E) and 88.4 / 90.1 on NVIDIA's listing (S40, E); the splits differ, so do not compare. **No invoice benchmark (SROIE, CORD, DocILE) found.** Image count or size limits: **not found**.
+- **Llama 4 Scout / Maverick:** Scout 10.0M context (S36, **V**: "Context 10.0M", "Price Free" on OpenRouter). Maverick 1M context, "Multilingual text and image" (S37, **V**). Licence: "license:other" tag (S37, **V**); "Llama 4 is licensed under the Llama 4 Community License" (S37, **V**, model card text). Native multimodal (E). Image limits: **not found**. No invoice or document benchmark found for Llama 4.
+- **Hosts:** Groq lists `meta-llama/llama-4-scout-17b-16e-instruct` and `meta-llama/llama-4-maverick-17b-128e-instruct` in its model list (S41, **V**). The Llama 3.2 vision models are **not** in the Groq list fetched (S41, **V**). OpenRouter lists Scout free (S36, **V**). Meta's own API pricing: **not verified**; one search excerpt says Meta shut its hosted Llama API on 6 July 2026, uncorroborated, so treat as unknown (E). AI/ML API: a Free Tier FAQ exists (S53, **V**) but **no prices or rate limits were found**.
+- **Verdict:** Meta's models can read invoice images, and Llama 4 Scout is a cheap free-route candidate for a live test. Nothing published shows their invoice-field accuracy, so they go through the same live run as everything else.
+
+### 8.4 Cost per 1,000 invoices
+
+**Assumptions:** two-page text invoice; one LLM call with 4,000 input and 600 output tokens (not measured); image input for VLMs would add tokens (not counted). Arithmetic computed in code this session.
+
+| Host and model class | Price used (source, mark) | Cost per 1,000 invoices (one call) | Notes and rate limits |
+|---|---|---|---|
+| Gemini 3.5 Flash (Gemini API, paid) | $1.50 in / $9.00 out per 1M (S10, **V**) | **$11.40** | Free tier for this model: not verified |
+| Groq gpt-oss-120b | $0.15 in / $0.60 out per 1M (S31, E) | **$0.96** | Groq page rows not rendered (S41); price **unverified on primary** |
+| Groq Llama 4 Scout | $0.11 in / $0.34 out per 1M (aggregator, E) | **$0.64** | Free-plan Scout limits **not rendered** (S41); aggregator says 30 RPM / 1K RPD (E, unverified) |
+| OpenRouter, Llama 4 Scout `:free` | "Price Free" (S36, **V**) | **$0** | 20 requests per minute on `:free`; 50/day under $10 credit, 1,000/day at $10+ (S35, E; table not rendered) |
+| Hugging Face Inference Providers | provider rate, no markup (S33, **V**) | **depends on model, unverified** | free users must buy credits (S33, **V**); PRO $2.00/month (S33, V) |
+| Llama 4 via other hosts (Together, Cerebras, Cloudflare) | $0.08–0.41 per 1M input (aggregator, E) | not computed (unverified) | conflicting prices across aggregators (S55, E) |
+| Meta's own API | **not verified** | — | — |
+| AI/ML API | **not verified** | — | free tier exists (S53, V); no price page found |
+| Azure prebuilt invoice (OCR path) | ~$10 per 1,000 pages (E) | **~$20** (2 pages × 1,000) | primary rate not rendered (S9, V) |
+| Textract, tables (OCR path) | $0.015 per page (S7, **V**) | **$30.00** | free tier applies to Analyze Expense only (S7, V) |
+| Google Invoice parser (OCR path) | "$0.10 / 1 count" (S8, **V**) | **$100 (10-page count) to $200 (per page)** | unit unverified (E) |
+| Local open models (Docling, PaddleOCR-VL, dots.ocr, Florence-2) | licence cost $0 (Apache/MIT, §8.1) | **$0 API; compute and time only** | CPU timing not measured |
+
+**Rate-limit risk for a live demo.** With the repair budget of three calls per invoice (`extract.ts`, budget 3), a worst-case invoice uses three calls. OpenRouter `:free` allows 20 requests per minute and 50 per day for accounts under $10 credit (S35, E). At three calls each, that is at most 16 invoices per day on that tier. Groq free tiers are shared across models (E) and not verified for Scout. Gemini free tier not verified. **For the demo: pay a few dollars to lift the OpenRouter daily cap, or keep the live set to under 15 invoices.**
+
+### 8.5 Tiered recommendation
+
+**Tier 0: stays deterministic code, for every model and every host.** Text parsing; quote-in-document; amount parse and separator rule; arithmetic re-add and VAT once the fields exist; date rule with the buyer's locale; payee exact-match against the verified record; injection pre-screen; abstain on any null required field. No model decides any of these.
+
+**Tier 1: cheapest or free test, first to run (this week).**
+1. Re-run the 30-case labelled set on **OpenRouter Llama 4 Scout `:free`** (free, 10M context, S36 V). Record the HTTP status and finish reason for each failed call, so the failure cause is isolated (the open item from §7).
+2. Run the **same set on Groq** (Scout or gpt-oss-120b) for the cheapest paid comparison, after checking the price on the console.
+3. Offline parser test: **Docling standard pipeline** (MIT) on the 30 PDFs for text and tables, on the laptop, no key needed.
+
+**Tier 2: live demo, primary.** Groq gpt-oss-120b (about $0.001 per invoice, E) **if** the Tier 1 run shows a usable reply rate and the console price matches. Otherwise **Gemini 3.5 Flash** ($0.011 per invoice, S10 V) which has the only primary-page price in this lane.
+
+**Tier 3: live demo, backup.** OpenRouter Llama 4 Scout `:free`, with a few dollars of credit to lift the daily cap (S35, E). Expect slower and rate-limited behaviour; say so on screen.
+
+**Tier 4: scans and OCR, only if time remains.** Local Docling or PaddleOCR-VL on a GPU machine (not the laptop); or a cloud OCR path (Textract $0.015/page, S7 V) with region and retention checked first. Do not claim these until measured.
+
+**Do not use for the demo:** LayoutLMv3 (non-commercial licence, S49 V); Surya without a licence review (GPL-3.0, E); any model with no published licence read this session.
+
+**What must stay deterministic code (restated):** every amount, date, payee, arithmetic check, quote binding, injection screen and hold decision. A model proposes a field value; code decides whether the payment can proceed.
+
+---
+
 ## Limitations and what I could not verify
 
 - **Excerpts, not pages.** Most external claims are from search excerpts (marked **E**). Quotes from them are not verbatim from the full page and must be re-checked before they go into a public document. Only S7 to S12 were fetched as pages (S9 showed placeholders, S11 without its model rows); the rest are excerpts.
 - **Pricing pages.** The Azure page showed placeholders ("$- per 1,000 pages"). The Groq page did not render its model rows. The Gemini page has two rows with prices that change on 1 January 2027; I could not confirm which row applies to `gemini-3.5-flash`. Textract's per-page AnalyzeExpense price is a template placeholder on the page. The Google Invoice parser unit ("1 count") is read as 10 pages by one forum post only.
 - **No benchmark run here.** I did not run any OCR, parser or model. All accuracy statements are other people's published numbers, and their versions and test sets differ from SignOff's.
-- **Not researched:** Claude vision, Qwen-VL, handwriting accuracy, rotated-page handling, Tesseract licence, docTR licence, data residency for any cloud parser in a South African or Zambian region, and the statutory VAT rate.
+- **Not researched:** Claude vision (excluded by policy), GOT-OCR2, InternVL, SmolVLM and SmolDocling licences, handwriting accuracy, rotated-page handling, Tesseract and docTR licences, data residency for any cloud parser in a South African or Zambian region, and the statutory VAT rate.
+- **Section 8 limits:** the Groq rate-limit table and the OpenRouter limit table cells were not rendered, so Scout free-tier limits and the OpenRouter caps rest on search excerpts (E). AI/ML API and Meta's own API prices were not found. The Qwen2.5-VL-3B licence file exists but was not read. No model in §8 was run, and no CPU timing was measured on the laptop.
+- **Repo default:** `providers.ts` names `muse-spark-1.3` as Meta's default model; I did not identify what it is.
 - **Repository state.** I read `origin/feat/console-redesign` at the time of this lane; it may have moved. The live-run numbers are from 10 November 2026 and are one sample each.
 - **Date.** The research is as of 12 November 2026. Prices and model identifiers change; re-check before budgeting.
 - **Language.** South African number and date conventions rest on a Siyavula textbook and a style-guide excerpt (S21, E). I did not find the SANS 1 text, so the rule is not a standard citation.
