@@ -53,7 +53,8 @@ export function MapView() {
             held for a person. Paid appears only after the ledger validates the payment and
             reconciliation records it.
           </p>
-          <div className="map-scroll">
+          {/* The box scrolls sideways on a narrow screen, so it takes focus: arrow keys can then scroll it. */}
+          <div className="map-scroll" tabIndex={0} role="group" aria-label="Agent map">
             <AgentMap board={stream.board} />
           </div>
         </section>
