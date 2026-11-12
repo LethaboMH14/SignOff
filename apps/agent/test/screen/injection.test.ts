@@ -27,7 +27,7 @@ describe('screenPages flags text written to steer a model', () => {
     const result = screenPages([text]);
     expect(result.flagged).toBe(true);
     expect(result.codes).toContain(code);
-    expect(result.findings[0]).toEqual({ code, page: 1 });
+    expect(result.findings[0]).toMatchObject({ code, page: 1, source: 'page' });
   });
 
   it('flags a phrase split by zero-width characters as hidden characters', () => {

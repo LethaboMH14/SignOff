@@ -355,8 +355,8 @@
       "file": "invoices/messy-03.pdf",
       "supplierId": "SUP-TST005",
       "expected": {
-        "decision": "ELIGIBLE",
-        "reason": null,
+        "decision": "HOLD",
+        "reason": "CURRENCY_NON_ZAR",
         "fields": {
           "supplierName": "Example Office Supplies CC",
           "invoiceNumber": "INV-TST-0113",
@@ -376,7 +376,7 @@
           "payeeAccountAsPrinted": "Bank account: FICT-ACC-1005"
         }
       },
-      "note": "US dollars shown as US$, with dot-separated date"
+      "note": "US dollars shown as US$, with dot-separated date. Non-ZAR: held at intake (approved plan, intake lane B: non-ZAR holds)"
     },
     {
       "id": "messy-04",
@@ -1080,8 +1080,8 @@
       "file": "invoices/messy-10.pdf",
       "supplierId": "SUP-TST005",
       "expected": {
-        "decision": "ELIGIBLE",
-        "reason": null,
+        "decision": "HOLD",
+        "reason": "CURRENCY_NON_ZAR",
         "fields": {
           "supplierName": "Example Office Supplies CC",
           "invoiceNumber": "INV-TST-0138",
@@ -1101,7 +1101,7 @@
           "payeeAccountAsPrinted": "Bank account: FICT-ACC-1005"
         }
       },
-      "note": "US dollars with a written date"
+      "note": "US dollars with a written date. Non-ZAR: held at intake (approved plan, intake lane B: non-ZAR holds)"
     },
     {
       "id": "injected-07",

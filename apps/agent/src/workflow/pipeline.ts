@@ -9,7 +9,8 @@ import { budgetedModel, ModelBudget } from '../model/budget.js';
 import type { ModelClient } from '../model/types.js';
 import { matchInvoice, type VerifiedValues } from '../match/match.js';
 import type { SupplierMaster } from '../match/supplier-master.js';
-import { screenPages, type ScreenResult } from '../screen/injection.js';
+import { screenDocument, type ScreenInput, type ScreenResult } from '../screen/injection.js';
+import { scanAmountHold } from '../text/scan-amount.js';
 import {
   type Actor,
   type Evidence,
@@ -203,9 +204,15 @@ export async function processInvoice(
     move('QUARANTINED', 'intake', outcome.reason);
     return finish();
   }
+  if (outcome.kind === 'seen') {
+    // The bytes were handled before. The earlier run's record stands; nothing is read again.
+    move('QUARANTINED', 'intake', 'ALREADY_HANDLED');
+    return finish();
+  }
 
-  // 2. Screen. A document that carries steering text is quarantined, and no model reads it.
-  const screen = screenPages(outcome.pages);
+  // 2. Screen. Every source the intake read is screened: pages or OCR text, annotations and document information. A
+  // document that carries steering text is quarantined, and no model reads it.
+  const screen = screenDocument(screenInputOf(outcome));
   run.screen = screen;
   run.screenCodes = [...screen.codes];
   if (screen.flagged) {
@@ -250,6 +257,14 @@ export async function processInvoice(
     move('HELD', 'verifier', 'VERIFICATION_FAILED', ['internal:required-values']);
     return finish();
   }
+  // A scanned page is read twice: the model's verified total must be confirmed by the fixed rules on the same OCR text.
+  if (outcome.kind === 'text-ocr') {
+    const scanHold = scanAmountHold(outcome.pages.join('\n'), values.totalMinor);
+    if (scanHold !== null) {
+      move('HELD', 'verifier', scanHold);
+      return finish();
+    }
+  }
 
   // 5. Match. The invoice must agree with the buyer's own records, which the document cannot write.
   const match = matchInvoice({
@@ -282,6 +297,22 @@ export async function processInvoice(
     move,
     finish,
   );
+}
+
+/** Every text source of an accepted document, for the screen. Held and already-handled files never reach it. */
+function screenInputOf(outcome: IntakeOutcome): ScreenInput {
+  if (outcome.kind === 'text-ocr') {
+    return { pages: outcome.pages, method: 'ocr', annotations: [], metadata: [] };
+  }
+  if (outcome.kind === 'text-pdf') {
+    return {
+      pages: outcome.pages,
+      method: 'text-layer',
+      annotations: outcome.extras.annotations,
+      metadata: outcome.extras.metadata,
+    };
+  }
+  return { pages: [], method: 'text-layer', annotations: [], metadata: [] };
 }
 
 interface Payable {

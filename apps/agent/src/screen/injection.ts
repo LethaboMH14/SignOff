@@ -9,10 +9,14 @@
 export type ScreenCode =
   'INSTRUCTION_LIKE_TEXT' | 'HIDDEN_CHARACTERS' | 'MARKUP_IN_TEXT' | 'PAYEE_CHANGE_CLAIM';
 
+/** Where a piece of text came from. Every source is screened, because a model reads all of them. */
+export type ScreenSource = 'page' | 'ocr' | 'annotation' | 'metadata';
+
 export interface ScreenFinding {
   readonly code: ScreenCode;
-  /** The 1-based page where the text was found. The matched text itself is never recorded. */
+  /** The 1-based page where the text was found; 0 for document information, which is not on a page. */
   readonly page: number;
+  readonly source: ScreenSource;
 }
 
 export interface ScreenResult {
@@ -20,6 +24,15 @@ export interface ScreenResult {
   readonly findings: readonly ScreenFinding[];
   /** The distinct codes that fired, in a fixed order, for the transition record. */
   readonly codes: readonly ScreenCode[];
+}
+
+/** The text of one document, from every source the intake read. */
+export interface ScreenInput {
+  readonly pages: readonly string[];
+  /** Whether the pages came from a text layer or from OCR. */
+  readonly method: 'text-layer' | 'ocr';
+  readonly annotations: readonly { readonly page: number; readonly text: string }[];
+  readonly metadata: readonly string[];
 }
 
 /** Characters a reader does not see: zero-width and bidirectional controls, tag characters and other control codes. */
@@ -76,6 +89,57 @@ const RULES: readonly Rule[] = [
       /\b(?:approve|authori[sz]e|release)\b[^.\n]{0,20}\b(?:this|the)\s+(?:invoice|payment|bill)\b[^.\n]{0,20}\b(?:immediately|now|today|urgently|without)\b/i,
   },
   { code: 'INSTRUCTION_LIKE_TEXT', pattern: /\byou\s+are\s+now\b/i },
+  // Role labels addressed to the model, followed by a directive on the same line (promptfoo's "[SYSTEM]" and "Assistant:"
+  // forms, and OWASP LLM01 scenario 2, hidden instructions). A label alone is not enough: it must carry a directive word.
+  {
+    code: 'INSTRUCTION_LIKE_TEXT',
+    pattern:
+      /(?:^|\n)\s*\[?\s*(?:assistant|system|ai|model|llm)\s*\]?\s*:[^\n]{0,200}\b(?:must|should|output|return|reply|respond|set|mark|approve|release|ignore|skip|treat|decision|verdict)\b/i,
+  },
+  // Hidden-text labels that announce an instruction (promptfoo's indirect-injection examples).
+  {
+    code: 'INSTRUCTION_LIKE_TEXT',
+    pattern: /\bhidden\s+(?:text|note|content|instruction)s?\s*:/i,
+  },
+  // Instructions to output or set a decision, status or approval value (OWASP LLM01: "output the system prompt").
+  {
+    code: 'INSTRUCTION_LIKE_TEXT',
+    pattern:
+      /\b(?:output|return|reply\s+with|respond\s+with|set|mark|write|print)\b[^.\n]{0,40}\b(?:decision|status|verdict|approval|outcome)\b[^.\n]{0,20}\b(?:eligible|approved|hold|pass|cleared|valid|accepted)\b/i,
+  },
+  // Skip, bypass, ignore or disable a control: the account, payee, bank, check, verification or the Warden.
+  {
+    code: 'INSTRUCTION_LIKE_TEXT',
+    pattern:
+      /\b(?:skip|bypass|ignore|disable|omit|suspend)\b[^.\n]{0,15}\b(?:the\s+|this\s+|any\s+|all\s+)?(?:account|payee|bank|check|checks|verification|warden|screen)\b/i,
+  },
+  // Release or authorise this payment: the imperative names the payment itself, so ordinary terms such as
+  // "Please release payment within 30 days" do not match, because they have no "this".
+  {
+    code: 'INSTRUCTION_LIKE_TEXT',
+    pattern: /\b(?:release|authori[sz]e)\s+this\s+payment\b/i,
+  },
+  // Afrikaans and French forms of the same instructions. A best effort; not reviewed by a native speaker.
+  {
+    code: 'INSTRUCTION_LIKE_TEXT',
+    pattern:
+      /\b(?:ignoreer|slaan|omseil|deaktiveer)\b[^.\n]{0,15}\b(?:die\s+)?(?:rekening|betaler|bank|kontrole|verifikasie|goedkeuring|waarskuwing)\b/i,
+  },
+  {
+    code: 'INSTRUCTION_LIKE_TEXT',
+    pattern:
+      /\b(?:ignorez|sautez|contournez|désactivez)\b[^.\n]{0,15}\b(?:le\s+|la\s+|les\s+)?(?:compte|bénéficiaire|banque|contrôle|vérification)\b/i,
+  },
+  {
+    code: 'INSTRUCTION_LIKE_TEXT',
+    pattern:
+      /\b(?:affichez|renvoyez|retournez|indiquez)\b[^.\n]{0,40}\b(?:la\s+)?(?:décision|statut|verdict)\b/i,
+  },
+  {
+    code: 'INSTRUCTION_LIKE_TEXT',
+    pattern:
+      /(?:^|\n)\s*(?:assistent|stelsel|ki|système|assistant)\s*:[^\n]{0,200}\b(?:moet|sit|keur|stuur|antwoord|besluit|doit|affichez)\b/i,
+  },
   { code: 'INSTRUCTION_LIKE_TEXT', pattern: /\bas\s+an?\s+ai\s+(?:model|assistant|agent)\b/i },
   {
     code: 'INSTRUCTION_LIKE_TEXT',
@@ -105,6 +169,55 @@ const RULES: readonly Rule[] = [
     pattern:
       /<\s*\/?\s*(?:script|iframe|object|embed|svg|img)\b|javascript\s*:|data\s*:\s*text\/html/i,
   },
+  // Afrikaans. South African suppliers print invoices in Afrikaans, so the same steering is screened in that language.
+  // Each pattern is a plain phrase rule, as the English ones are; coverage is measured on the labelled phrases.
+  {
+    code: 'INSTRUCTION_LIKE_TEXT',
+    pattern:
+      /\b(?:ignoreer|negeer|verontagsaam|vergeet)\b[^.\n]{0,60}\b(?:vorige|alle|enige|jou|hierdie|reëls|instruksies|kontroles|beleid)\b/i,
+  },
+  {
+    code: 'INSTRUCTION_LIKE_TEXT',
+    pattern: /\bmoenie\s+(?:verifieer|nagaan|kontroleer|vlag|hou)\b/i,
+  },
+  {
+    code: 'INSTRUCTION_LIKE_TEXT',
+    pattern: /\bsonder\s+(?:verdere|enige)\s+(?:kontrole|goedkeuring|verifikasie|hersiening)\b/i,
+  },
+  {
+    code: 'INSTRUCTION_LIKE_TEXT',
+    pattern:
+      /\b(?:keur|aanvaar|goedkeur)\b[^.\n]{0,30}\b(?:hierdie|die)\s+(?:faktuur|betaling)\b[^.\n]{0,30}\b(?:onmiddellik|nou|sonder)\b/i,
+  },
+  {
+    code: 'PAYEE_CHANGE_CLAIM',
+    pattern:
+      /\bnuwe\s+(?:bankbesonderhede|rekeningbesonderhede|rekeningnommer|betaalbesonderhede)\b/i,
+  },
+  // French. The same rules for French-language invoices and for steering written in French.
+  {
+    code: 'INSTRUCTION_LIKE_TEXT',
+    pattern:
+      /\b(?:ignorez|ignore|oubliez|négligez)\b[^.\n]{0,60}\b(?:précédent(?:e|es|s)?|toutes?\s+les|toutes|ces|vos|règles?|instructions?|contrôles?|vérifications?)\b/i,
+  },
+  {
+    code: 'INSTRUCTION_LIKE_TEXT',
+    pattern: /\bne\s+(?:vérifiez|contrôlez|signalez|bloquez)\s+pas\b/i,
+  },
+  {
+    code: 'INSTRUCTION_LIKE_TEXT',
+    pattern: /\bsans\s+(?:vérification|contrôle|approbation)\s+(?:supplémentaire|préalable)s?\b/i,
+  },
+  {
+    code: 'INSTRUCTION_LIKE_TEXT',
+    pattern:
+      /\b(?:approuvez|validez|autorisez)\b[^.\n]{0,30}\b(?:cette|la)\s+(?:facture|paiement)\b[^.\n]{0,30}\b(?:immédiatement|maintenant|sans)\b/i,
+  },
+  {
+    code: 'PAYEE_CHANGE_CLAIM',
+    pattern:
+      /\b(?:nouvelles?|nouveaux?|modifiées?)\s+(?:coordonnées\s+bancaires|coordonnées|RIB|IBAN|compte\s+bancaire)\b/i,
+  },
 ];
 
 const CODE_ORDER: readonly ScreenCode[] = [
@@ -114,21 +227,56 @@ const CODE_ORDER: readonly ScreenCode[] = [
   'MARKUP_IN_TEXT',
 ];
 
-/** Screens every page. A page is flagged by any rule; the result says where and why, never what the text said. */
-export function screenPages(pages: readonly string[]): ScreenResult {
-  const findings: ScreenFinding[] = [];
-  pages.forEach((raw, index) => {
-    const page = index + 1;
-    if (hasHiddenCharacter(raw)) {
-      findings.push({ code: 'HIDDEN_CHARACTERS', page });
+/** Screens one piece of text. A rule that fires is recorded with where the text came from, never with the text itself. */
+function screenText(
+  raw: string,
+  page: number,
+  source: ScreenSource,
+  findings: ScreenFinding[],
+): void {
+  // One finding per code and source on a page, however many rules of that code fired.
+  const codes = new Set<ScreenCode>();
+  if (hasHiddenCharacter(raw)) {
+    codes.add('HIDDEN_CHARACTERS');
+  }
+  const readable = raw.normalize('NFKC');
+  for (const rule of RULES) {
+    if (rule.pattern.test(readable)) {
+      codes.add(rule.code);
     }
-    const readable = raw.normalize('NFKC');
-    for (const rule of RULES) {
-      if (rule.pattern.test(readable)) {
-        findings.push({ code: rule.code, page });
-      }
+  }
+  for (const code of CODE_ORDER) {
+    if (codes.has(code)) {
+      findings.push({ code, page, source });
     }
-  });
+  }
+}
+
+function resultOf(findings: readonly ScreenFinding[]): ScreenResult {
   const codes = CODE_ORDER.filter((code) => findings.some((finding) => finding.code === code));
   return { flagged: findings.length > 0, findings, codes };
+}
+
+/**
+ * Screens every source of one document: its pages (from a text layer or from OCR), its annotations and its document
+ * information. A document is flagged by any rule on any source. A model reads all of these, so none is skipped.
+ */
+export function screenDocument(input: ScreenInput): ScreenResult {
+  const findings: ScreenFinding[] = [];
+  const pageSource: ScreenSource = input.method === 'ocr' ? 'ocr' : 'page';
+  input.pages.forEach((text, index) => {
+    screenText(text, index + 1, pageSource, findings);
+  });
+  for (const annotation of input.annotations) {
+    screenText(annotation.text, annotation.page, 'annotation', findings);
+  }
+  for (const field of input.metadata) {
+    screenText(field, 0, 'metadata', findings);
+  }
+  return resultOf(findings);
+}
+
+/** Screens page text alone. Kept for callers that hold only pages; the workflow uses screenDocument. */
+export function screenPages(pages: readonly string[]): ScreenResult {
+  return screenDocument({ pages, method: 'text-layer', annotations: [], metadata: [] });
 }
