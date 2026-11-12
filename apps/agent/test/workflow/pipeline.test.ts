@@ -174,6 +174,7 @@ describe('processInvoice holds and quarantines', () => {
     const result = await run(deps);
     expect(result.finalState).toBe('HELD');
     expect(result.reasonCode).toBe('MODEL_CALL_FAILED');
+    expect(result.reasons).toEqual(['MODEL_OTHER']);
   });
 
   it('quarantines a document too long to send', async () => {

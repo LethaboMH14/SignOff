@@ -123,7 +123,12 @@ describe('extractInvoice', () => {
   it('gives MODEL_OUTPUT_INVALID after the repair call also fails, using two calls', async () => {
     const model = scripted(['nope', 'still nope']);
     const result = await run(model);
-    expect(result).toEqual({ ok: false, reason: 'MODEL_OUTPUT_INVALID', model: 'test:scripted' });
+    expect(result).toEqual({
+      ok: false,
+      reason: 'MODEL_OUTPUT_INVALID',
+      detail: 'REPLY_NOT_JSON',
+      model: 'test:scripted',
+    });
     expect(model.requests).toHaveLength(2);
   });
 
@@ -142,6 +147,36 @@ describe('extractInvoice', () => {
   it('holds with MODEL_CALL_FAILED when the repair call fails', async () => {
     const model = scripted(['nope', new ModelError('the model provider returned HTTP 500', 500)]);
     expect(await run(model)).toMatchObject({ ok: false, reason: 'MODEL_CALL_FAILED' });
+  });
+
+  it('names the cause of a failed call as a fixed token, never the provider text', async () => {
+    const cases: readonly (readonly [ModelError | Error, string])[] = [
+      [new ModelError('the model request timed out', null, 'TIMEOUT'), 'MODEL_TIMEOUT'],
+      [new ModelError('the model provider returned HTTP 429', 429, 'HTTP'), 'MODEL_HTTP_429'],
+      [new ModelError('the model reply was cut off', null, 'CUT_OFF'), 'MODEL_CUT_OFF'],
+      [new ModelError('the model reply was not JSON', null, 'NOT_JSON'), 'MODEL_NOT_JSON'],
+      [new Error('provider said: sk-not-a-real-key and the prompt'), 'MODEL_OTHER'],
+    ];
+    for (const [error, token] of cases) {
+      const result = await run(scripted([error]));
+      expect(result).toEqual({
+        ok: false,
+        reason: 'MODEL_CALL_FAILED',
+        detail: token,
+        model: 'test:scripted',
+      });
+    }
+  });
+
+  it('says whether a refused reply was not JSON or did not match the schema', async () => {
+    expect(await run(scripted(['nope', 'still nope']))).toMatchObject({
+      reason: 'MODEL_OUTPUT_INVALID',
+      detail: 'REPLY_NOT_JSON',
+    });
+    expect(await run(scripted(['{"schemaVersion":2}', '{"schemaVersion":2}']))).toMatchObject({
+      reason: 'MODEL_OUTPUT_INVALID',
+      detail: 'REPLY_SCHEMA_MISMATCH',
+    });
   });
 
   it('holds without a call when the document is too long', async () => {

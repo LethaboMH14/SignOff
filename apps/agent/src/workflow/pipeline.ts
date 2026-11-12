@@ -223,6 +223,8 @@ export async function processInvoice(
       extracted.reason === 'DOCUMENT_TOO_LONG' ? 'QUARANTINED' : 'HELD',
       'extractor',
       extracted.reason,
+      // The cause of a failed call, as a fixed token. It names no document text.
+      extracted.detail === null ? [] : [extracted.detail],
     );
     return finish();
   }

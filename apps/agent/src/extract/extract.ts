@@ -3,8 +3,13 @@ import { randomBytes } from 'node:crypto';
 import { z } from 'zod';
 
 import { InvoiceExtraction } from '../../../../packages/shared/src/schemas/invoice.js';
-import type { ModelBudget } from '../model/budget.js';
-import type { ChatMessage, ModelClient, ReplySchema } from '../model/types.js';
+import { BudgetExhaustedError, type ModelBudget } from '../model/budget.js';
+import {
+  type ChatMessage,
+  type ModelClient,
+  modelFailureToken,
+  type ReplySchema,
+} from '../model/types.js';
 import { normaliseKeepingLines } from '../text/normalise.js';
 
 /**
@@ -46,7 +51,13 @@ export type ExtractionFailure = 'DOCUMENT_TOO_LONG' | 'MODEL_CALL_FAILED' | 'MOD
 
 export type ExtractionResult =
   | { readonly ok: true; readonly extraction: InvoiceExtraction; readonly model: string }
-  | { readonly ok: false; readonly reason: ExtractionFailure; readonly model: string };
+  | {
+      readonly ok: false;
+      readonly reason: ExtractionFailure;
+      /** The cause as one fixed token, such as MODEL_TIMEOUT, MODEL_HTTP_429 or REPLY_NOT_JSON. Null when there is none. */
+      readonly detail: string | null;
+      readonly model: string;
+    };
 
 export interface ExtractInput {
   /** The page texts from intake. They are normalised here, and the same normalised text is what verification checks. */
@@ -118,50 +129,64 @@ export async function extractInvoice(input: ExtractInput): Promise<ExtractionRes
   const model = input.model.label;
   const pages = input.pages.map(normaliseKeepingLines);
   if (pages.reduce((total, page) => total + page.length, 0) > MAX_DOCUMENT_CHARS) {
-    return { ok: false, reason: 'DOCUMENT_TOO_LONG', model };
+    return { ok: false, reason: 'DOCUMENT_TOO_LONG', detail: null, model };
   }
   const nonce = (input.nonce ?? defaultNonce)();
   const messages = buildMessages(pages, nonce);
 
   const first = await complete(input.model, messages);
-  if (first === null) {
-    return { ok: false, reason: 'MODEL_CALL_FAILED', model };
+  if (!first.ok) {
+    return { ok: false, reason: 'MODEL_CALL_FAILED', detail: first.failure, model };
   }
-  const parsed = parseReply(first);
+  const parsed = parseReply(first.text);
   if (parsed.ok) {
     return { ok: true, extraction: parsed.extraction, model };
   }
   if (input.budget.callsUsed >= input.budget.limit) {
-    return { ok: false, reason: 'MODEL_OUTPUT_INVALID', model };
+    return { ok: false, reason: 'MODEL_OUTPUT_INVALID', detail: replyFailureToken(parsed), model };
   }
 
   const repair = await complete(input.model, [
     ...messages,
     { role: 'user', content: repairNotice(parsed.issues) },
   ]);
-  if (repair === null) {
-    return { ok: false, reason: 'MODEL_CALL_FAILED', model };
+  if (!repair.ok) {
+    return { ok: false, reason: 'MODEL_CALL_FAILED', detail: repair.failure, model };
   }
-  const second = parseReply(repair);
+  const second = parseReply(repair.text);
   if (second.ok) {
     return { ok: true, extraction: second.extraction, model };
   }
-  return { ok: false, reason: 'MODEL_OUTPUT_INVALID', model };
+  return { ok: false, reason: 'MODEL_OUTPUT_INVALID', detail: replyFailureToken(second), model };
 }
 
-/** One call. A provider error, or a refused budget, gives null: the invoice is then held, never guessed at. */
-async function complete(
-  model: ModelClient,
-  messages: readonly ChatMessage[],
-): Promise<string | null> {
+/** Why a reply was refused: it was not JSON, or it was JSON that did not match the schema. */
+function replyFailureToken(parsed: Parsed & { readonly ok: false }): string {
+  return parsed.issues.some((issue) => issue.code === 'not_json')
+    ? 'REPLY_NOT_JSON'
+    : 'REPLY_SCHEMA_MISMATCH';
+}
+
+type CallResult =
+  { readonly ok: true; readonly text: string } | { readonly ok: false; readonly failure: string };
+
+/**
+ * One call. A provider error, or a refused budget, gives a failure: the invoice is then held, never guessed at. The
+ * failure is a fixed token that names the cause, so failed calls can be counted by cause.
+ */
+async function complete(model: ModelClient, messages: readonly ChatMessage[]): Promise<CallResult> {
   try {
     const reply = await model.complete({
       messages,
       maxTokens: EXTRACTION_MAX_TOKENS,
       replySchema: EXTRACTION_REPLY,
     });
-    return reply.text;
-  } catch {
-    return null;
+    return { ok: true, text: reply.text };
+  } catch (error) {
+    return {
+      ok: false,
+      failure:
+        error instanceof BudgetExhaustedError ? 'MODEL_BUDGET_USED' : modelFailureToken(error),
+    };
   }
 }

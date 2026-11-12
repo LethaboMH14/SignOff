@@ -191,6 +191,7 @@ describe('createChatClient failures', () => {
       .complete(REQUEST)
       .catch((caught: unknown) => caught);
     expect((error as ModelError).message).toBe('the model request timed out');
+    expect((error as ModelError).kind).toBe('TIMEOUT');
   });
 
   it('maps an abort to the timeout message as well', async () => {

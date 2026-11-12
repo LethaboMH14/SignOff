@@ -98,16 +98,16 @@ async function send(
     });
   } catch (error) {
     const name = nameOf(error);
-    throw new ModelError(
-      name === 'TimeoutError' || name === 'AbortError'
-        ? 'the model request timed out'
-        : 'the model request failed',
-    );
+    if (name === 'TimeoutError' || name === 'AbortError') {
+      throw new ModelError('the model request timed out', null, 'TIMEOUT');
+    }
+    throw new ModelError('the model request failed', null, 'NETWORK');
   }
   if (!response.ok) {
     throw new ModelError(
       `the model provider returned HTTP ${String(response.status)}`,
       response.status,
+      'HTTP',
     );
   }
   return response;
@@ -117,31 +117,31 @@ async function send(
 async function contentOf(response: Response): Promise<string> {
   const raw = await response.text().catch(() => null);
   if (raw === null) {
-    throw new ModelError('the model reply could not be read');
+    throw new ModelError('the model reply could not be read', null, 'UNREADABLE');
   }
   if (Buffer.byteLength(raw, 'utf8') > MAX_REPLY_BYTES) {
-    throw new ModelError('the model reply is too large');
+    throw new ModelError('the model reply is too large', null, 'TOO_LARGE');
   }
   let payload: unknown;
   try {
     payload = JSON.parse(raw) as unknown;
   } catch {
-    throw new ModelError('the model reply was not JSON');
+    throw new ModelError('the model reply was not JSON', null, 'NOT_JSON');
   }
   const choices = fieldOf(payload, 'choices');
   if (!Array.isArray(choices) || choices.length === 0) {
-    throw new ModelError('the model reply had no choices');
+    throw new ModelError('the model reply had no choices', null, 'NO_CHOICES');
   }
   const choice: unknown = choices[0];
   const content = fieldOf(fieldOf(choice, 'message'), 'content');
   if (fieldOf(choice, 'finish_reason') === 'length') {
-    throw new ModelError('the model reply was cut off');
+    throw new ModelError('the model reply was cut off', null, 'CUT_OFF');
   }
   if (typeof content !== 'string' || content.trim().length === 0) {
-    throw new ModelError('the model reply was empty');
+    throw new ModelError('the model reply was empty', null, 'EMPTY');
   }
   if (Buffer.byteLength(content, 'utf8') > MAX_REPLY_BYTES) {
-    throw new ModelError('the model reply is too large');
+    throw new ModelError('the model reply is too large', null, 'TOO_LARGE');
   }
   return content;
 }
