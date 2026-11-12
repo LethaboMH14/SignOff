@@ -48,6 +48,7 @@ The build sliced into small, reviewable issues. Each maps to a requirement in [P
 | B7 | Pause route | Authenticated pause independent of the console; tested with console stopped | B1 | S | Sibusiso (AI-assisted) | [#34](https://github.com/LethaboMH14/SignOff/issues/34) | Review (T-069, T-071) |
 | B8 | Pre-signing ledger read | Balance, trust line freeze state and issuer checked before signing; hold on surprise | B1, A5 | S | Sibusiso (AI-assisted) | [#35](https://github.com/LethaboMH14/SignOff/issues/35) | Review (T-069, T-072) |
 | B9 | Supplier enrolment and change | Enrolment with simulated identity check; changes need current key, cooling-off and second approval | B3 | M | Sibusiso (AI-assisted) | [#36](https://github.com/LethaboMH14/SignOff/issues/36) | Review (T-069; enrolment and approval live in T-071) |
+| P0 | Final Warden authorization (issue #45) | Proposal returns unsigned terms only; the agent signs; Warden rechecks pause, policy version, limits, payee, ledger and expiry, then signs and submits itself. Offline regression T-092: 3 of 3 pass on head, 3 of 3 fail on pre-fix code. Live Testnet negative proof reported as T-124 in PR #55, not verified here | B1, B5, B7 | M | | [#45](https://github.com/LethaboMH14/SignOff/issues/45) | Review |
 
 ## Gate C: agent reliability and evidence
 

@@ -22,6 +22,7 @@
     "prepare": "node scripts/setup-hooks.mjs",
     "setup:hooks": "node scripts/setup-hooks.mjs",
     "secrets:scan": "tsx scripts/secret-scan.ts --all",
+    "attack": "tsx scripts/attack-suite.ts",
     "testnet:provision": "tsx scripts/testnet/gate-a.ts provision",
     "testnet:signers": "tsx scripts/testnet/gate-a.ts signers",
     "testnet:pay": "tsx scripts/testnet/gate-a.ts pay",
