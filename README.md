@@ -184,3 +184,7 @@ Read [docs/RULES.md](docs/RULES.md) before changing anything. Work starts from a
 ## Licence
 
 See [LICENSE](LICENSE).
+
+## Testnet money and invoice sizes
+
+Invoices are in rand, and the Testnet account pays RLUSD at a live USD/ZAR rate (about 16.7 on 12 November 2026). A R4 800 invoice would need about 287 RLUSD, far more than the Testnet account holds, so the demo invoices are R16 to R50. The sizing, the Testnet DEX limits and how to re-provision are in [docs/RLUSD-TESTNET-RUNBOOK.md](docs/RLUSD-TESTNET-RUNBOOK.md). Testnet money has no value.

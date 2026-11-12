@@ -22,6 +22,13 @@ export const RLUSD_TESTNET = {
 /** Currency code of the test-issued token, used while RLUSD testnet balances are not available. */
 export const TEST_TOKEN_CURRENCY = 'TST';
 
+/**
+ * The most any SignOff transaction may pay in fee, in drops (1000 drops = 0.001 XRP). A two-signature payment costs about
+ * 36 drops on Testnet (TEST-LOG T-059 and the demo run), so this leaves room for fee-level changes without letting a
+ * fee spike drain the spending account. Signers refuse to sign above it (multisig.ts). Decision D-099.
+ */
+export const MAX_FEE_DROPS = '1000';
+
 /** Two of the two signers must approve a payment: Agent weight 1 + Warden weight 1 reach quorum 2. */
 export const SIGNER_QUORUM = 2;
 export const AGENT_SIGNER_WEIGHT = 1;

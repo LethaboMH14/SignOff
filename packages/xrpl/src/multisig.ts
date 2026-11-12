@@ -1,7 +1,24 @@
 import { decode, hashes, multisign, type Transaction, type Wallet } from 'xrpl';
 
+import { MAX_FEE_DROPS } from './constants.js';
+
+/**
+ * Throws unless the transaction has a fee and the fee is within the cap. Every signer checks this before signing, so a
+ * fee spike or a tampered fee field is refused by each key, not only by the one that built the transaction.
+ */
+export function assertFeeWithinCap(transaction: Transaction): void {
+  const fee = (transaction as { Fee?: unknown }).Fee;
+  if (typeof fee !== 'string' || !/^[0-9]+$/.test(fee)) {
+    throw new Error('the transaction has no fee, so it is not signed');
+  }
+  if (BigInt(fee) > BigInt(MAX_FEE_DROPS)) {
+    throw new Error('the transaction fee is above the cap, so it is not signed');
+  }
+}
+
 /** Signs a transaction as one signer of a multi-signed transaction and returns the signed blob. */
 export function signAsSigner(wallet: Wallet, transaction: Transaction): string {
+  assertFeeWithinCap(transaction);
   return wallet.sign(transaction, true).tx_blob;
 }
 

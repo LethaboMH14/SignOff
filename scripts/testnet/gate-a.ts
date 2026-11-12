@@ -107,6 +107,19 @@ const RUNNERS: ReadonlyMap<string, Runner> = new Map<string, Runner>([
     async (deps) =>
       demonstrateRejections(deps, await tokenTransfer(deps, 'rejections.proof', '10')),
   ],
+  [
+    // The same single-key refusals, for the RLUSD payment path (P6). Nothing moves: each refused attempt is not applied.
+    'rejections-rlusd',
+    async (deps) =>
+      demonstrateRejections(
+        deps,
+        await rlusdTransfer(
+          deps,
+          'rejections-rlusd.proof',
+          process.env['SIGNOFF_RLUSD_AMOUNT'] ?? '0.01',
+        ),
+      ),
+  ],
   ['timeout', async (deps) => timeoutDrill(deps, await tokenTransfer(deps, 'timeout.proof', '4'))],
   [
     'failover',

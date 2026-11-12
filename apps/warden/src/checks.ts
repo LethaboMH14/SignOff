@@ -154,6 +154,12 @@ export function preSigningVerdict(facts: PreSigningFacts, amount: string): Verdi
   if (facts.issuerGlobalFreeze) {
     return hold('ACCOUNT_FROZEN', 'the issuer has frozen the asset');
   }
+  if (facts.issuerRequiresAuth) {
+    return hold(
+      'INVARIANT_FAILED',
+      'the issuer requires trust-line authorization, which is not performed',
+    );
+  }
   if (facts.spendingLine === null) {
     return hold('INVARIANT_FAILED', 'the spending account does not hold the asset');
   }
@@ -165,6 +171,15 @@ export function preSigningVerdict(facts: PreSigningFacts, amount: string): Verdi
   }
   if (!facts.destinationExists) {
     return hold('INVARIANT_FAILED', 'the payee account is not on the ledger');
+  }
+  if (facts.destinationRequiresAuth) {
+    return hold(
+      'INVARIANT_FAILED',
+      'the payee requires trust-line authorization, which is not performed',
+    );
+  }
+  if (facts.destinationRequiresDestTag && facts.enrolledDestinationTag === null) {
+    return hold('INVARIANT_FAILED', 'the payee requires a destination tag that is not enrolled');
   }
   if (facts.destinationLine === null) {
     return hold('INVARIANT_FAILED', 'the payee cannot hold the asset');
