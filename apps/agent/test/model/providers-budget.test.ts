@@ -6,6 +6,7 @@ import {
   MAX_MODEL_CALLS,
   ModelBudget,
 } from '../../src/model/budget.js';
+import { keyFor } from '../../src/config.js';
 import {
   assertModelAllowed,
   baseUrlOf,
@@ -26,11 +27,13 @@ describe('providers', () => {
     expect(providerById('groq')).toBe(PROVIDERS.groq);
     expect(providerById('gemini')).toBe(PROVIDERS.gemini);
     expect(providerById('meta')).toBe(PROVIDERS.meta);
+    expect(providerById('aiml')).toBe(PROVIDERS.aiml);
+    expect(providerById('huggingface')).toBe(PROVIDERS.huggingface);
   });
 
-  it('refuses an unknown provider, the retired Hugging Face route, and a prototype key', () => {
+  it('refuses an unknown provider, a provider name that is not an identifier, and a prototype key', () => {
     expect(() => providerById('anthropic')).toThrow('unknown model provider');
-    expect(() => providerById('huggingface')).toThrow('unknown model provider');
+    expect(() => providerById('hf')).toThrow('unknown model provider');
     expect(() => providerById('__proto__')).toThrow('unknown model provider');
   });
 
@@ -39,6 +42,38 @@ describe('providers', () => {
     expect(PROVIDERS.groq.keyEnv).toBe('GROQ_API_KEY');
     expect(PROVIDERS.gemini.keyEnv).toBe('GEMINI_API_KEY');
     expect(PROVIDERS.meta.keyEnv).toBe('META_API_KEY');
+    expect(PROVIDERS.aiml.keyEnv).toBe('AIML_API_KEY');
+    expect(PROVIDERS.huggingface.keyEnv).toBe('HF_TOKEN');
+  });
+
+  it('gives the AI/ML API and Hugging Face their documented base URLs, with a fixed address', () => {
+    expect(PROVIDERS.aiml.baseUrl).toBe('https://api.aimlapi.com/v1');
+    expect(PROVIDERS.aiml.baseUrlEnv).toBeNull();
+    expect(baseUrlOf(PROVIDERS.aiml, {})).toBe('https://api.aimlapi.com/v1');
+    expect(PROVIDERS.huggingface.baseUrl).toBe('https://router.huggingface.co/v1');
+    expect(PROVIDERS.huggingface.baseUrlEnv).toBeNull();
+    expect(baseUrlOf(PROVIDERS.huggingface, {})).toBe('https://router.huggingface.co/v1');
+  });
+
+  it('marks the AI/ML API and Hugging Face defaults UNVERIFIED in their access notes', () => {
+    expect(PROVIDERS.aiml.accessNote).toContain('UNVERIFIED');
+    expect(PROVIDERS.huggingface.accessNote).toContain('UNVERIFIED');
+    expect(PROVIDERS.aiml.accessNote).toContain('https://aimlapi.com/app/sign-up');
+    expect(PROVIDERS.huggingface.accessNote).toContain(
+      'https://huggingface.co/settings/tokens/new',
+    );
+  });
+
+  it('names HF_TOKEN, and never a value, when the Hugging Face or AI/ML API key is missing', () => {
+    expect(() => keyFor(PROVIDERS.huggingface, {})).toThrow(
+      'set HF_TOKEN in your environment to use huggingface',
+    );
+    expect(() => keyFor(PROVIDERS.aiml, { AIML_API_KEY: '   ' })).toThrow(
+      'set AIML_API_KEY in your environment to use aiml',
+    );
+    expect(keyFor(PROVIDERS.aiml, { AIML_API_KEY: '  placeholder-value  ' })).toBe(
+      'placeholder-value',
+    );
   });
 
   it('accepts the default model of every provider', () => {

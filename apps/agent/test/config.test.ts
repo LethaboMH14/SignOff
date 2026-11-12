@@ -16,9 +16,16 @@ describe('chooseModel', () => {
     expect(chooseModel('meta', 'muse-spark-1.2').model).toBe('muse-spark-1.2');
   });
 
-  it('refuses an unknown provider, the retired Hugging Face route, and an Anthropic model', () => {
+  it('accepts the AI/ML API and Hugging Face, with their defaults', () => {
+    expect(chooseModel('aiml', undefined).model).toBe(PROVIDERS.aiml.defaultModel);
+    expect(chooseModel('huggingface', undefined).model).toBe(PROVIDERS.huggingface.defaultModel);
+    expect(chooseModel('huggingface', 'openai/gpt-oss-20b:cheapest').provider.id).toBe(
+      'huggingface',
+    );
+  });
+
+  it('refuses an unknown provider and an Anthropic model', () => {
     expect(() => chooseModel('someone', undefined)).toThrow('unknown model provider');
-    expect(() => chooseModel('huggingface', undefined)).toThrow('unknown model provider');
     expect(() => chooseModel('openrouter', 'anthropic/claude-opus-5-5')).toThrow(
       'Anthropic and Claude models are not used by this project',
     );
@@ -59,6 +66,15 @@ describe('assertDataAllowed', () => {
 });
 
 describe('keyFor', () => {
+  it('reads the key for the new providers from their variables, and names only the variable', () => {
+    expect(keyFor(PROVIDERS.huggingface, { HF_TOKEN: '  placeholder-value  ' })).toBe(
+      'placeholder-value',
+    );
+    expect(() => keyFor(PROVIDERS.aiml, {})).toThrow(
+      'set AIML_API_KEY in your environment to use aiml',
+    );
+  });
+
   it('reads the key from the environment, and names only the variable when it is missing', () => {
     expect(keyFor(PROVIDERS.openrouter, { OPENROUTER_API_KEY: '  placeholder-value  ' })).toBe(
       'placeholder-value',

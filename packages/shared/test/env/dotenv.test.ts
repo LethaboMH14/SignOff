@@ -1,10 +1,13 @@
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { loadDotEnv, parseDotEnv } from '../../src/env/dotenv.js';
+
+const EXAMPLE = fileURLToPath(new URL('../../../../.env.example', import.meta.url));
 
 /* Each test writes only inside its own temporary folder. */
 /* eslint-disable security/detect-non-literal-fs-filename */
@@ -78,5 +81,25 @@ describe('loadDotEnv', () => {
 
   it('does nothing when the file does not exist', () => {
     expect(loadDotEnv(join(directory, 'missing.env'), {})).toEqual({ loaded: [], kept: [] });
+  });
+});
+
+describe('.env.example', () => {
+  it('lists every provider key with an empty value, so a template never carries a secret', () => {
+    const parsed = parseDotEnv(readFileSync(EXAMPLE, 'utf8'));
+    for (const name of [
+      'OPENROUTER_API_KEY',
+      'GROQ_API_KEY',
+      'GEMINI_API_KEY',
+      'META_API_KEY',
+      'META_API_BASE_URL',
+      'AIML_API_KEY',
+      'HF_TOKEN',
+    ]) {
+      expect(parsed.has(name), `${name} is listed`).toBe(true);
+    }
+    for (const [name, value] of parsed) {
+      expect(value, `${name} is empty`).toBe('');
+    }
   });
 });

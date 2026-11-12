@@ -64,9 +64,10 @@ npm run agent:export -- --log apps/agent/state/agent-log.jsonl --obligation <64-
 
 ## Models and data
 
-- Providers: OpenRouter, Groq, Gemini and Meta, through their OpenAI-compatible APIs. Hugging Face is retired (2026-11-10). Anthropic and Claude models are refused by policy ([ADR 0006](../../docs/decisions/0006-model-boundary-and-providers.md)).
+- Providers: OpenRouter, Groq, Gemini and Meta, through their OpenAI-compatible APIs, and the AI/ML API (`--provider aiml`) and Hugging Face Inference Providers (`--provider huggingface`), added 2026-11-12 ([D-095](../../docs/logs/DECISION-JOURNAL.md)). Hugging Face was retired on 2026-11-10 and is re-added by that later decision, which supersedes [ADR 0006](../../docs/decisions/0006-model-boundary-and-providers.md) on this point. Anthropic and Claude models are refused by policy (ADR 0006).
 - Defaults, each checked with one minimal call on 2026-11-10: `nvidia/nemotron-3-ultra-550b-a55b:free` on OpenRouter, `openai/gpt-oss-120b` on Groq, `gemini-3.5-flash` on Gemini, and `muse-spark-1.3` on Meta. Re-check an identifier before a live run.
-- Keys are read from `OPENROUTER_API_KEY`, `GROQ_API_KEY`, `GEMINI_API_KEY` or `META_API_KEY` at run time, and are never stored or printed. Meta's address is read from `META_API_BASE_URL`, which must be https with no credentials, query or fragment.
+- **UNVERIFIED defaults (2026-11-12):** the AI/ML API default `google/gemma-3-4b-it` and the Hugging Face default `openai/gpt-oss-120b:cheapest` come from the providers' public docs. Neither docs page states that the model is free or cheap, and JSON or structured output is not confirmed for either. No live call was made. Check both before a live run; the access notes in `src/model/providers.ts` say the same.
+- Keys are read from `OPENROUTER_API_KEY`, `GROQ_API_KEY`, `GEMINI_API_KEY`, `META_API_KEY`, `AIML_API_KEY` or `HF_TOKEN` at run time, and are never stored or printed. Each is listed with an empty value in the root [`.env.example`](../../.env.example). Meta's address is read from `META_API_BASE_URL`, which must be https with no credentials, query or fragment.
 - `eval --min-interval-ms N` spaces the calls of a live run, so a free tier's rate limit does not turn a burst into refusals.
 - Real invoices need the operator's confirmation of the provider's zero-retention terms. Free-tier models are refused for real invoices (S-032).
 
