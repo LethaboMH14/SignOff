@@ -9,6 +9,14 @@ updates:
     cooldown:
       default-days: 7
     open-pull-requests-limit: 3
+    # Gate 0 intentionally targets Node 24 and TypeScript 6. TypeScript 7 is outside
+    # the current typescript-eslint peer range. Treat major migrations as planned
+    # compatibility work with explicit review, not routine grouped updates.
+    ignore:
+      - dependency-name: 'typescript'
+        update-types: ['version-update:semver-major']
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
     groups:
       development-dependencies:
         dependency-type: development

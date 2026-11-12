@@ -345,3 +345,10 @@ One entry per working session (rule R-19 in [RULES.md](../RULES.md)), newest fir
 - Evidence: source changes and tests committed for CI; no local `npm run check` result claimed.
 - Blockers: PR #58 is behind its integration target and was unmergeable at review; exact-head CI and an independent timer are not yet verified. Only simulated development is authorised.
 - Next: run exact-head CI, reconcile the stack, and obtain independent review before merging.
+
+### 2026-11-11 — Lethabo security administration review
+
+- Done: added a maintainers' CODEOWNERS declaration and the GitHub administrator security checklist, tracked as issue #59.
+- Evidence: GitHub rulesets returned an empty list; branch-protection read returned 403 `Resource not accessible by integration`. Code-side check and audit already exist in CI.
+- Problems / blockers: native secret scanning, push protection and branch settings cannot be edited through the current integration; owner verification and CI on this documentation PR are pending.
+- Next: apply and verify GitHub administrator settings, then resolve #59 and #9.

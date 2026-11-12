@@ -29,7 +29,7 @@ The build sliced into small, reviewable issues. Each maps to a requirement in [P
 |---|---|---|---|---|---|---|---|
 | A1 | Testnet provisioning script | One command creates spending, reserve and supplier accounts, funds XRP, opens RLUSD trust lines, records addresses (no seeds) | F1, F3 | M | Sibusiso (AI-assisted) | [#20](https://github.com/LethaboMH14/SignOff/issues/20) | Review |
 | A2 | Signer list | Agent 1, Warden 1, quorum 2; master key disabled; no regular key; verified by reading the account back | A1 | S | Sibusiso (AI-assisted) | [#21](https://github.com/LethaboMH14/SignOff/issues/21) | Review |
-| A3 | Two-signature payment | Validated RLUSD payment with expected delivered amount; hash logged | A2 | M | Sibusiso (AI-assisted) | [#22](https://github.com/LethaboMH14/SignOff/issues/22) | Doing (RLUSD run blocked, T-059) |
+| A3 | Two-signature payment | Validated RLUSD payment with expected delivered amount; hash logged | A2 | M | Sibusiso (AI-assisted) | [#22](https://github.com/LethaboMH14/SignOff/issues/22) | Review (1 RLUSD validated, T-059; 10 RLUSD run still open) |
 | A4 | Single-key rejections | Agent alone and Warden alone rejected; result codes logged | A2 | S | Sibusiso (AI-assisted) | [#23](https://github.com/LethaboMH14/SignOff/issues/23) | Review |
 | A5 | Reliable submission | Expiry set, persist before submit, reconcile by validated history, no blind resubmit; timeout test | A3 | M | Sibusiso (AI-assisted) | [#24](https://github.com/LethaboMH14/SignOff/issues/24) | Review |
 | A6 | Node failover | Second Testnet node; failover keeps exact transaction identity | A5 | S | Sibusiso (AI-assisted) | [#25](https://github.com/LethaboMH14/SignOff/issues/25) | Review |
@@ -97,3 +97,12 @@ The build sliced into small, reviewable issues. Each maps to a requirement in [P
 | S3 | Armed-mode heartbeat watchdog | Server-side fail closed on lost heartbeat; tested | S1 | M | Sibusiso (AI-assisted) | | Review (T-101; server side only; Arduino link UNVERIFIED) |
 | S4 | RFID tag presented | Tag event recorded; receiving approval still required | S1 | S | | | Todo |
 | S5 | XRPL credential on suppliers | Issue, accept, check, delete on Testnet ([ADR 0004](decisions/0004-workshop-adjustments.md)) | B3 | M | Sibusiso (AI-assisted) | | Review (T-117, T-118: lifecycle live on Testnet between two test accounts; not yet on the provisioned supplier accounts) |
+
+## Maintenance and review blockers (after Gate 0)
+
+| ID | Work | GitHub issue | Related PR | Status |
+|---|---|---|---|---|
+| M1 | Prevent incompatible TypeScript 7 / Node 26 type-definition major jumps in Dependabot until the pinned Node 24 / TS 6 toolchain is migrated with compatible lint/parser and CI | [#46](https://github.com/LethaboMH14/SignOff/issues/46) | [#47](https://github.com/LethaboMH14/SignOff/pull/47) | In review |
+| P0 | Repair Warden signing sequence: **never expose a usable Warden co-signature before final pause/policy/payee checks and server-owned submit** | [#45](https://github.com/LethaboMH14/SignOff/issues/45) | [#27](https://github.com/LethaboMH14/SignOff/pull/27) and [#44](https://github.com/LethaboMH14/SignOff/pull/44) | BLOCKED (changes requested) |
+
+This section tracks maintenance and security blockers without treating these tasks as part of the already merged Gate 0 foundation. Issue #45 must be completed before claiming a secure physical pause or autonomous-payment authorization.

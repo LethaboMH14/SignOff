@@ -1,0 +1,4 @@
+# GitHub requests review from the maintainers below.
+# Enforcement requires "Require review from Code Owners" in branch protection / repository rulesets.
+# GitHub must not accept an author's own approval (see docs/RULES.md R-17).
+* @LethaboMH14 @Sibusiso-K
