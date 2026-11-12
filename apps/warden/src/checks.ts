@@ -5,6 +5,11 @@ import type { GoodsReceiptRecord, InvoiceRecord, PurchaseOrderRecord } from './e
 import type { PreSigningFacts } from './ledger-read.js';
 import { isUnresolved, type AttemptState, type LimitsState } from './state.js';
 import { compareDecimal, normaliseDecimal } from '../../../packages/xrpl/src/amounts.js';
+import {
+  receiptCovers,
+  withinTolerance,
+  type Tolerance,
+} from '../../../packages/shared/src/match-rules.js';
 
 /**
  * The rules, one function each. Every function returns null when the rule passes, or the verdict that the
@@ -42,18 +47,8 @@ export function scopedKeyOf(buyerScope: string, obligationKey: string): string {
   return sha256Hex(`${buyerScope}\n${obligationKey}`);
 }
 
-export interface Tolerance {
-  readonly absoluteMinor: number;
-  readonly basisPoints: number;
-}
-
-/** The larger of the absolute allowance and the percentage allowance on the given amount. */
-export function toleranceMinor(amountMinor: number, tolerance: Tolerance): number {
-  return Math.max(
-    tolerance.absoluteMinor,
-    Math.floor((amountMinor * tolerance.basisPoints) / 10_000),
-  );
-}
+/** The tolerance rule lives in shared code, so the agent and the Warden give the same verdict on the same input. */
+export { toleranceMinor, type Tolerance } from '../../../packages/shared/src/match-rules.js';
 
 /** Money already counted against a limit on a day: paid attempts and attempts still in flight. */
 export function dailyUsage(
@@ -90,8 +85,7 @@ export function matchVerdict(input: {
   if (purchaseOrder.supplierId !== input.supplierId) {
     return refuse('INVARIANT_FAILED', 'the purchase order belongs to another supplier');
   }
-  const orderGap = Math.abs(invoice.amountMinor - purchaseOrder.amountMinor);
-  if (orderGap > toleranceMinor(purchaseOrder.amountMinor, tolerance)) {
+  if (!withinTolerance(purchaseOrder.amountMinor, invoice.amountMinor, tolerance)) {
     return hold(
       'AMOUNT_MISMATCH',
       'the invoice does not match the purchase order within tolerance',
@@ -100,8 +94,7 @@ export function matchVerdict(input: {
   if (receipt === undefined) {
     return hold('MISSING_EVIDENCE', 'no goods receipt is recorded for the purchase order');
   }
-  const covered = invoice.amountMinor - toleranceMinor(invoice.amountMinor, tolerance);
-  if (receipt.receivedMinor < covered) {
+  if (!receiptCovers(invoice.amountMinor, receipt.receivedMinor, tolerance)) {
     return hold('AMOUNT_MISMATCH', 'the goods received do not cover the invoice within tolerance');
   }
   return null;
