@@ -53,6 +53,10 @@ function runTests(files: readonly string[]): TestRun {
   return { status: run.status, output: `${run.stdout}\n${run.stderr}` };
 }
 
+/**
+ * Runs a set of test files on a fake ledger or fixtures: every such row is SIMULATED, never REAL. The count is shown in
+ * the note; the full output of a failed run goes to the terminal above the table.
+ */
 function testCheck(name: string, files: readonly string[]): JudgeCheck {
   const { status, output } = runTests(files);
   if (status !== 0) {
@@ -61,16 +65,15 @@ function testCheck(name: string, files: readonly string[]): JudgeCheck {
     return {
       name,
       status: 'FAIL',
+      label: 'SIMULATED',
+      note: `vitest exited with ${String(status)}; output above`,
       detail: `vitest exited with ${String(status)}; its output is above`,
     };
   }
   const count = passedCountOf(output);
   const scope = `in ${String(files.length)} file(s)`;
-  return {
-    name,
-    status: 'PASS',
-    detail: count === null ? `passed ${scope}` : `${String(count)} tests passed ${scope}`,
-  };
+  const passed = count === null ? `passed ${scope}` : `${String(count)} tests passed ${scope}`;
+  return { name, status: 'PASS', label: 'SIMULATED', note: passed, detail: passed };
 }
 
 /** Re-runs the simulated labelled set into a temporary folder, so the committed result is never overwritten. */
