@@ -101,7 +101,7 @@ export function checkTaxInvoice(fields: TaxInvoiceFields): TaxCheckResult {
   const required: readonly string[] = requiresFull
     ? [...ABRIDGED_FIELDS, ...FULL_EXTRA_FIELDS]
     : [...ABRIDGED_FIELDS];
-  const values: ReadonlyMap<string, string | number | null> = new Map([
+  const values = new Map<string, string | number | null>([
     ['supplierName', fields.supplierName],
     ['supplierVatNumber', fields.supplierVatNumber],
     ['supplierAddress', fields.supplierAddress],
