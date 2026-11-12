@@ -16,8 +16,21 @@ export const MAX_CHILD_OUTPUT_BYTES = 4 * 1024 * 1024;
 
 export type PdfFailure = 'ENCRYPTED' | 'UNREADABLE' | 'TOO_MANY_PAGES' | 'EXTRACTION_FAILED';
 
+/** Text a reader does not see as page text but a model would read: annotations and document information. */
+export interface PdfExtras {
+  /** Annotation contents, alternative text and field values, each with the 1-based page it sits on. */
+  readonly annotations: readonly { readonly page: number; readonly text: string }[];
+  readonly metadata: readonly string[];
+}
+
 export type PdfTextResult =
-  | { readonly ok: true; readonly pages: readonly string[] }
+  | {
+      readonly ok: true;
+      readonly pages: readonly string[];
+      readonly extras: PdfExtras;
+      /** True when the parser cut a page, an annotation or the output at its limit. The document is then held. */
+      readonly truncated: boolean;
+    }
   | { readonly ok: false; readonly reason: PdfFailure };
 
 const FAILED: PdfTextResult = { ok: false, reason: 'EXTRACTION_FAILED' };
@@ -26,6 +39,13 @@ const ChildAnswer = z.discriminatedUnion('ok', [
   z.strictObject({
     ok: z.literal(true),
     pages: z.array(z.string().max(200_000)).min(1).max(200),
+    annotations: z
+      .array(
+        z.strictObject({ page: z.number().int().min(1).max(200), text: z.string().max(200_000) }),
+      )
+      .max(500),
+    metadata: z.array(z.string().max(200_000)).max(20),
+    truncated: z.boolean(),
   }),
   z.strictObject({
     ok: z.literal(false),
@@ -106,7 +126,13 @@ function parseAnswer(text: string): PdfTextResult {
   if (!answer.success) {
     return FAILED;
   }
-  return answer.data.ok
-    ? { ok: true, pages: answer.data.pages }
-    : { ok: false, reason: answer.data.reason };
+  if (!answer.data.ok) {
+    return { ok: false, reason: answer.data.reason };
+  }
+  return {
+    ok: true,
+    pages: answer.data.pages,
+    extras: { annotations: answer.data.annotations, metadata: answer.data.metadata },
+    truncated: answer.data.truncated,
+  };
 }
