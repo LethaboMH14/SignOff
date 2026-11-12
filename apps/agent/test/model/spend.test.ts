@@ -116,6 +116,44 @@ describe('the daily dollar cap', () => {
 });
 
 describe('the failover order and the providers without a price', () => {
+  it('sends a hop its own reply limit, and reserves its spend at that limit', async () => {
+    const client = counting({ text: '{"ok":true}', promptTokens: 10, completionTokens: 10 });
+    const sentLimits: number[] = [];
+    const recording: ModelClient = {
+      label: 'test:recording',
+      complete: (request: ModelRequest) => {
+        sentLimits.push(request.maxTokens);
+        return client.complete(request);
+      },
+    };
+    const hopWithLimit: Hop = { ...priced('meta', recording, PRICE), maxTokens: 8_000 };
+    await failoverModel({ hops: [hopWithLimit] }).complete(REQUEST);
+    expect(sentLimits).toEqual([8_000]);
+  });
+
+  it('refuses a hop whose larger reply limit would pass the invoice cap, although the caller limit would fit', async () => {
+    const client = counting({ text: '{}', promptTokens: 1, completionTokens: 1 });
+    // At 1,000 tokens the worst case is about 0.0021 dollars; at 8,000 it is about 0.0161. The invoice limit is 0.01.
+    const budget = new ModelBudget(3, 0.01);
+    const hopWithLimit: Hop = { ...priced('meta', client, PRICE), maxTokens: 8_000 };
+    const error: unknown = await failoverModel({ hops: [hopWithLimit] })
+      .complete({ ...REQUEST, spend: budget })
+      .catch((caught: unknown) => caught);
+    expect((error as ModelError).errorClass).toBe('SPEND_CAP');
+    expect(client.calls()).toBe(0);
+    const fits = counting({ text: '{}', promptTokens: 1, completionTokens: 1 });
+    await failoverModel({ hops: [priced('plain', fits, PRICE)] }).complete({
+      ...REQUEST,
+      spend: new ModelBudget(3, 0.01),
+    });
+    expect(fits.calls()).toBe(1);
+  });
+
+  it('gives Meta an 8,000-token reply limit, with low reasoning effort', () => {
+    expect(PROVIDERS.meta.replyTokens).toBe(8_000);
+    expect(PROVIDERS.meta.requestExtras).toEqual({ reasoning_effort: 'low' });
+  });
+
   it('puts Meta first, because it is the funded provider', () => {
     expect(FAILOVER_ORDER[0]).toBe('meta');
   });

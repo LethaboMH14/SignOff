@@ -15,7 +15,7 @@
 
 ## Decision
 
-1. **Meta is a full provider.** It is first in the failover order (`FAILOVER_ORDER`), with the default model `muse-ember-1.0`, which is verified against Meta's own live list. A model id is changed only after checking that list (owner's instruction, 2026-11-12). The model is called with `reasoning_effort: low` and a JSON schema, and with a reply limit of 4,000 tokens.
+1. **Meta is a full provider.** It is first in the failover order (`FAILOVER_ORDER`), with the default model `muse-ember-1.0`, which is verified against Meta's own live list. A model id is changed only after checking that list (owner's instruction, 2026-11-12). The model is called with `reasoning_effort: low` and a JSON schema, and with a reply limit of 8,000 tokens (the other providers keep 4,000). The larger limit is part of the per-attempt worst case, so the caps see it.
 2. **Hard spend cap in code.** Two caps are enforced before each attempt, against its worst-case cost (prompt measured conservatively, plus the full output limit), and then settled to the actual cost:
    - **Per invoice:** $0.05 by default (`DEFAULT_INVOICE_USD`). A call that would pass it is not sent, and the invoice is held with `SPEND_CAP`.
    - **Per day, in total across providers and runs:** $3 by default (`DEFAULT_DAILY_USD`). The count is kept in a file under the user's local application data, so a second run does not reset it. A call that would pass it is not sent, and the run stops with `DAILY_CAP`.

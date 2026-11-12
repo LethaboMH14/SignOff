@@ -34,6 +34,8 @@ export interface Hop {
   readonly client: ModelClient;
   /** The list price of the hop, or null when none is on record. */
   readonly price: Price | null;
+  /** The reply limit this provider needs, when it differs from the caller's (a reasoning model needs more). */
+  readonly maxTokens?: number;
 }
 
 /** One HTTP attempt, as the telemetry records it. It carries no prompt, no reply text and no key. */
@@ -155,13 +157,16 @@ export function failoverModel(options: FailoverOptions): ModelClient {
             });
           }
           attempts += 1;
-          const estimate = estimateUsdOf(hop.price, request);
+          // The request this hop sends, and the one its spend is estimated on, carry the same reply limit.
+          const sent: ModelRequest =
+            hop.maxTokens === undefined ? request : { ...request, maxTokens: hop.maxTokens };
+          const estimate = estimateUsdOf(hop.price, sent);
           // The invoice is checked first, then the day. Either refusal throws before anything is sent.
           request.spend?.reserveUsd(estimate);
           options.caps?.reserve(estimate);
           const started = now();
           try {
-            const reply = await hop.client.complete(request);
+            const reply = await hop.client.complete(sent);
             const latencyMs = now() - started;
             options.sink?.record({
               provider: hop.provider,

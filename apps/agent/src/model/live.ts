@@ -64,7 +64,13 @@ export function buildLiveChain(options: LiveChainOptions): LiveChain {
       ...(options.timeoutMs === undefined ? {} : { timeoutMs: options.timeoutMs }),
       ...(options.fetchImpl === undefined ? {} : { fetchImpl: options.fetchImpl }),
     });
-    hops.push({ provider: provider.id, model, client, price: provider.listPrice });
+    hops.push({
+      provider: provider.id,
+      model,
+      client,
+      price: provider.listPrice,
+      ...(provider.replyTokens === undefined ? {} : { maxTokens: provider.replyTokens }),
+    });
   }
   if (hops.length === 0) {
     throw new RangeError(

@@ -32,6 +32,12 @@ export interface ProviderDefinition {
   readonly listPrice: { readonly input: number; readonly output: number } | null;
   /** What is known about the access terms. Data handling is set by the provider, and this project does not verify it. */
   readonly accessNote: string;
+  /**
+   * The reply limit this provider's model needs, when it is larger than the extraction default. A reasoning model
+   * spends part of its limit on reasoning before the JSON, so a small limit cuts the reply off (D-100). Meta's
+   * muse-ember-1.0 needs 8,000 with reasoning_effort low (lane D probes, 2026-11-12).
+   */
+  readonly replyTokens?: number;
 }
 
 export const PROVIDERS = {
@@ -84,6 +90,7 @@ export const PROVIDERS = {
     // catalogue that lists structured output (its price is used below); it answered a schema request with valid JSON when
     // reasoning_effort was low. The previous default, muse-spark-1.3, costs about twelve times as much per token.
     defaultModel: 'muse-ember-1.0',
+    replyTokens: 8000,
     schemaReply: true,
     requestExtras: { reasoning_effort: 'low' },
     listPrice: { input: 0.1, output: 0.5 },
