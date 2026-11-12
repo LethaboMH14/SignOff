@@ -224,10 +224,12 @@ export async function processInvoice(
   run.modelCalls = budget.callsUsed;
   run.modelLabel = extracted.model;
   if (!extracted.ok) {
+    // The reason names the class of the failure (for example RATE_LIMIT or NOT_JSON), so a hold says what went wrong.
     move(
       extracted.reason === 'DOCUMENT_TOO_LONG' ? 'QUARANTINED' : 'HELD',
       'extractor',
       extracted.reason,
+      extracted.detail === null ? [] : [extracted.detail],
     );
     return finish();
   }

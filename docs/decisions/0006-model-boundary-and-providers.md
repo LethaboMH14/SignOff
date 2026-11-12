@@ -1,6 +1,6 @@
 # 0006: Model boundary and providers for the agent
 
-- **Status:** Proposed
+- **Status:** Proposed. **Partly superseded by [0008](0008-meta-full-provider-and-spend-cap.md)** (decisions 2, 4 and 8). Decisions 1, 3, 5, 6, 7 and 9 stand.
 - **Affects:** `apps/agent` (model layer, extraction, evaluation), [AGENT-RELIABILITY.md](../AGENT-RELIABILITY.md), [TRUST.md](../TRUST.md) (model boundary)
 - **Rules touched:** R-6 (the agent holds no payment keys and only proposes), R-12 (no secrets or personal data in code, logs or prompts beyond need), R-22 (AI tools never receive secrets or real personal data), in [RULES.md](../RULES.md)
 - **Journal:** D-061, D-063, D-066, D-069 in [DECISION-JOURNAL.md](../logs/DECISION-JOURNAL.md)
@@ -16,13 +16,13 @@
 ## Decision
 
 1. **One boundary.** Every model call goes through a `ModelClient` interface. The only implementation is an OpenAI-compatible chat completions client over `fetch`. No provider SDK is added.
-2. **Four providers.** OpenRouter, Groq, Gemini and Meta, with the defaults listed in the agent README. Hugging Face is retired. Anthropic and Claude identifiers are refused in code.
+2. **Four providers.** *Superseded by [0008](0008-meta-full-provider-and-spend-cap.md).* OpenRouter, Groq, Gemini and Meta, with the defaults listed in the agent README. Hugging Face is retired. Anthropic and Claude identifiers are refused in code.
 3. **Keys stay in the environment.** `OPENROUTER_API_KEY`, `GROQ_API_KEY`, `GEMINI_API_KEY` and `META_API_KEY` are read at run time. They are never stored, logged or echoed. A missing key is reported by variable name only. Meta's address comes from `META_API_BASE_URL`, which must be https with no credentials, query or fragment.
-4. **Few calls.** One call per invoice, plus one repair call only when the first reply does not parse. A budget of three is enforced in code, and a failed call holds the invoice. There are no automatic retries, because a retry would spend the budget.
+4. **Few calls.** *Superseded in part by [0008](0008-meta-full-provider-and-spend-cap.md): one retry per provider and failover are now allowed, and the per-invoice call budget still holds.* One call per invoice, plus one repair call only when the first reply does not parse. A budget of three is enforced in code, and a failed call holds the invoice.
 5. **Strict replies.** Where a model supports JSON Schema output, the schema is requested. Every reply is validated locally against the strict schema either way, and an invalid reply is never used.
 6. **Data.** Real invoices reach a model only after the operator confirms that provider's zero-retention terms. Free-tier identifiers are refused for real invoices. The labelled evaluation uses fictional invoices only.
 7. **Measure before claiming.** Changing a provider or a model means re-running the labelled evaluation in live mode and recording the result in the test log before any claim is made.
-8. **Few calls to Meta.** On the user's instruction (2026-11-10), the Meta API is used for probes only, never for the labelled evaluation. Each probe is one call with a small prompt, and the number of probes is recorded in the test log.
+8. **Few calls to Meta.** *Superseded by [0008](0008-meta-full-provider-and-spend-cap.md):* Meta is a full provider under a hard $3 total spend cap enforced in code. On the user's instruction (2026-11-10), the Meta API was used for probes only, until the owner confirmed full use on 2026-11-12.
 9. **Pacing.** A live run may space its calls with `--min-interval-ms`, so free tiers are not overrun by a burst. The spacing is a setting of the run and is recorded with its result.
 
 ## Alternatives considered

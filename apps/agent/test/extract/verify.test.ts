@@ -298,22 +298,31 @@ describe('verifyInvoice on amounts', () => {
     });
   });
 
-  it('refuses a South African space-grouped amount with a decimal comma, as an amount-format hold', () => {
+  it('reads a South African space-grouped amount with a decimal comma, as the same amount', () => {
     expect(total('12 345,67', 'Total due: R 12 345,67', 'Total due: R 12 345,67')).toMatchObject({
-      status: 'AMBIGUOUS',
-      reason: 'AMOUNT_FORMAT',
+      status: 'EXACT',
+      value: { printed: '12 345,67', canonical: '12345.67', minor: 1_234_567 },
     });
   });
 
-  it('refuses a European amount with a decimal comma', () => {
+  it('reads a European amount with a dot thousands mark and a decimal comma', () => {
     expect(total('12.345,67', 'Total: 12.345,67', 'Total: 12.345,67')).toMatchObject({
-      reason: 'AMOUNT_FORMAT',
+      status: 'EXACT',
+      value: { canonical: '12345.67', minor: 1_234_567 },
     });
   });
 
-  it('refuses more decimal places than the currency has', () => {
+  it('holds an amount with three decimal places, which may be thousands or decimals', () => {
     expect(total('10.555', 'Total due: 10.555', 'Total due: 10.555')).toMatchObject({
-      reason: 'AMOUNT_FORMAT',
+      status: 'AMBIGUOUS',
+      reason: 'AMOUNT_AMBIGUOUS',
+    });
+  });
+
+  it('holds a comma thousands amount with no decimal part, which may be a decimal in another country', () => {
+    expect(total('12,500', 'Total due: 12,500', 'Total due: 12,500')).toMatchObject({
+      status: 'AMBIGUOUS',
+      reason: 'AMOUNT_AMBIGUOUS',
     });
   });
 
