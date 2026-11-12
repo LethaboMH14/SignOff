@@ -12,6 +12,7 @@ import { assertOutsideRepository, defaultLocalDir } from '../../../../packages/x
 
 import { type ApiContext, type WardenPort } from './api.js';
 import { type ConsoleMode, createConsoleServer } from './app.js';
+import { resolveConsoleMode } from './mode.js';
 import { type Operator, loadOperators } from './auth/operators.js';
 import { LoginGuard, SessionStore } from './auth/sessions.js';
 import { type ReceiptLedger, TESTNET_EXPLORER } from './receipt.js';
@@ -25,13 +26,6 @@ import { type ReceiptLedger, TESTNET_EXPLORER } from './receipt.js';
 const LOOPBACK = new Set(['127.0.0.1', 'localhost', '::1']);
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, '..', '..', '..', '..');
-
-function modeOf(text: string): ConsoleMode {
-  if (text === 'simulated' || text === 'live') {
-    return text;
-  }
-  throw new RangeError('SIGNOFF_CONSOLE_MODE must be simulated or live');
-}
 
 function portOf(text: string): number {
   const port = Number(text);
@@ -47,7 +41,9 @@ function secretOf(path: string): Buffer {
   return Buffer.from(readFileSync(path, 'utf8').trim(), 'base64');
 }
 
-const mode = modeOf(process.env['SIGNOFF_CONSOLE_MODE'] ?? 'live');
+// The live Warden is the default. A fixture replay needs SIGNOFF_CONSOLE_DEV_FIXTURES=1 (see mode.ts).
+const modeDecision = resolveConsoleMode(process.env);
+const mode: ConsoleMode = modeDecision.mode;
 const transitionsPath = resolve(
   process.env['SIGNOFF_CONSOLE_TRANSITIONS'] ?? 'apps/agent/state/agent-log.jsonl',
 );
@@ -151,7 +147,7 @@ const api: ApiContext = {
     tokenIssuer: process.env['SIGNOFF_TOKEN_ISSUER'] ?? null,
     rlusdIssuer: process.env['SIGNOFF_RLUSD_ISSUER'] ?? null,
     explorerBase: process.env['SIGNOFF_EXPLORER_BASE'] ?? TESTNET_EXPLORER,
-    demoRandPerUnit: process.env['SIGNOFF_DEMO_RAND_PER_UNIT'] ?? null,
+    demoRandPerUnit: modeDecision.demoRandPerUnit,
   },
 };
 
