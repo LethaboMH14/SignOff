@@ -170,11 +170,19 @@ export async function pollOnce(
   return next;
 }
 
-/** Rejects if `work` does not settle within `ms`. The stalled work is left to finish or fail on its own connection. */
+/** A mail check or connection that did not finish in time. Its connection can no longer be trusted. */
+export class StallError extends Error {
+  constructor(ms: number) {
+    super(`the mail server did not answer within ${String(ms / 1000)} seconds`);
+    this.name = 'StallError';
+  }
+}
+
+/** Rejects with a StallError if `work` does not settle within `ms`. The stalled work is left to finish or fail on its own. */
 export function withTimeout<T>(work: Promise<T>, ms: number): Promise<T> {
   return new Promise<T>((resolve, reject) => {
     const timer = setTimeout(() => {
-      reject(new Error(`the mail server did not answer within ${String(ms / 1000)} seconds`));
+      reject(new StallError(ms));
     }, ms);
     work.then(
       (value) => {

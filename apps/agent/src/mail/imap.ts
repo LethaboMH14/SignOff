@@ -22,10 +22,15 @@ export function isAuthFailure(error: unknown): boolean {
   );
 }
 
+/** A connection that sends nothing for this long is closed by the library, so a stalled server is noticed. */
+export const SOCKET_TIMEOUT_MS = 60_000;
+
 /** The mailbox over IMAP with TLS. Every call takes the INBOX lock for its own duration. */
 export async function connectImap(settings: ImapSettings): Promise<{
   readonly port: MailboxPort;
   readonly close: () => Promise<void>;
+  /** False once the library or the server has closed the connection. */
+  readonly usable: () => boolean;
 }> {
   const client = new ImapFlow({
     host: settings.host,
@@ -33,10 +38,11 @@ export async function connectImap(settings: ImapSettings): Promise<{
     secure: true,
     auth: { user: settings.user, pass: settings.password },
     logger: false,
+    socketTimeout: SOCKET_TIMEOUT_MS,
   });
   // A dropped connection (for example ECONNRESET from the server) is emitted as an 'error' event. Without a listener
   // Node ends the process, and the launcher then stops the whole demo (seen on 13 Nov). The operation in progress
-  // fails or times out instead, and the watcher's next check opens a fresh connection.
+  // fails, and the connection is no longer usable, so the keeper opens a new one.
   client.on('error', (error: unknown) => {
     const code = (error as { code?: unknown }).code;
     process.stderr.write(`mail connection error: ${typeof code === 'string' ? code : 'unknown'}\n`);
@@ -75,6 +81,7 @@ export async function connectImap(settings: ImapSettings): Promise<{
 
   return {
     port,
+    usable: () => client.usable,
     // LOGOUT waits for the server. On a stalled connection it would never answer, so it gets a few seconds, and then
     // the socket is closed regardless (the hang this watcher was rebuilt to avoid).
     close: async () => {

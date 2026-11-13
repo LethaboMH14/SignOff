@@ -26,12 +26,18 @@ Every command runs from the repository root. Ledger checks use XRPL Testnet; Tes
 | 12 | Live console refuses signed-out reads and cross-site control | `curl` `/api/desk`, `/api/session`, POST `/api/control/pause` | 401 | PASS: 401, 401, 401; CSP, `X-Frame-Options: DENY`, `nosniff`, `no-referrer` on pages |
 | 13 | Public simulated console | `curl` `/`, `/api/health`, `/api/desk` | 200, simulated, 401 | PASS: 200, `{"mode":"simulated"}`, 401. **Gap:** the CDN-served pages lacked the CSP and frame headers the Node server sends; fixed in `deploy/console/vercel-output-config.json`, redeploy pending the owner's approval |
 
+## Fixed after the 13 November review (the code-review findings)
+
+| Finding | Fix |
+|---|---|
+| The watcher signed in to Gmail every 5 seconds | One connection is kept and reused; a socket timeout of 60 s closes a silent one (`keeper.ts`, `imap.ts`) |
+| A stalled check could overlap the next one | A new check waits until the abandoned one ends (`keeper.ts`) |
+| Prepared invoices were also payable by the local Warden | Their records are withdrawn from the local Warden after the bundle is made; eight already bundled were withdrawn (`hosted-bundle.ts`) |
+| Evidence files were rewritten without a lock | Every rewrite holds an evidence lock folder, with a stale-lock timeout (`demo-invoice.ts`) |
+
 ## Recorded, not fixed before the deadline
 
 | Item | Risk | Plan |
 |---|---|---|
-| The mail watcher logs in to Gmail every 5 seconds | Gmail may throttle, so an emailed invoice is picked up late | One connection with ImapFlow's `socketTimeout`, reconnect on close |
-| Prepared invoices for the hosted Warden also have local Warden records | Switching back to the local Warden could pay one twice; only the agent's log prevents it | One Warden per spending account; a shared payment journal |
-| Evidence files are rewritten without a lock | Two writers at once can drop one invoice's records (held, never paid) | A lock or an append-only evidence log |
 | No HSTS header from Railway's edge | A first plain-http visit could be intercepted | The Warden is called by the agent over https only; add HSTS at the app or a custom domain |
 | Warden key on a Railway volume | Project members can reach it | Key service or HSM (P2) |

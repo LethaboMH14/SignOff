@@ -10,16 +10,19 @@ const state: { search: number[] | false; released: number; logoutHangs: boolean 
   logoutHangs: false,
 };
 
-const clients: EventEmitter[] = [];
+const clients: (EventEmitter & { usable: boolean })[] = [];
+const optionsSeen: { socketTimeout?: number }[] = [];
 
 vi.mock('imapflow', async () => {
   const { EventEmitter: Emitter } = await import('node:events');
   return {
     ImapFlow: class extends Emitter {
       mailbox: { uidNext: number } | false = { uidNext: 10 };
-      constructor(options: { secure: boolean; logger: unknown }) {
+      usable = true;
+      constructor(options: { secure: boolean; logger: unknown; socketTimeout?: number }) {
         super();
         calls.push(`new secure=${String(options.secure)} logger=${String(options.logger)}`);
+        optionsSeen.push(options);
         clients.push(this);
       }
       close(): void {
@@ -64,7 +67,8 @@ vi.mock('imapflow', async () => {
   };
 });
 
-const { connectImap, isAuthFailure, LOGOUT_LIMIT_MS } = await import('../../src/mail/imap.js');
+const { connectImap, isAuthFailure, LOGOUT_LIMIT_MS, SOCKET_TIMEOUT_MS } =
+  await import('../../src/mail/imap.js');
 
 const SETTINGS = { host: 'imap.example', port: 993, user: 'u@example.com', password: 'p' };
 
@@ -129,6 +133,22 @@ describe('the IMAP adapter', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it('asks the library to close a connection that sends nothing for a minute', async () => {
+    await connectImap(SETTINGS);
+    expect(optionsSeen.at(-1)?.socketTimeout).toBe(SOCKET_TIMEOUT_MS);
+    expect(SOCKET_TIMEOUT_MS).toBe(60_000);
+  });
+
+  it('reports whether the library still considers the connection usable', async () => {
+    const { usable } = await connectImap(SETTINGS);
+    expect(usable()).toBe(true);
+    const client = clients.at(-1);
+    if (client !== undefined) {
+      client.usable = false;
+    }
+    expect(usable()).toBe(false);
   });
 
   it('tells a refused password apart from a network failure', () => {

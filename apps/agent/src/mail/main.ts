@@ -2,8 +2,9 @@ import { resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 
 import { connectImap, type ImapSettings, isAuthFailure } from './imap.js';
+import { createMailboxKeeper } from './keeper.js';
 import { sendersOf } from './admit.js';
-import { type MailboxPort, pollOnce, type WatchOptions, withTimeout } from './watch.js';
+import { pollOnce, type WatchOptions } from './watch.js';
 
 /**
  * The mailbox watcher, a process of its own. It holds the mailbox password and nothing else: no ledger key, no Warden
@@ -11,8 +12,8 @@ import { type MailboxPort, pollOnce, type WatchOptions, withTimeout } from './wa
  *
  *   tsx apps/agent/src/mail/main.ts --inbox <dir> --log <file>
  *
- * Each check opens its own connection, does its work and closes it. A long-lived connection stopped answering during
- * testing with no error, so the watcher now starts clean every time.
+ * One connection is kept and reused between checks (see keeper.ts), because every sign-in is counted by Gmail. A
+ * connection the server closes, or a check that stalls, is replaced.
  *
  * Settings come from the environment: SIGNOFF_MAIL_USER, SIGNOFF_MAIL_PASSWORD (an app password),
  * SIGNOFF_MAIL_ALLOWED_SENDERS (comma-separated), and optionally SIGNOFF_MAIL_HOST (imap.gmail.com), SIGNOFF_MAIL_PORT
@@ -30,23 +31,6 @@ function need(name: string): string {
     throw new Error(`${name} is not set`);
   }
   return value;
-}
-
-/** Runs one piece of work on a fresh connection, then closes the connection, whatever happened. */
-async function onFreshConnection<T>(
-  settings: ImapSettings,
-  work: (port: MailboxPort) => Promise<T>,
-): Promise<T> {
-  const mailbox = await withTimeout(connectImap(settings), CHECK_TIMEOUT_MS);
-  const running = work(mailbox.port);
-  try {
-    return await withTimeout(running, CHECK_TIMEOUT_MS);
-  } finally {
-    await mailbox.close();
-    // A timed-out check must not overlap the next one, which would handle the same message twice. Closing the
-    // connection makes its pending calls fail, so this wait is short.
-    await withTimeout(running, CHECK_TIMEOUT_MS).catch(() => undefined);
-  }
 }
 
 async function main(): Promise<void> {
@@ -74,10 +58,12 @@ async function main(): Promise<void> {
     user: need('SIGNOFF_MAIL_USER'),
     password: need('SIGNOFF_MAIL_PASSWORD'),
   };
+  const keeper = createMailboxKeeper(() => connectImap(settings), CHECK_TIMEOUT_MS);
 
   // The first connection proves the sign-in works and sets the starting point. Mail that arrives after this is read.
-  let fromUid = await onFreshConnection(settings, (mailbox) => mailbox.nextUid()).catch(
-    (error: unknown) => {
+  let fromUid = await keeper
+    .check((mailbox) => mailbox.nextUid())
+    .catch((error: unknown) => {
       // The server's reason says why it refused (for example "Invalid credentials"). The password is never printed.
       const reason = error instanceof Error ? error.message : 'unknown';
       const detail = (error as { responseText?: unknown }).responseText;
@@ -91,8 +77,7 @@ async function main(): Promise<void> {
       throw new Error(
         `the mail server refused the sign-in (${why}). SIGNOFF_MAIL_PASSWORD must be the 16-letter Google app password for SIGNOFF_MAIL_USER, not the normal password. Nothing was started.`,
       );
-    },
-  );
+    });
   process.stdout.write(
     `mail watcher running: ${String(options.policy.allowedSenders.size)} allowed sender(s); only email that arrives from now on is read\n`,
   );
@@ -107,7 +92,7 @@ async function main(): Promise<void> {
 
   while (!state.stopped) {
     try {
-      fromUid = await onFreshConnection(settings, (mailbox) => pollOnce(mailbox, fromUid, options));
+      fromUid = await keeper.check((mailbox) => pollOnce(mailbox, fromUid, options));
     } catch (error) {
       // A failed check changes nothing on disk; the next check tries again. The message is short and holds no secret.
       process.stderr.write(
@@ -118,6 +103,7 @@ async function main(): Promise<void> {
       setTimeout(done, POLL_MS);
     });
   }
+  await keeper.close();
 }
 
 main().catch((error: unknown) => {

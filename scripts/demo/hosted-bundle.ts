@@ -15,7 +15,7 @@ import { fileURLToPath } from 'node:url';
 import { gzipSync } from 'node:zlib';
 
 import { assertOutsideRepository, defaultLocalDir } from '../../packages/xrpl/src/node.js';
-import { writeDemoInvoice } from './demo-invoice.js';
+import { withdrawFromLocalWarden, withEvidenceLock, writeDemoInvoice } from './demo-invoice.js';
 
 const repoRoot = resolve(fileURLToPath(new URL('.', import.meta.url)), '..', '..');
 
@@ -66,11 +66,13 @@ async function main(): Promise<void> {
   }
 
   const made: string[] = [];
+  const fingerprints: string[] = [];
   for (let index = 0; index < Number(countText); index += 1) {
     const invoice = await writeDemoInvoice(Number(zarText.replace('.', '')), localDir, {
       delivery: 'outbox',
     });
     made.push(invoice.file);
+    fingerprints.push(invoice.fingerprint);
     // Invoice numbers are stamped to the second, so each needs its own second.
     await new Promise((done) => {
       setTimeout(done, 1100);
@@ -78,13 +80,26 @@ async function main(): Promise<void> {
   }
 
   const wardenDir = join(localDir, 'warden');
-  const files: Record<string, string> = {};
-  for (const name of BUNDLE_FILES) {
-    const content = readFileSync(join(wardenDir, name), 'utf8');
-    // eslint-disable-next-line security/detect-object-injection -- name comes from the fixed BUNDLE_FILES list
-    files[name] = name === 'warden-config.json' ? hostedConfig(content) : content;
-  }
+  // The bundle is read under the evidence lock, so no record is read while another writer is rewriting it.
+  const files = withEvidenceLock(localDir, () => {
+    const read: Record<string, string> = {};
+    for (const name of BUNDLE_FILES) {
+      const content = readFileSync(join(wardenDir, name), 'utf8');
+      // eslint-disable-next-line security/detect-object-injection -- name comes from the fixed BUNDLE_FILES list
+      read[name] = name === 'warden-config.json' ? hostedConfig(content) : content;
+    }
+    return read;
+  });
   const bundle = packBundle(files);
+  // The hosted Warden holds these invoices' records from now on. The local Warden must not hold them as well, or it
+  // could pay an invoice the hosted Warden has already paid. Without its records it holds the invoice for missing
+  // evidence instead.
+  const withdrawn = withdrawFromLocalWarden(localDir, new Set(fingerprints));
+  if (withdrawn !== made.length) {
+    throw new Error(
+      `expected to withdraw ${String(made.length)} invoices from the local Warden but found ${String(withdrawn)}; no bundle was written`,
+    );
+  }
   const outDir = join(localDir, 'hosted');
   mkdirSync(outDir, { recursive: true });
   const outPath = join(outDir, 'warden-bundle.b64');
@@ -94,6 +109,7 @@ async function main(): Promise<void> {
     `${JSON.stringify(
       {
         invoicesInOutbox: made,
+        localRecordsWithdrawn: withdrawn,
         bundle: outPath,
         bundleCharacters: bundle.length,
         next: 'Paste the file content into the Railway variable SIGNOFF_WARDEN_BUNDLE yourself (docs/HOSTED-WARDEN.md). Do not paste it into chat.',
