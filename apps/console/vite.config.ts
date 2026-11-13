@@ -11,6 +11,8 @@ export default defineConfig({
   build: {
     outDir: '../dist/web',
     emptyOutDir: true,
+    // Fonts stay separate files. Inlined data: fonts would be blocked by the console's content security policy.
+    assetsInlineLimit: 0,
   },
   server: {
     proxy: {

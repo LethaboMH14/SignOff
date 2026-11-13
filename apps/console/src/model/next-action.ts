@@ -56,6 +56,10 @@ const NEXT_ACTIONS: ReadonlyMap<string, string> = new Map<string, string>([
     'Get the supplier approved by two operators in the Warden, then propose the invoice again.',
   ],
   [
+    'SUPPLIER_CREDENTIAL_MISSING',
+    'Ask the supplier to accept the credential the buyer requires on the ledger, then propose the invoice again. Nothing was signed.',
+  ],
+  [
     'SIGNER_CHANGE_NOT_APPROVED',
     'A change to the signing setup needs two approvals. Get both before trying again.',
   ],
@@ -179,6 +183,60 @@ const NEXT_ACTIONS: ReadonlyMap<string, string> = new Map<string, string>([
     'OUTCOME_UNKNOWN',
     'The outcome is not known yet. Wait for the reconciler to settle it. Do not pay the invoice again.',
   ],
+  [
+    'ALREADY_HANDLED',
+    'No action is needed. The invoice was handled in an earlier run and is not paid again.',
+  ],
+  ['SCREEN_HOLD', 'A person checks the flagged invoice text before anything else happens.'],
+  [
+    'INTERNAL_STATE',
+    'Ask an operator to check the agent log for this invoice before proposing it again.',
+  ],
+  [
+    'CURRENCY_NOT_PAYABLE',
+    'Check the invoice currency with the supplier, then propose the invoice again.',
+  ],
+  ['FX_UNAVAILABLE', 'Wait until a rate is available, then propose the invoice again.'],
+  [
+    'WARDEN_REFUSED_REQUEST',
+    'Ask an operator to check why the Warden refused the request before proposing it again.',
+  ],
+  [
+    'PROPOSE_OUTCOME_UNKNOWN',
+    'Ask an operator to check the ledger for this invoice before anything else is done.',
+  ],
+  [
+    'ATTEMPT_ID_MISMATCH',
+    'Ask an operator to check the attempt records before anything else is done.',
+  ],
+  [
+    'WARDEN_NO_TRANSACTION',
+    'Ask an operator to check the Warden log before proposing the invoice again.',
+  ],
+  [
+    'SENT',
+    'No action is needed yet. Wait for the ledger to validate the payment. Do not pay the invoice again.',
+  ],
+  [
+    'WARDEN_REFUSED_COSIGN',
+    'Ask an operator to check the Warden decision before proposing the invoice again.',
+  ],
+  [
+    'RESULT_MISMATCH',
+    'Ask an operator to check the ledger result against the invoice. Do not pay the invoice again.',
+  ],
+  [
+    'RESULT_UNREADABLE',
+    'Ask an operator to check the ledger result. Do not pay the invoice again.',
+  ],
+  ['PAID', 'No action is needed. The ledger has validated the payment.'],
+  ['MATCHED', 'No action is needed. The payment is paid and reconciled.'],
+  [
+    'WARDEN_HELD_AT_SUBMISSION',
+    'Ask an operator to check the Warden decision before proposing the invoice again.',
+  ],
+  ['OUTCOME_PENDING', 'Wait for the ledger outcome to be known. Do not pay the invoice again.'],
+  ['WARDEN_HOLD', 'Open the invoice to see the reason the Warden gave, then follow its next step.'],
 ]);
 
 /** The next step for a reason code, or a plain statement that none is written yet. Never an invented step. */

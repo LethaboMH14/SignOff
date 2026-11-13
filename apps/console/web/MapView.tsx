@@ -7,7 +7,7 @@ import { type ConnectionStatus, useEventStream } from './useEventStream.js';
 
 const STATUS_WORDS: Readonly<Record<ConnectionStatus, string>> = {
   connecting: 'Connecting',
-  live: 'Live',
+  live: 'Connected',
   reconnecting: 'Reconnecting',
 };
 
@@ -19,8 +19,29 @@ const STATUS_GLYPHS: Readonly<Record<ConnectionStatus, string>> = {
 
 const MODE_WORDS: Readonly<Record<string, string>> = {
   simulated: 'SIMULATED replay of a labelled run',
-  live: 'Live agent run',
+  live: 'Live data from the agent log',
 };
+
+const SAST_CLOCK = new Intl.DateTimeFormat('en-ZA', {
+  timeZone: 'Africa/Johannesburg',
+  hour: '2-digit',
+  minute: '2-digit',
+  second: '2-digit',
+  hourCycle: 'h23',
+});
+
+/** When the newest agent move happened, in South African time, or a plain statement that there is none yet. */
+export function lastMoveLabel(moves: readonly Movement[]): string {
+  let newest: string | null = null;
+  for (const move of moves) {
+    if (newest === null || move.at > newest) {
+      newest = move.at;
+    }
+  }
+  return newest === null
+    ? 'No agent move yet'
+    : `Last agent move ${SAST_CLOCK.format(new Date(newest))} SAST`;
+}
 
 /** The agents' map and the feed of what happened, from the console's event stream. */
 export function MapView() {
@@ -38,6 +59,7 @@ export function MapView() {
           {STATUS_WORDS[stream.status]}
         </span>
         <span className="badge">{modeWord}</span>
+        <span className="badge">{lastMoveLabel(stream.board.history)}</span>
         {stream.damaged > 0 ? (
           <span className="badge badge-warn">
             <span aria-hidden="true">!</span> {String(stream.damaged)} damaged lines skipped

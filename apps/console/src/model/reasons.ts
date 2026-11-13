@@ -31,6 +31,10 @@ const REASON_TEXT: ReadonlyMap<string, string> = new Map<string, string>([
   ],
   ['UNSUPPORTED_TRANSACTION', 'This kind of payment is not allowed.'],
   ['SUPPLIER_NOT_APPROVED', 'The supplier is not approved yet.'],
+  [
+    'SUPPLIER_CREDENTIAL_MISSING',
+    'The supplier does not hold the accepted credential the buyer requires, so the payment waits.',
+  ],
   ['SIGNER_CHANGE_NOT_APPROVED', 'A change to the signing setup needs two approvals.'],
   ['VERIFICATION_FAILED', 'A field could not be checked against its quote.'],
   ['FIELD_NOT_STATED', 'A field is not stated in the invoice text.'],
@@ -69,6 +73,42 @@ const REASON_TEXT: ReadonlyMap<string, string> = new Map<string, string>([
   ['PROPOSAL_INVALID', 'The payment proposal did not match its schema.'],
   ['SIGNING_FAILED', 'The signature could not be made, so nothing was sent.'],
   ['OUTCOME_UNKNOWN', 'The outcome is not known yet, so the invoice is not treated as paid.'],
+  ['ALREADY_HANDLED', 'This invoice was handled in an earlier run, so it is not processed again.'],
+  ['SCREEN_HOLD', 'The screen held the invoice text for a person to check.'],
+  ['INTERNAL_STATE', 'An internal check failed, so the invoice is held. Nothing was signed.'],
+  ['CURRENCY_NOT_PAYABLE', 'The invoice currency cannot be paid from this account.'],
+  ['FX_UNAVAILABLE', 'No exchange rate is available right now, so the invoice is held.'],
+  [
+    'WARDEN_REFUSED_REQUEST',
+    'The Warden did not accept the payment request, so nothing was signed.',
+  ],
+  [
+    'PROPOSE_OUTCOME_UNKNOWN',
+    'The Warden gave no clear answer to the proposal, so a person needs to check it.',
+  ],
+  [
+    'ATTEMPT_ID_MISMATCH',
+    'The Warden answered for a different attempt, so its answer is not used and a person checks it.',
+  ],
+  ['WARDEN_NO_TRANSACTION', 'The Warden returned no transaction to sign, so nothing was sent.'],
+  ['SENT', 'The payment was submitted to the ledger and is waiting for validation.'],
+  [
+    'WARDEN_REFUSED_COSIGN',
+    'The Warden refused to add the second signature, so the payment was not sent.',
+  ],
+  [
+    'RESULT_MISMATCH',
+    'The ledger result does not match what was expected, so a person needs to check it.',
+  ],
+  ['RESULT_UNREADABLE', 'The ledger result could not be read, so a person needs to check it.'],
+  ['PAID', 'The ledger validated the payment.'],
+  ['MATCHED', 'The validated payment matches the invoice and is reconciled.'],
+  ['WARDEN_HELD_AT_SUBMISSION', 'The Warden held the payment at submission, so it was not sent.'],
+  [
+    'OUTCOME_PENDING',
+    'The ledger outcome is still pending, so the invoice is not treated as paid yet.',
+  ],
+  ['WARDEN_HOLD', 'The Warden is holding this invoice for a person to check.'],
 ]);
 
 export function reasonTextOf(code: string): string {

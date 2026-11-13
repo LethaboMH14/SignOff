@@ -1,7 +1,7 @@
 /*
- * The operator console's layout: the shell, the logo and header, the three columns of the payment desk, the sign-in page,
- * the opening sequence and the screen transitions. Layout works from 375 px wide upward: long text wraps, and no page
- * scrolls sideways. Every state shows its symbol and its words.
+ * The operator console's layout: the shell, the logo and header, the payment desk (a summary strip, three tabs and their
+ * sections), the sign-in page, the opening sequence and the screen transitions. Layout works from 375 px wide upward:
+ * labels stay on one line, long text wraps, and no page scrolls sideways. Every state shows its symbol and its words.
  */
 
 /* The logo */
@@ -82,7 +82,9 @@
   background: rgba(255, 255, 255, 0.12);
 }
 
-.views button[aria-pressed='true'] {
+/* The selected view keeps its look under the pointer, so its label never sinks into the dark bar. */
+.views button[aria-pressed='true'],
+.views button[aria-pressed='true']:hover:not(:disabled) {
   background: #fff;
   color: var(--ink);
   border-color: #fff;
@@ -184,23 +186,31 @@
   overflow-wrap: anywhere;
 }
 
-/* The payment desk: three columns */
+/* The payment desk: a summary strip, three tabs, and one section at a time. The counts stay in view on every tab. */
 .desk {
-  min-width: 0;
-}
-
-.desk-grid {
-  display: grid;
-  grid-template-columns: 260px minmax(0, 1fr) 360px;
-  gap: 14px;
-  align-items: start;
-}
-
-.col {
   display: grid;
   gap: 14px;
   min-width: 0;
-  align-content: start;
+}
+
+.desk > * {
+  min-width: 0;
+}
+
+.desk > .mode-label {
+  justify-self: start;
+  margin: 0;
+}
+
+.desk-panel {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  animation: view-in-forward 200ms ease-out both;
+}
+
+.desk-panel[hidden] {
+  display: none;
 }
 
 .desk .panel {
@@ -211,41 +221,135 @@
   margin-bottom: 10px;
 }
 
+.panel-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 16px;
+  margin-bottom: 10px;
+}
+
+.panel-head h2 {
+  margin-bottom: 0;
+}
+
 .muted {
   color: var(--ink-3);
   font-size: 13px;
 }
 
-.hero {
-  background: radial-gradient(ellipse at 50% 40%, #f7f6f1 0%, #ecebe4 60%, #e3e2da 100%);
+/* Tabs: a segmented control. The selected tab is a raised card on the tab bar. */
+.desk-tabs {
+  justify-self: start;
+  display: flex;
+  gap: 4px;
+  max-width: 100%;
+  padding: 4px;
+  background: var(--stage);
+  border: 1px solid var(--line);
+  border-radius: 999px;
 }
 
-.agent-flow {
-  display: block;
-  width: 100%;
-  height: 340px;
+.desk-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 8px 16px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-2);
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
-.hero .lede {
-  font-size: 13.5px;
-  max-width: 70ch;
+.desk-tab:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.5);
+  color: var(--ink);
+}
+
+.desk-tab[aria-selected='true'],
+.desk-tab[aria-selected='true']:hover:not(:disabled) {
+  background: var(--card);
+  border-color: var(--line);
+  color: var(--ink);
+  box-shadow:
+    0 1px 2px rgba(20, 33, 61, 0.1),
+    0 8px 16px -12px rgba(20, 33, 61, 0.5);
+}
+
+.desk-tab-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 24px;
+  height: 22px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: var(--ink-3);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.desk-tab[aria-selected='true'] .desk-tab-count {
+  background: var(--ink);
+}
+
+/* Queue and control: the sections sit in two columns on wide screens, and each column always holds content. */
+.queue-layout {
+  display: grid;
+  gap: 14px;
+  align-items: start;
+  min-width: 0;
+}
+
+.control-layout {
+  display: grid;
+  gap: 14px;
+  align-items: stretch;
+  min-width: 0;
+}
+
+.queue-main,
+.queue-side {
+  display: grid;
+  gap: 14px;
+  align-content: start;
+  min-width: 0;
 }
 
 .featured {
   display: grid;
   gap: 12px;
+  box-shadow: inset 6px 0 0 var(--accent, var(--track));
 }
 
 .featured-head {
   display: flex;
   align-items: center;
   gap: 12px;
+  min-width: 0;
+}
+
+.featured-head > div {
+  display: grid;
+  gap: 6px;
+  justify-items: start;
+  min-width: 0;
 }
 
 .featured h2 {
+  margin-bottom: 0;
   font-size: 22px;
   letter-spacing: -0.01em;
-  margin-bottom: 6px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .facts {
@@ -269,7 +373,7 @@
   margin: 0;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
-  overflow-wrap: anywhere;
+  white-space: nowrap;
 }
 
 .actions {
@@ -283,11 +387,45 @@
   color: var(--ink-2);
 }
 
-/* Links in the cards get a 44 px tap area, without changing how the text looks */
-.col a {
-  display: inline-flex;
-  align-items: center;
+.hero {
+  background: radial-gradient(ellipse at 50% 40%, #f7f6f1 0%, #ecebe4 60%, #e3e2da 100%);
+}
+
+.hero .lede {
+  font-size: 13.5px;
+  max-width: 70ch;
+}
+
+.agent-flow {
+  display: block;
+  width: 100%;
+  height: 340px;
+}
+
+/* In the hero the flow keeps its own proportions and sits centred, with the lede beneath it. */
+.hero .agent-flow {
+  width: min(100%, 440px);
+  height: auto;
+  aspect-ratio: 560 / 520;
+  margin: 0 auto;
+}
+
+/* A link that acts like a button: link colour, with the same 44 px tap area as the other controls. */
+.link-button {
   min-height: 44px;
+  padding: 8px 4px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--verified);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.link-button:hover:not(:disabled) {
+  background: transparent;
+  color: var(--ink);
 }
 
 /* Symbols and chips: a symbol and words for every state, with colour as a second signal */
@@ -369,7 +507,7 @@
   animation: tick-draw 300ms ease-out both;
 }
 
-/* Tiles: the counts by state */
+/* The summary strip: the counts by state. Six in a row on wide screens, three on tablets, two on phones. */
 .tiles {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -379,73 +517,89 @@
   margin: 0;
 }
 
+@media (min-width: 1200px) {
+  .tiles {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}
+
 .tile {
   background: var(--card);
-  border-radius: 18px;
-  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-top: 4px solid var(--accent, var(--track));
+  border-radius: 16px;
+  padding: 12px 14px;
   min-width: 0;
-  border-top: 6px solid var(--line);
-}
-
-.tile-paid {
-  border-top-color: var(--verified);
-}
-
-.tile-held,
-.tile-needs-a-person {
-  border-top-color: var(--exception);
+  box-shadow: 0 12px 22px -20px rgba(20, 33, 61, 0.7);
 }
 
 .tile-number {
-  font-size: 34px;
-  font-weight: 500;
+  font-size: 30px;
+  font-weight: 600;
   letter-spacing: -0.02em;
   line-height: 1.1;
   font-variant-numeric: tabular-nums;
 }
 
 .tile-label {
-  margin-top: 6px;
-}
-
-/* Lists: all invoices, next in the queue, and the history */
-.invoice-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: 4px;
-}
-
-.invoice-list li {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 10px;
-  align-items: center;
-  padding: 8px;
-  border-radius: 14px;
-}
-
-.invoice-list li.on {
-  background: var(--card);
-}
-
-.invoice-line {
-  display: grid;
+  margin: 6px 0 0;
   min-width: 0;
 }
 
-.invoice-line b {
-  font-weight: 600;
-  font-size: 14px;
-  overflow-wrap: anywhere;
+/* One accent colour per state: the featured invoice, the summary tiles and the history cards share it. */
+.tile-held,
+.tile-needs-a-person,
+.tile-quarantined,
+.accent-held,
+.accent-needs-a-person,
+.accent-quarantined,
+.state-held,
+.state-needs-a-person,
+.state-quarantined {
+  --accent: var(--exception);
 }
 
-.invoice-line small {
-  color: var(--ink-3);
-  font-size: 12px;
+.tile-paid,
+.accent-paid,
+.state-paid {
+  --accent: var(--verified);
 }
 
+.tile-refused,
+.tile-failed,
+.accent-refused,
+.accent-failed,
+.state-refused,
+.state-failed {
+  --accent: var(--ink);
+}
+
+.tile-not-confirmed,
+.tile-not-paid,
+.accent-not-confirmed,
+.accent-not-paid,
+.state-not-confirmed,
+.state-not-paid {
+  --accent: var(--ink-3);
+}
+
+.tile-in-progress,
+.tile-received,
+.accent-in-progress,
+.accent-received,
+.state-in-progress,
+.state-received {
+  --accent: var(--track);
+}
+
+.featured-head .chip,
+.tile-label .chip,
+.next-list .chip,
+.history-head .chip {
+  flex: none;
+}
+
+/* The queue's next invoices */
 .next-list {
   list-style: none;
   margin: 0 0 8px;
@@ -456,26 +610,46 @@
 
 .next-list li {
   display: flex;
-  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
   gap: 8px;
+  min-width: 0;
   background: var(--card);
   border-radius: 14px;
   padding: 10px 12px;
   font-size: 14px;
 }
 
+.next-list li > span:first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Warden's limits: one row per limit, with a rule between the rows */
 .limits {
   display: grid;
-  gap: 8px;
+  gap: 0;
   margin: 10px 0 0;
 }
 
 .limits div {
   display: flex;
   justify-content: space-between;
+  align-items: baseline;
   gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.limits div:first-child {
+  padding-top: 0;
+}
+
+.limits div:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
 }
 
 .limits dt {
@@ -488,57 +662,96 @@
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   text-align: right;
+  white-space: nowrap;
 }
 
+.limit-unchanged {
+  color: var(--ink-3);
+}
+
+/* Invoice history: one card per invoice, in as many columns as fit the width. The card's accent is its state's colour. */
 .history {
   list-style: none;
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 8px;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+  gap: 12px;
 }
 
-.history li {
+.history-card {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 6px 10px;
-  align-items: center;
+  grid-template-rows: auto auto 1fr auto;
+  gap: 10px;
+  min-width: 0;
   background: var(--card);
-  border-radius: 16px;
-  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 14px;
+  box-shadow: inset 4px 0 0 var(--accent, var(--track));
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease;
 }
 
-.history-line {
-  display: grid;
+.history-card:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    inset 4px 0 0 var(--accent, var(--track)),
+    0 16px 28px -22px rgba(20, 33, 61, 0.7);
+}
+
+.history-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   min-width: 0;
 }
 
-.history-line b {
-  font-weight: 600;
-  overflow-wrap: anywhere;
+.history-ref {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.history-line small,
-.history-reason {
-  color: var(--ink-3);
-  font-size: 12px;
-  overflow-wrap: anywhere;
-}
-
-.history-state {
-  justify-self: end;
+.history-facts {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
 }
 
 .history-amount {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-variant-numeric: tabular-nums;
   font-weight: 600;
 }
 
+.history-time {
+  flex: none;
+  color: var(--ink-3);
+  font-size: 12.5px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.history-reason {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
 .history-actions {
-  justify-self: end;
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 8px;
 }
 
 .history-actions button {
@@ -546,14 +759,11 @@
   padding: 6px 14px;
 }
 
-.history-reason {
-  grid-column: 1 / -1;
-}
-
 .counts-line {
+  margin: 0;
   color: var(--ink-2);
   font-size: 13px;
-  margin-top: 14px;
+  font-variant-numeric: tabular-nums;
 }
 
 /* Forms: the password sheet, the limits and the sign-in fields */
@@ -605,6 +815,13 @@ input {
   padding: 0;
   display: grid;
   gap: 10px;
+}
+
+.receipt a,
+.invoice a {
+  color: var(--verified);
+  font-weight: 600;
+  text-underline-offset: 3px;
 }
 
 .move {
@@ -885,38 +1102,42 @@ input {
   animation: sheet-up 240ms ease-out both;
 }
 
-/* Narrower screens: two columns, then one. The invoices become a strip that scrolls inside its own box. */
-@media (max-width: 1099px) {
-  .desk-grid {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+/* Wide screens: the queue and the control sheet each take two columns. Narrower screens stack them. */
+@media (min-width: 900px) {
+  .queue-layout {
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
   }
 
-  .col-left {
+  /* Warden and Payments side by side, with the limits form across the full width and its three fields in a row. */
+  .control-layout {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .control-limits {
     grid-column: 1 / -1;
   }
 
-  .col-left .invoice-list {
-    display: flex;
-    overflow-x: auto;
-    gap: 8px;
-    padding-bottom: 4px;
+  .control-limits .limits-rule {
+    max-width: 70ch;
   }
 
-  .col-left .invoice-list li {
-    flex: 0 0 auto;
-    min-width: 210px;
+  .control-limits .limits-form {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: start;
+  }
+
+  .control-limits .limits-form > .limits-rule,
+  .control-limits .limits-form > .notice,
+  .control-limits .limits-form > button {
+    grid-column: 1 / -1;
+  }
+
+  .control-limits .limits-form > button {
+    justify-self: start;
   }
 }
 
 @media (max-width: 860px) {
-  .desk-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .col-left {
-    grid-column: auto;
-  }
-
   .signin-page {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -930,7 +1151,7 @@ input {
   }
 }
 
-/* Phones: the navigation becomes a bar at the foot of the screen, and the history stays in one column. */
+/* Phones: the navigation becomes a bar at the foot of the screen, the tabs share the width, and the summary strip has two columns. */
 @media (max-width: 719px) {
   body {
     padding-bottom: 104px;
@@ -941,8 +1162,9 @@ input {
     border-radius: 22px;
   }
 
+  /* On a phone the user chip has a row of its own, so it never covers the wordmark. */
   .site-head {
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .views {
@@ -993,13 +1215,24 @@ input {
     height: 300px;
   }
 
-  .history li {
-    grid-template-columns: minmax(0, 1fr);
+  .desk-tabs {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    width: 100%;
   }
 
-  .history-state,
-  .history-actions {
-    justify-self: start;
+  .desk-tab {
+    justify-content: center;
+    min-width: 0;
+    padding: 8px 6px;
+    font-size: 13px;
+    line-height: 1.25;
+    text-align: center;
+    white-space: normal;
+  }
+
+  .hero .agent-flow {
+    width: min(100%, 340px);
   }
 }
 

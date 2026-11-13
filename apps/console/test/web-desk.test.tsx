@@ -10,6 +10,8 @@ import {
   minorOf,
   moneyOf,
   sastOf,
+  shortSastOf,
+  tabAfter,
 } from '../web/DeskView.js';
 import { Login } from '../web/Login.js';
 import { slugOf, StateChip, symbolOf } from '../web/StateChip.js';
@@ -136,6 +138,7 @@ describe('the desk', () => {
     expect(simulated).toContain('SIMULATED: replay of a labelled run.');
     expect(simulated).not.toContain('Live run on Testnet');
     expect(deskOf(dataOf({ mode: 'live' }))).toContain('Live run on Testnet');
+    expect(deskOf(dataOf({ mode: 'live' }))).not.toContain('Test-issued token');
   });
 
   it('shows Paid only on the row that is Paid, and the reason words for the held row', () => {
@@ -233,6 +236,74 @@ describe('formatting', () => {
   it('counts a missing state as zero', () => {
     expect(countOf(counts({ Paid: 3 }), 'Paid')).toBe(3);
     expect(countOf(counts(), 'Held')).toBe(0);
+  });
+});
+
+describe('the desk tabs', () => {
+  it('opens on the queue, and keeps the other two sections behind their tabs', () => {
+    const markup = deskOf(dataOf({ mode: 'live' }));
+    expect(markup).toContain('role="tablist"');
+    expect(markup).toMatch(/id="desk-tab-queue"[^>]*aria-selected="true"/);
+    expect(markup).toMatch(/id="desk-tab-invoices"[^>]*aria-selected="false"/);
+    expect(markup).toMatch(/id="desk-tab-warden"[^>]*aria-selected="false"/);
+    expect(markup).not.toMatch(/id="desk-panel-queue"[^>]*hidden/);
+    expect(markup).toMatch(/id="desk-panel-invoices"[^>]*hidden=""/);
+    expect(markup).toMatch(/id="desk-panel-warden"[^>]*hidden=""/);
+  });
+
+  it('keeps the counts above the tabs, so they stay in view on every tab', () => {
+    const markup = deskOf(dataOf({ mode: 'live' }));
+    expect(markup.indexOf('aria-label="Counts by state"')).toBeLessThan(
+      markup.indexOf('role="tablist"'),
+    );
+  });
+
+  it('shows the count of invoices that need a person on the Queue tab, and the invoice count on Invoices', () => {
+    const markup = deskOf(dataOf({ mode: 'live' }));
+    expect(markup).toMatch(/id="desk-tab-queue"[\s\S]*?desk-tab-count">1</);
+    expect(markup).toMatch(/id="desk-tab-invoices"[\s\S]*?desk-tab-count">2</);
+  });
+
+  it('keeps the invoice history in the Invoices tab, and does not list the invoices a second time', () => {
+    const markup = deskOf(dataOf({ mode: 'live' }));
+    expect(markup).toMatch(/id="desk-panel-invoices"[^>]*hidden=""[\s\S]*id="invoice-history"/);
+    expect(markup).not.toContain('All invoices');
+  });
+
+  it('puts the password sheet at the top of the Warden tab, beside the change it confirms', () => {
+    const markup = deskOf(dataOf({ mode: 'live' }), PAUSE);
+    const sheet = markup.indexOf('aria-label="Confirm your password"');
+    expect(sheet).toBeGreaterThan(markup.indexOf('id="desk-panel-warden"'));
+    expect(sheet).toBeLessThan(markup.indexOf('class="control-layout"'));
+  });
+});
+
+describe('moving between the desk tabs with the keyboard', () => {
+  it('moves one tab on with the arrows, wrapping at the ends, and Home and End go to the first and last', () => {
+    expect(tabAfter('queue', 'ArrowRight')).toBe('invoices');
+    expect(tabAfter('invoices', 'ArrowRight')).toBe('warden');
+    expect(tabAfter('warden', 'ArrowRight')).toBe('queue');
+    expect(tabAfter('queue', 'ArrowLeft')).toBe('warden');
+    expect(tabAfter('warden', 'Home')).toBe('queue');
+    expect(tabAfter('queue', 'End')).toBe('warden');
+  });
+
+  it('moves nothing for any other key', () => {
+    expect(tabAfter('queue', 'Enter')).toBeNull();
+    expect(tabAfter('invoices', 'a')).toBeNull();
+  });
+});
+
+describe('the short time on a history card', () => {
+  it('shows the day, month and clock in South African time, with no year', () => {
+    const text = shortSastOf('2026-11-13T00:35:00.000Z');
+    expect(text).toContain('02:35');
+    expect(text).toContain('13');
+    expect(text).not.toContain('2026');
+  });
+
+  it('says the time is not recorded when the stamp cannot be read', () => {
+    expect(shortSastOf('not a time')).toBe('time not recorded');
   });
 });
 

@@ -22,6 +22,44 @@ export const HEADLINE_STATES: readonly DisplayState[] = [
 const ATTENTION: readonly DisplayState[] = ['Held', 'Needs a person'];
 
 /**
+ * The three sections of the desk. The counts above the tabs stay in view on every one of them.
+ */
+export type DeskTab = 'queue' | 'invoices' | 'warden';
+
+export const DESK_TABS: readonly { readonly id: DeskTab; readonly label: string }[] = [
+  { id: 'queue', label: 'Queue' },
+  { id: 'invoices', label: 'Invoices' },
+  { id: 'warden', label: 'Warden and limits' },
+];
+
+/**
+ * The tab that a key moves to, following the tab pattern: arrows wrap around, Home and End go to the ends. Any other key
+ * moves nothing.
+ */
+export function tabAfter(current: DeskTab, key: string): DeskTab | null {
+  const index = DESK_TABS.findIndex((tab) => tab.id === current);
+  const last = DESK_TABS.length - 1;
+  let next: number;
+  switch (key) {
+    case 'ArrowRight':
+      next = index === last ? 0 : index + 1;
+      break;
+    case 'ArrowLeft':
+      next = index === 0 ? last : index - 1;
+      break;
+    case 'Home':
+      next = 0;
+      break;
+    case 'End':
+      next = last;
+      break;
+    default:
+      return null;
+  }
+  return DESK_TABS.at(next)?.id ?? null;
+}
+
+/**
  * An amount in minor units, shown with two decimals in the usual international form (1,250.00). The currency comes from
  * the row, never guessed.
  */
@@ -43,6 +81,22 @@ export function sastOf(iso: string): string {
     timeZone: 'Africa/Johannesburg',
     dateStyle: 'medium',
     timeStyle: 'short',
+  });
+}
+
+/** A short South African time for a card: day, month and clock, with no year, so it stays on one line. */
+export function shortSastOf(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) {
+    return 'time not recorded';
+  }
+  return date.toLocaleString('en-ZA', {
+    timeZone: 'Africa/Johannesburg',
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
   });
 }
 
@@ -298,12 +352,12 @@ export function LimitsForm({
 }
 
 /**
- * The payment desk, in three columns on a wide screen: the invoices and the Warden on the left; the invoice that needs
- * a person, the agent flow and the queue in the middle; the reason, the pause and limits, and the history on the right.
- * It only shows what the console API gave it; nothing here decides a payment state.
+ * The payment desk. A summary strip of counts stays at the top; three tabs hold the queue, the invoice history and the
+ * Warden with its limits. It only shows what the console API gave it; nothing here decides a payment state.
  */
 export function DeskView(props: DeskViewProps) {
   const { data, error, busy, pending } = props;
+  const [tab, setTab] = useState<DeskTab>('queue');
   if (data === null) {
     return (
       <section className="desk" aria-label="Payment desk">
@@ -316,6 +370,20 @@ export function DeskView(props: DeskViewProps) {
   const featured = featuredOf(rows);
   const next = nextRowsOf(rows, featured);
   const featuredHeld = featured !== null && ATTENTION.includes(featured.displayState);
+  const attention = countOf(data.counts, 'Held') + countOf(data.counts, 'Needs a person');
+
+  const countFor = (id: DeskTab): number | null => {
+    if (id === 'queue') {
+      return attention;
+    }
+    return id === 'invoices' ? rows.length : null;
+  };
+
+  const choose = (id: DeskTab): void => {
+    setTab(id);
+    document.getElementById(`desk-tab-${id}`)?.focus();
+  };
+
   return (
     <section className="desk" aria-label="Payment desk">
       {error === null ? null : (
@@ -324,34 +392,268 @@ export function DeskView(props: DeskViewProps) {
         </p>
       )}
       <p className="mode-label" role="status">
+        <span className="mode-dot" aria-hidden="true" />
         {data.mode === 'simulated'
           ? 'SIMULATED: replay of a labelled run. Nothing here moved real money.'
-          : 'Live run on Testnet. Test-issued token, not RLUSD.'}
+          : 'Live run on Testnet. Test tokens with no real value.'}
       </p>
 
-      <div className="desk-grid">
-        <div className="col col-left">
-          <section className="panel" aria-labelledby="invoices-title">
-            <h2 id="invoices-title">All invoices</h2>
-            {rows.length === 0 ? (
-              <p className="muted">Nothing has been proposed or held yet.</p>
-            ) : (
-              <ul className="invoice-list">
-                {rows.map((row) => (
-                  <li key={row.rowId} className={row === featured ? 'on' : undefined}>
-                    <StateSymbol state={row.displayState} />
-                    <span className="invoice-line">
-                      <b>Invoice {row.invoiceRef}</b>
-                      <small>
-                        {row.displayState} · {sastOf(row.updatedAt)}
-                      </small>
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
+      <ul className="tiles" aria-label="Counts by state">
+        {HEADLINE_STATES.map((state) => (
+          <li key={state} className={`tile tile-${slugOf(state)}`}>
+            <p className="tile-number">
+              <CountUp value={countOf(data.counts, state)} />
+            </p>
+            <p className="tile-label">
+              <StateChip state={state} />
+            </p>
+          </li>
+        ))}
+      </ul>
 
+      <div className="desk-tabs" role="tablist" aria-label="Desk sections">
+        {DESK_TABS.map((item) => {
+          const selected = tab === item.id;
+          const count = countFor(item.id);
+          return (
+            <button
+              key={item.id}
+              type="button"
+              role="tab"
+              id={`desk-tab-${item.id}`}
+              aria-selected={selected}
+              aria-controls={`desk-panel-${item.id}`}
+              tabIndex={selected ? 0 : -1}
+              className={selected ? 'desk-tab on' : 'desk-tab'}
+              onClick={() => {
+                setTab(item.id);
+              }}
+              onKeyDown={(event) => {
+                const target = tabAfter(item.id, event.key);
+                if (target !== null) {
+                  event.preventDefault();
+                  choose(target);
+                }
+              }}
+            >
+              <span>{item.label}</span>
+              {count === null ? null : <span className="desk-tab-count">{count}</span>}
+            </button>
+          );
+        })}
+      </div>
+
+      <div
+        role="tabpanel"
+        id="desk-panel-queue"
+        aria-labelledby="desk-tab-queue"
+        className="desk-panel"
+        hidden={tab !== 'queue'}
+      >
+        <div className="queue-layout">
+          <div className="queue-main">
+            {featured === null ? (
+              <section className="panel" aria-labelledby="featured-title">
+                <h2 id="featured-title">No invoice yet</h2>
+                <p>The first invoice appears here once the agent proposes it.</p>
+              </section>
+            ) : (
+              <section
+                className={`panel featured accent-${slugOf(featured.displayState)}`}
+                aria-labelledby="featured-title"
+              >
+                <div className="featured-head">
+                  <StateSymbol state={featured.displayState} />
+                  <div>
+                    <h2 id="featured-title">Invoice {featured.invoiceRef}</h2>
+                    <StateChip state={featured.displayState} />
+                  </div>
+                </div>
+                <dl className="facts">
+                  <div>
+                    <dt>Amount</dt>
+                    <dd>
+                      {featured.amountMinor === null
+                        ? 'Amount not recorded'
+                        : moneyOf(featured.amountMinor, featured.currency)}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Updated</dt>
+                    <dd>{sastOf(featured.updatedAt)}</dd>
+                  </div>
+                </dl>
+                <div className="actions">
+                  <button
+                    type="button"
+                    aria-label={`Open evidence for invoice ${featured.invoiceRef}`}
+                    onClick={() => {
+                      props.onOpen(featured.rowId);
+                    }}
+                  >
+                    Open evidence
+                  </button>
+                  {featured.displayState === 'Paid' && featured.attemptId !== null ? (
+                    <button
+                      type="button"
+                      className="quiet"
+                      aria-label={`Open receipt for invoice ${featured.invoiceRef}`}
+                      onClick={() => {
+                        props.onReceipt(featured.attemptId ?? '');
+                      }}
+                    >
+                      Receipt
+                    </button>
+                  ) : null}
+                </div>
+              </section>
+            )}
+
+            <section className="panel" aria-labelledby="why-title">
+              <h2 id="why-title">{featuredHeld ? 'Why it is held' : 'Status'}</h2>
+              {featured === null ? (
+                <p>Nothing is held.</p>
+              ) : featuredHeld ? (
+                <>
+                  <p>
+                    {featured.reasonCode === null ? null : <code>{featured.reasonCode}</code>}{' '}
+                    {featured.reason}
+                  </p>
+                  {featured.reasonCode === null ? null : (
+                    <p className="next-step">
+                      <b>Next step.</b> {nextActionOf(featured.reasonCode)}
+                    </p>
+                  )}
+                </>
+              ) : (
+                <p>{featured.reason}</p>
+              )}
+            </section>
+
+            <section className="panel" aria-labelledby="next-title">
+              <h2 id="next-title">Next in the queue</h2>
+              {next.length === 0 ? (
+                <p className="muted">No other invoices are waiting.</p>
+              ) : (
+                <ul className="next-list">
+                  {next.map((row) => (
+                    <li key={row.rowId}>
+                      <span>Invoice {row.invoiceRef}</span>
+                      <StateChip state={row.displayState} />
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <p>
+                <button
+                  type="button"
+                  className="link-button"
+                  onClick={() => {
+                    setTab('invoices');
+                  }}
+                >
+                  See every invoice
+                </button>
+              </p>
+            </section>
+          </div>
+
+          <div className="queue-side">
+            <section className="panel hero" aria-labelledby="flow-title">
+              <h2 id="flow-title">How an invoice moves</h2>
+              <AgentFlow />
+              <p className="lede">
+                An invoice moves from left to right. Warden checks the rules before it adds the
+                second signature. Paid appears only after the ledger validates the payment.
+              </p>
+            </section>
+          </div>
+        </div>
+      </div>
+
+      <div
+        role="tabpanel"
+        id="desk-panel-invoices"
+        aria-labelledby="desk-tab-invoices"
+        className="desk-panel"
+        hidden={tab !== 'invoices'}
+      >
+        <section className="panel" id="invoice-history" aria-labelledby="history-title">
+          <div className="panel-head">
+            <h2 id="history-title">Invoice history</h2>
+            <p className="counts-line">
+              {DISPLAY_STATES.map(
+                (state) => `${state} ${String(countOf(data.counts, state))}`,
+              ).join(' · ')}
+            </p>
+          </div>
+          {rows.length === 0 ? (
+            <p>Nothing has been proposed or held yet.</p>
+          ) : (
+            <ol className="history">
+              {rows.map((row) => (
+                <li key={row.rowId} className={`history-card state-${slugOf(row.displayState)}`}>
+                  <div className="history-head">
+                    <b className="history-ref">Invoice {row.invoiceRef}</b>
+                    <StateChip state={row.displayState} />
+                  </div>
+                  <div className="history-facts">
+                    <span className="history-amount">
+                      {row.amountMinor === null
+                        ? 'Amount not recorded'
+                        : moneyOf(row.amountMinor, row.currency)}
+                    </span>
+                    <time className="history-time" dateTime={row.updatedAt}>
+                      {shortSastOf(row.updatedAt)}
+                    </time>
+                  </div>
+                  <p className="history-reason">
+                    {row.reasonCode === null ? null : <code>{row.reasonCode}</code>} {row.reason}
+                    {row.modelCalls === null
+                      ? null
+                      : ` · Model calls: ${String(row.modelCalls)} of at most 3`}
+                  </p>
+                  <div className="history-actions">
+                    <button
+                      type="button"
+                      className="quiet"
+                      aria-label={`Open invoice ${row.invoiceRef}`}
+                      onClick={() => {
+                        props.onOpen(row.rowId);
+                      }}
+                    >
+                      Open
+                    </button>
+                    {row.displayState !== 'Paid' || row.attemptId === null ? null : (
+                      <button
+                        type="button"
+                        aria-label={`Open receipt for invoice ${row.invoiceRef}`}
+                        onClick={() => {
+                          props.onReceipt(row.attemptId ?? '');
+                        }}
+                      >
+                        Receipt
+                      </button>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ol>
+          )}
+        </section>
+      </div>
+
+      <div
+        role="tabpanel"
+        id="desk-panel-warden"
+        aria-labelledby="desk-tab-warden"
+        className="desk-panel"
+        hidden={tab !== 'warden'}
+      >
+        {pending === null ? null : (
+          <StepUp busy={busy} onConfirm={props.onConfirm} onCancel={props.onCancelConfirm} />
+        )}
+        <div className="control-layout">
           <section className="panel" aria-labelledby="warden-title">
             <h2 id="warden-title">Warden</h2>
             <p className="muted">
@@ -373,131 +675,27 @@ export function DeskView(props: DeskViewProps) {
               </div>
             </dl>
           </section>
-        </div>
 
-        <div className="col col-centre">
-          {featured === null ? (
-            <section className="panel" aria-labelledby="featured-title">
-              <h2 id="featured-title">No invoice yet</h2>
-              <p>The first invoice appears here once the agent proposes it.</p>
-            </section>
-          ) : (
-            <section className="panel featured" aria-labelledby="featured-title">
-              <div className="featured-head">
-                <StateSymbol state={featured.displayState} />
-                <div>
-                  <h2 id="featured-title">Invoice {featured.invoiceRef}</h2>
-                  <StateChip state={featured.displayState} />
-                </div>
-              </div>
-              <dl className="facts">
-                <div>
-                  <dt>Amount</dt>
-                  <dd>
-                    {featured.amountMinor === null
-                      ? 'Amount not recorded'
-                      : moneyOf(featured.amountMinor, featured.currency)}
-                  </dd>
-                </div>
-                <div>
-                  <dt>Updated</dt>
-                  <dd>{sastOf(featured.updatedAt)}</dd>
-                </div>
-              </dl>
-              <div className="actions">
-                <button
-                  type="button"
-                  aria-label={`Open evidence for invoice ${featured.invoiceRef}`}
-                  onClick={() => {
-                    props.onOpen(featured.rowId);
-                  }}
-                >
-                  Open evidence
-                </button>
-                {featured.displayState === 'Paid' && featured.attemptId !== null ? (
-                  <button
-                    type="button"
-                    aria-label={`Open receipt for invoice ${featured.invoiceRef}`}
-                    onClick={() => {
-                      props.onReceipt(featured.attemptId ?? '');
-                    }}
-                  >
-                    Receipt
-                  </button>
-                ) : null}
-              </div>
-            </section>
-          )}
-
-          <section className="panel hero" aria-labelledby="flow-title">
-            <h2 id="flow-title">How an invoice moves</h2>
-            <AgentFlow />
-            <p className="lede">
-              An invoice moves from left to right. Warden checks the rules before it adds the second
-              signature. Paid appears only after the ledger validates the payment.
-            </p>
-          </section>
-
-          <section className="panel" aria-labelledby="next-title">
-            <h2 id="next-title">Next in the queue</h2>
-            {next.length === 0 ? (
-              <p className="muted">No other invoices are waiting.</p>
-            ) : (
-              <ul className="next-list">
-                {next.map((row) => (
-                  <li key={row.rowId}>
-                    <span>Invoice {row.invoiceRef}</span>
-                    <StateChip state={row.displayState} />
-                  </li>
-                ))}
-              </ul>
-            )}
-            <p>
-              <a href="#invoice-history">See every invoice</a>
-            </p>
-          </section>
-
-          <ul className="tiles" aria-label="Counts by state">
-            {HEADLINE_STATES.map((state) => (
-              <li key={state} className={`tile tile-${slugOf(state)}`}>
-                <p className="tile-number">
-                  <CountUp value={countOf(data.counts, state)} />
-                </p>
-                <p className="tile-label">
-                  <StateChip state={state} />
-                </p>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        <div className="col col-right">
-          <section className="panel" aria-labelledby="why-title">
-            <h2 id="why-title">{featuredHeld ? 'Why it is held' : 'Status'}</h2>
-            {featured === null ? (
-              <p>Nothing is held.</p>
-            ) : featuredHeld ? (
-              <>
-                <p>
-                  {featured.reasonCode === null ? null : <code>{featured.reasonCode}</code>}{' '}
-                  {featured.reason}
-                </p>
-                {featured.reasonCode === null ? null : (
-                  <p className="next-step">
-                    <b>Next step.</b> {nextActionOf(featured.reasonCode)}
-                  </p>
-                )}
-              </>
-            ) : (
-              <p>{featured.reason}</p>
-            )}
-          </section>
-
-          <section className="panel" aria-labelledby="control-title">
-            <h2 id="control-title">Pause and limits</h2>
+          <section className="panel" aria-labelledby="payments-title">
+            <h2 id="payments-title">Payments</h2>
             <p>
               <strong>{overview.paused ? 'Payments are paused.' : 'Payments are running.'}</strong>
             </p>
+            <p>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => {
+                  props.onTogglePause();
+                }}
+              >
+                {overview.paused ? 'Resume payments' : 'Pause new payments'}
+              </button>
+            </p>
+          </section>
+
+          <section className="panel control-limits" aria-labelledby="limits-title">
+            <h2 id="limits-title">Change limits</h2>
             {raise === null ? null : (
               <section className="notice" aria-labelledby="raise-title">
                 <h3 id="raise-title">A raised limit is waiting</h3>
@@ -522,17 +720,6 @@ export function DeskView(props: DeskViewProps) {
                 <p id="approve-why">{raise.why}</p>
               </section>
             )}
-            <p>
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => {
-                  props.onTogglePause();
-                }}
-              >
-                {overview.paused ? 'Resume payments' : 'Pause new payments'}
-              </button>
-            </p>
             <LimitsForm
               current={overview.limits}
               busy={busy}
@@ -540,75 +727,9 @@ export function DeskView(props: DeskViewProps) {
                 props.onRequestLimits(values);
               }}
             />
-            {pending === null ? null : (
-              <StepUp busy={busy} onConfirm={props.onConfirm} onCancel={props.onCancelConfirm} />
-            )}
-          </section>
-
-          <section className="panel" id="invoice-history" aria-labelledby="history-title">
-            <h2 id="history-title">Invoice history</h2>
-            {rows.length === 0 ? (
-              <p>Nothing has been proposed or held yet.</p>
-            ) : (
-              <ol className="history">
-                {rows.map((row) => (
-                  <li key={row.rowId}>
-                    <span className="history-line">
-                      <b>Invoice {row.invoiceRef}</b>
-                      <small>Updated {sastOf(row.updatedAt)}</small>
-                    </span>
-                    <span className="history-state">
-                      <StateChip state={row.displayState} />
-                    </span>
-                    <span className="history-amount">
-                      {row.amountMinor === null
-                        ? 'Amount not recorded'
-                        : moneyOf(row.amountMinor, row.currency)}
-                    </span>
-                    <span className="history-actions">
-                      <button
-                        type="button"
-                        className="open"
-                        aria-label={`Open invoice ${row.invoiceRef}`}
-                        onClick={() => {
-                          props.onOpen(row.rowId);
-                        }}
-                      >
-                        Open
-                      </button>
-                      {row.displayState !== 'Paid' ||
-                      row.attemptId === null ||
-                      row === featured ? null : (
-                        <button
-                          type="button"
-                          aria-label={`Open receipt for invoice ${row.invoiceRef}`}
-                          onClick={() => {
-                            props.onReceipt(row.attemptId ?? '');
-                          }}
-                        >
-                          Receipt
-                        </button>
-                      )}
-                    </span>
-                    <span className="history-reason">
-                      {row.reasonCode === null ? null : <code>{row.reasonCode}</code>} {row.reason}
-                      {row.modelCalls === null
-                        ? null
-                        : ` · Model calls: ${String(row.modelCalls)} of at most 3`}
-                    </span>
-                  </li>
-                ))}
-              </ol>
-            )}
           </section>
         </div>
       </div>
-
-      <p className="counts-line">
-        {DISPLAY_STATES.map((state) => `${state} ${String(countOf(data.counts, state))}`).join(
-          ' · ',
-        )}
-      </p>
     </section>
   );
 }
