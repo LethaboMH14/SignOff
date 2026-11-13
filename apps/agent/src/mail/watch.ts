@@ -134,3 +134,22 @@ export async function pollOnce(
   }
   return next;
 }
+
+/** Rejects if `work` does not settle within `ms`. The stalled work is left to finish or fail on its own connection. */
+export function withTimeout<T>(work: Promise<T>, ms: number): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error(`the mail server did not answer within ${String(ms / 1000)} seconds`));
+    }, ms);
+    work.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error: unknown) => {
+        clearTimeout(timer);
+        reject(error instanceof Error ? error : new Error('unknown'));
+      },
+    );
+  });
+}

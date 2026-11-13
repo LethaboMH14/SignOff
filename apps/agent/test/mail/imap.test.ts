@@ -1,50 +1,62 @@
+import type { EventEmitter } from 'node:events';
+
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 /** A stand-in for the IMAP library: it records the calls the adapter makes and answers from a small mailbox. */
 const calls: string[] = [];
 const state: { search: number[] | false; released: number } = { search: [7, 3, 12], released: 0 };
 
-vi.mock('imapflow', () => ({
-  ImapFlow: class {
-    mailbox: { uidNext: number } | false = { uidNext: 10 };
-    constructor(options: { secure: boolean; logger: unknown }) {
-      calls.push(`new secure=${String(options.secure)} logger=${String(options.logger)}`);
-    }
-    connect(): Promise<void> {
-      calls.push('connect');
-      return Promise.resolve();
-    }
-    getMailboxLock(path: string): Promise<{ path: string; release: () => void }> {
-      calls.push(`lock ${path}`);
-      return Promise.resolve({
-        path,
-        release: () => {
-          state.released += 1;
-        },
-      });
-    }
-    search(query: { seen: boolean }, options: { uid: boolean }): Promise<number[] | false> {
-      calls.push(`search seen=${String(query.seen)} uid=${String(options.uid)}`);
-      return Promise.resolve(state.search);
-    }
-    fetchOne(
-      range: string,
-      query: { source: boolean },
-      options: { uid: boolean },
-    ): Promise<{ source: Buffer } | false> {
-      calls.push(`fetch ${range} source=${String(query.source)} uid=${String(options.uid)}`);
-      return Promise.resolve(range === '404' ? false : { source: Buffer.from('raw message') });
-    }
-    messageFlagsAdd(range: string, flags: string[], options: { uid: boolean }): Promise<boolean> {
-      calls.push(`flag ${range} ${flags.join(',')} uid=${String(options.uid)}`);
-      return Promise.resolve(true);
-    }
-    logout(): Promise<void> {
-      calls.push('logout');
-      return Promise.reject(new Error('already closed'));
-    }
-  },
-}));
+const clients: EventEmitter[] = [];
+
+vi.mock('imapflow', async () => {
+  const { EventEmitter: Emitter } = await import('node:events');
+  return {
+    ImapFlow: class extends Emitter {
+      mailbox: { uidNext: number } | false = { uidNext: 10 };
+      constructor(options: { secure: boolean; logger: unknown }) {
+        super();
+        calls.push(`new secure=${String(options.secure)} logger=${String(options.logger)}`);
+        clients.push(this);
+      }
+      close(): void {
+        calls.push('close');
+      }
+      connect(): Promise<void> {
+        calls.push('connect');
+        return Promise.resolve();
+      }
+      getMailboxLock(path: string): Promise<{ path: string; release: () => void }> {
+        calls.push(`lock ${path}`);
+        return Promise.resolve({
+          path,
+          release: () => {
+            state.released += 1;
+          },
+        });
+      }
+      search(query: { seen: boolean }, options: { uid: boolean }): Promise<number[] | false> {
+        calls.push(`search seen=${String(query.seen)} uid=${String(options.uid)}`);
+        return Promise.resolve(state.search);
+      }
+      fetchOne(
+        range: string,
+        query: { source: boolean },
+        options: { uid: boolean },
+      ): Promise<{ source: Buffer } | false> {
+        calls.push(`fetch ${range} source=${String(query.source)} uid=${String(options.uid)}`);
+        return Promise.resolve(range === '404' ? false : { source: Buffer.from('raw message') });
+      }
+      messageFlagsAdd(range: string, flags: string[], options: { uid: boolean }): Promise<boolean> {
+        calls.push(`flag ${range} ${flags.join(',')} uid=${String(options.uid)}`);
+        return Promise.resolve(true);
+      }
+      logout(): Promise<void> {
+        calls.push('logout');
+        return Promise.reject(new Error('already closed'));
+      }
+    },
+  };
+});
 
 const { connectImap } = await import('../../src/mail/imap.js');
 
@@ -84,5 +96,17 @@ describe('the IMAP adapter', () => {
     const { close } = await connectImap(SETTINGS);
     await expect(close()).resolves.toBeUndefined();
     expect(calls).toContain('logout');
+    expect(calls).toContain('close');
+  });
+
+  it('survives a connection reset from the server instead of ending the process', async () => {
+    const written = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
+    await connectImap(SETTINGS);
+    const client = clients.at(-1);
+    const reset = Object.assign(new Error('read ECONNRESET'), { code: 'ECONNRESET' });
+    // An EventEmitter with no 'error' listener throws here; that throw is what ended the watcher on 13 Nov.
+    expect(() => client?.emit('error', reset)).not.toThrow();
+    expect(written).toHaveBeenCalledWith('mail connection error: ECONNRESET\n');
+    written.mockRestore();
   });
 });

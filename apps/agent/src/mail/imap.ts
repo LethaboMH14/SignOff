@@ -22,6 +22,13 @@ export async function connectImap(settings: ImapSettings): Promise<{
     auth: { user: settings.user, pass: settings.password },
     logger: false,
   });
+  // A dropped connection (for example ECONNRESET from the server) is emitted as an 'error' event. Without a listener
+  // Node ends the process, and the launcher then stops the whole demo (seen on 13 Nov). The operation in progress
+  // fails or times out instead, and the watcher's next check opens a fresh connection.
+  client.on('error', (error: unknown) => {
+    const code = (error as { code?: unknown }).code;
+    process.stderr.write(`mail connection error: ${typeof code === 'string' ? code : 'unknown'}\n`);
+  });
   await client.connect();
 
   const withInbox = async <T>(work: () => Promise<T>): Promise<T> => {
@@ -57,7 +64,9 @@ export async function connectImap(settings: ImapSettings): Promise<{
   return {
     port,
     close: async () => {
-      await client.logout().catch(() => undefined);
+      await client.logout().catch(() => {
+        client.close();
+      });
     },
   };
 }

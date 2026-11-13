@@ -35,11 +35,15 @@ import {
  */
 export const DEMO_POLICY_VERSION = AGENT_POLICY_VERSION;
 export const DEMO_LISTEN = { host: '127.0.0.1', port: 8789 } as const;
-/** Demo limits in USD minor units (cents). The spending account holds about USD 2.78 of RLUSD, so these cap every payment. */
+/**
+ * Demo limits in USD minor units (cents). Each R20 demo invoice is about USD 1.20. The daily limits were 500, which held
+ * the fifth payment of a rehearsal day with OVER_LIMIT (T-264); 2000 leaves room for rehearsals and the judged run.
+ * The spending account's own balance (about USD 4 of Testnet RLUSD on 13 Nov) still caps what can be lost.
+ */
 export const DEMO_LIMITS = {
   perPaymentMinor: 500,
-  supplierDailyMinor: 500,
-  dailyTotalMinor: 500,
+  supplierDailyMinor: 2000,
+  dailyTotalMinor: 2000,
 } as const;
 
 /** The demo invoice: R20.00, fictional, supplier SUP-TST001 (the labelled set's first supplier). */

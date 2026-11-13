@@ -80,7 +80,10 @@ What to say at step 6: "The email asked us to pay a new account. SignOff ignores
 | `not accepted (SENDER_NOT_AUTHENTICATED)` | Gmail did not record `dmarc=pass` for the sender | Send from a Gmail or Google Workspace address |
 | `not accepted (NO_PDF_ATTACHMENT)` | No PDF, or a file that only looks like one | Attach the downloaded PDF itself |
 | The token stops at Held, not Paid | The PDF was changed or re-saved, so its fingerprint no longer matches the order | Send the downloaded file unchanged |
-| Nothing at all after a minute | The email was sent before the watcher started, so it is left alone | Send it again |
+| Nothing at all after a minute | The email was sent before the watcher started, so it is left alone. This includes a restart: the watcher skips anything that arrived before it began, by design | Send it again after `mail watcher running` appears |
+| Nothing at all, and the watcher was running | Gmail put the email in SignOff's Spam folder. The watcher reads only the inbox (seen on 13 Nov: one of five test invoices went to Spam) | In SignOff's Gmail, open Spam, press "Not spam", then send a fresh copy. Before the demo, add a filter "from the supplier address: never send to Spam" |
+| The token stops at Held with `OVER_LIMIT` | Earlier runs used up a daily limit. The demo sets USD 5.00 per payment and USD 20.00 per supplier per day and in total per day (raised from USD 5.00 on 13 Nov, T-264); each R20 invoice is about USD 1.20 | Wait for the next day, which starts at midnight South African time (22:00 UTC), or raise the daily limits in the local `warden-config.json` and restart. Nothing is paid while held |
+| The Warden will not start: `a run.lock file is present` | An earlier run was stopped without a clean exit | Confirm no Warden is running, then rename `run.lock` in the local Warden folder |
 
 ## What is real and what is not
 
