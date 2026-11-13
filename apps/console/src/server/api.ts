@@ -427,7 +427,9 @@ async function testInvoice(
     return;
   }
   if (ctx.testInvoices === undefined) {
-    sendJson(response, 404, { error: 'test invoices are off; start the console with the demo launcher' });
+    sendJson(response, 404, {
+      error: 'test invoices are off; start the console with the demo launcher',
+    });
     return;
   }
   if (!changeAllowed(request, response, ctx, caller, false)) {
