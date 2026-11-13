@@ -28,12 +28,19 @@ Leading with the supplier was accepted in [ADR 0001](decisions/0001-supplier-anc
 
 ## How the company earns
 
-- **Subscription per paying business.** A flat fee, not a percentage of money moved, so the company stays software and does not look like a money transmitter. This needs legal confirmation.
-- **Supplier-led growth.** Each supplier that publishes a payout record brings its buyers.
+- **A percentage of each protected payment, in tiers.** SignOff takes 2% to 5% of the value of each payment it protects. The percentage rises with the size of the payment. The buyer pays it. The exact tier bands are not set, and this model has not been tested with any customer.
+- **Supplier-led growth.** Each supplier that publishes a payout record brings its buyers, so volume grows through supplier onboarding rather than per-buyer sales.
 - **Later.** Per-verification fees, a share of captured discounts, partnerships with cyber insurers.
 - **Defensibility.** The register of supplier-signed payout details grows more valuable with each supplier.
 
-The only price point on record is an assumption from the historical plan: US$299 a month, so 34 customers is about US$10,000 a month.
+**Open risks, stated plainly.**
+
+- A percentage of money moved can make SignOff look like a payment provider rather than software. Legal confirmation is needed before any launch.
+- At 2% to 5%, a supplier comparing SignOff with a bank EFT costing a few rand will see the difference clearly. Buyers who pay large invoices may push back hardest.
+- Tiers can invite splitting invoices to stay under a band. The Warden's rules are meant to catch that, but this is untested.
+- No customer has agreed to any percentage. The next step is a pilot with one South African supplier and its buyers, to test what they will accept.
+
+**Earlier model, kept for reference.** The historical plan used a flat subscription of about US$299 a month per buyer (an assumption). The model above is the owner's current choice, and it replaces that plan in this document.
 
 ## Existing solutions
 
