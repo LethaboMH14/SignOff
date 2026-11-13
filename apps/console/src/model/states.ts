@@ -78,8 +78,12 @@ export interface MapEventInput {
   readonly policyVersion: string;
 }
 
-/** The map's places: the agents, the arrival point, the hold lane, the ledger and the paid end. */
-export type MapNode = AgentActor | 'arrival' | 'hold' | 'ledger' | 'paid';
+/**
+ * The map's places: the agents, the arrival point, the hold lane, the ledger and the paid end, plus the owner's
+ * phone approval for high-value payments and the simulated money-in and money-out legs.
+ */
+export type MapNode =
+  AgentActor | 'arrival' | 'hold' | 'ledger' | 'paid' | 'approver' | 'onramp' | 'payout';
 
 /** The look of a move: progress, submitted to the ledger (not yet paid), held, paid, or failed. */
 export type Tone = 'progress' | 'submitted' | 'hold' | 'paid' | 'failed';

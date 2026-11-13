@@ -64,6 +64,17 @@ import {
   type OpsSupplier,
 } from './ops-view.js';
 import { isUnresolved, WardenState, type AttemptState, type LimitsState } from './state.js';
+import { OwnerApprovalError, type OwnerApprover } from './owner-approval.js';
+
+/**
+ * Which account pays and who must sign. Below the threshold: the spending account, agent + Warden. At or
+ * above it: the high-value account, agent + Warden + owner, so the ledger refuses it until the owner signs.
+ */
+interface Route {
+  readonly account: string;
+  readonly owner: Pick<RegistryAccount, 'address'> | undefined;
+  readonly signerCount: 2 | 3;
+}
 
 /** Errors that map to an HTTP status. Their messages are safe to show the caller. */
 export class WardenError extends Error {
@@ -87,6 +98,8 @@ export interface WardenDeps {
   readonly now: () => Date;
   readonly sleep: (ms: number) => Promise<void>;
   readonly newId: () => string;
+  /** Collects the owner's signature for high-value payments. Absent: high-value payments are held. */
+  readonly ownerApprover?: OwnerApprover;
 }
 
 export type {
@@ -247,6 +260,8 @@ interface Evaluation {
  */
 export class WardenService {
   private chain: Promise<unknown> = Promise.resolve();
+  /** Attempts waiting for the owner's phone signature. A second finalization while one waits is refused. */
+  private readonly awaitingOwner = new Set<string>();
   /** When the last heartbeat arrived, in milliseconds. Null after a restart, so an armed Warden starts paused. */
   private lastHeartbeatMs: number | null = null;
 
@@ -417,7 +432,7 @@ export class WardenService {
    * and submits itself. No Warden co-signature leaves before authorization.
    */
   async coSign(attemptId: string, signedBlob: string): Promise<CoSignResult> {
-    const submission = await this.exclusive(async () => {
+    const prepared = await this.exclusive(async () => {
       await this.enforceWatchdog(this.deps.now());
       const attempt = this.state.attempts.get(attemptId);
       if (attempt === undefined) {
@@ -462,16 +477,24 @@ export class WardenService {
           'the supplier no longer holds the credential the buyer requires',
         );
       }
+      const route = this.routeFor(attempt.amountMinor);
+      if (route.owner !== undefined && this.deps.ownerApprover === undefined) {
+        throw new WardenError(409, 'owner approval is not set up for high-value payments');
+      }
+      if (this.awaitingOwner.has(attemptId)) {
+        throw new WardenError(409, 'the owner is already being asked to approve this payment');
+      }
       let facts: PreSigningFacts;
       try {
         facts = await readPreSigning(this.deps.port, {
-          spending: this.deps.config.spendingAddress,
+          spending: route.account,
           destination: payee.address,
           destinationTag: payee.destinationTag,
           issuer: asset.issuer,
           ledgerCurrency: asset.ledgerCurrency,
           agent: accountRef('agent', this.deps.config.agentAddress, now),
           warden: accountRef('warden', this.deps.config.wardenAddress, now),
+          ...(route.owner === undefined ? {} : { owner: route.owner }),
         });
       } catch {
         throw new WardenError(503, 'the ledger could not be read at final authorization');
@@ -483,17 +506,25 @@ export class WardenService {
       if (pre !== null) {
         throw new WardenError(409, 'the ledger no longer permits this payment');
       }
-      const finalBlob = this.finalizeAgentSignature(attempt, signedBlob);
-      const hash = hashOfSigned(finalBlob);
+      const partial = this.finalizeAgentSignature(attempt, signedBlob);
+      if (route.owner !== undefined) {
+        // Agent and Warden have signed. The ledger still refuses it until the owner adds the third signature.
+        this.awaitingOwner.add(attemptId);
+        return { attempt, partial, needsOwner: true as const };
+      }
+      const hash = hashOfSigned(partial);
       await this.record({
         type: 'attempt.submitting',
         at: now.toISOString(),
         attemptId,
-        finalBlob,
+        finalBlob: partial,
         hash,
       });
-      return { attempt, hash, finalBlob };
+      return { attempt, hash, finalBlob: partial, needsOwner: false as const };
     });
+    const submission = prepared.needsOwner
+      ? await this.collectOwnerAndRecord(attemptId, prepared.attempt, prepared.partial)
+      : prepared;
     let decision: Decision;
     try {
       decision = await sendAndReconcile(
@@ -985,8 +1016,17 @@ export class WardenService {
     if ([...this.state.attempts.values()].some((attempt) => isUnresolved(attempt.status))) {
       return stop(hold('ACCOUNT_BUSY', 'another transfer on the spending account is unresolved'));
     }
+    const route = this.routeFor(proposal.amountMinor);
+    if (route.owner !== undefined && this.deps.ownerApprover === undefined) {
+      return stop(
+        hold(
+          'OWNER_APPROVAL_UNAVAILABLE',
+          'the payment is above the high-value threshold and owner approval is not set up',
+        ),
+      );
+    }
     const terms: PaymentTerms = {
-      spending: config.spendingAddress,
+      spending: route.account,
       destination: supplier.payee.address,
       destinationTag: supplier.payee.destinationTag,
       asset: { ledgerCurrency: asset.ledgerCurrency, issuer: asset.issuer },
@@ -997,13 +1037,14 @@ export class WardenService {
     let facts: PreSigningFacts;
     try {
       facts = await readPreSigning(this.deps.port, {
-        spending: config.spendingAddress,
+        spending: route.account,
         destination: supplier.payee.address,
         destinationTag: supplier.payee.destinationTag,
         issuer: asset.issuer,
         ledgerCurrency: asset.ledgerCurrency,
         agent,
         warden,
+        ...(route.owner === undefined ? {} : { owner: route.owner }),
       });
     } catch {
       return stop(hold('LEDGER_UNREADABLE', 'the ledger could not be read before signing'));
@@ -1027,11 +1068,17 @@ export class WardenService {
     let lastLedgerSequence: number;
     let txFields: string;
     try {
-      const prepared = await this.deps.port.autofill(paymentFor(terms), 2);
-      const expiry = prepared.LastLedgerSequence;
-      if (expiry === undefined) {
+      const prepared = await this.deps.port.autofill(paymentFor(terms), route.signerCount);
+      const autofilledExpiry = prepared.LastLedgerSequence;
+      if (autofilledExpiry === undefined) {
         return stop(refuse('INVARIANT_FAILED', 'the ledger did not set an expiry for the payment'));
       }
+      // A person needs minutes, not seconds, so a high-value payment stays valid for longer.
+      const expiry =
+        route.owner === undefined || config.highValue === null
+          ? autofilledExpiry
+          : autofilledExpiry + config.highValue.approvalWindowLedgers;
+      prepared.LastLedgerSequence = expiry;
       assertWardenPayment(asRecord(prepared), terms);
       // The proposal must NEVER contain a Warden signature: agent can sign only its own half.
       wardenBlob = encode(prepared);
@@ -1063,6 +1110,119 @@ export class WardenService {
         wardenBlob,
       },
     };
+  }
+
+  /**
+   * Asks the owner to sign on their phone, outside the lock so other decisions continue while a person decides.
+   * A rejection or timeout lapses the attempt unsigned by the owner, so nothing is sent and the payable is freed.
+   * Then, under the lock again, rechecks the attempt is still awaiting and payments are not paused.
+   */
+  private async collectOwnerAndRecord(
+    attemptId: string,
+    attempt: AttemptState,
+    partial: string,
+  ): Promise<{
+    readonly attempt: AttemptState;
+    readonly hash: string;
+    readonly finalBlob: string;
+  }> {
+    const approver = this.deps.ownerApprover;
+    let ownerBlob: string;
+    try {
+      if (approver === undefined) {
+        throw new OwnerApprovalError('unavailable', 'owner approval is not set up');
+      }
+      const prepared = decodeFields(attempt.wardenBlob);
+      const amount = minorToDecimal(attempt.amountMinor, CurrencyCode.parse(attempt.currency));
+      ownerBlob = await approver.collect({
+        transaction: prepared,
+        instruction: `SignOff (Testnet): approve a high-value payment of ${amount} ${attempt.currency} to supplier ${attempt.supplierId}. Agent and Warden have signed.`,
+      });
+    } catch (error) {
+      this.awaitingOwner.delete(attemptId);
+      const message = error instanceof OwnerApprovalError ? error.message : 'owner approval failed';
+      await this.exclusive(async () => {
+        if (this.state.attempts.get(attemptId)?.status === 'awaiting') {
+          await this.settle(attemptId, 'expired', null, null);
+        }
+      });
+      throw new WardenError(409, `${message}; nothing was sent`);
+    }
+    try {
+      return await this.exclusive(async () => {
+        const current = this.state.attempts.get(attemptId);
+        if (current?.status !== 'awaiting') {
+          throw new WardenError(409, `the attempt is ${current?.status ?? 'missing'}`);
+        }
+        if (this.state.paused) {
+          throw new WardenError(
+            409,
+            'payments were paused while the owner decided; nothing was sent',
+          );
+        }
+        if ((await this.validatedLedger()) > current.lastLedgerSequence) {
+          await this.settle(attemptId, 'expired', null, null);
+          throw new WardenError(409, 'the attempt expired while the owner decided; propose again');
+        }
+        const finalBlob = this.addOwnerSignature(current, partial, ownerBlob);
+        const hash = hashOfSigned(finalBlob);
+        await this.record({
+          type: 'attempt.submitting',
+          at: this.deps.now().toISOString(),
+          attemptId,
+          finalBlob,
+          hash,
+        });
+        return { attempt: current, hash, finalBlob };
+      });
+    } finally {
+      this.awaitingOwner.delete(attemptId);
+    }
+  }
+
+  /** The account and signers for an amount. The threshold is fixed policy, so the same amount always routes the same way. */
+  private routeFor(amountMinor: number): Route {
+    const highValue = this.deps.config.highValue;
+    if (highValue === null || amountMinor < highValue.thresholdMinor) {
+      return { account: this.deps.config.spendingAddress, owner: undefined, signerCount: 2 };
+    }
+    return {
+      account: highValue.treasuryAddress,
+      owner: { address: highValue.ownerAddress },
+      signerCount: 3,
+    };
+  }
+
+  /**
+   * Checks the owner's blob is the prepared transaction signed by the owner alone, then adds it to the agent and
+   * Warden signatures. Anything else is refused, so a phone can only add the owner's signature to this payment.
+   */
+  private addOwnerSignature(attempt: AttemptState, partial: string, ownerBlob: string): string {
+    const highValue = this.deps.config.highValue;
+    if (highValue === null) {
+      throw new WardenError(503, 'owner approval is not configured');
+    }
+    let ownerFields: Readonly<Record<string, unknown>>;
+    try {
+      ownerFields = decodeFields(ownerBlob);
+    } catch {
+      throw new WardenError(422, 'the owner signature could not be read');
+    }
+    if (canonicalJson(boundFieldsOf(ownerFields)) !== attempt.txFields) {
+      throw new WardenError(422, 'the owner signed a different transaction');
+    }
+    try {
+      assertSignedExactly(ownerBlob, [highValue.ownerAddress]);
+    } catch {
+      throw new WardenError(422, 'the owner blob must carry only the owner signature');
+    }
+    const finalBlob = combineSigned([partial, ownerBlob]);
+    assertSignedExactly(finalBlob, [
+      this.deps.config.agentAddress,
+      this.deps.config.wardenAddress,
+      highValue.ownerAddress,
+    ]);
+    return finalBlob;
   }
 
   /** Finalize an agent-only signature; add Warden's signature only after all last-moment checks. */
@@ -1244,7 +1404,11 @@ export class WardenService {
   /** A payee is an outside account. The Warden's own accounts can never be enrolled or changed to as a supplier. */
   private assertExternalPayee(address: string): void {
     const config = this.deps.config;
-    if ([config.spendingAddress, config.agentAddress, config.wardenAddress].includes(address)) {
+    const own = [config.spendingAddress, config.agentAddress, config.wardenAddress];
+    if (config.highValue !== null) {
+      own.push(config.highValue.treasuryAddress, config.highValue.ownerAddress);
+    }
+    if (own.includes(address)) {
       throw new WardenError(422, "the payee is one of the Warden's own accounts");
     }
   }

@@ -44,6 +44,10 @@ const NEXT_ACTIONS: ReadonlyMap<string, string> = new Map<string, string>([
     'Ask the supplier to raise the limit on their trust line for this asset, or pay a smaller amount. Nothing was signed.',
   ],
   [
+    'OWNER_APPROVAL_UNAVAILABLE',
+    'Set up owner approval in Xaman for the Warden, or pay a smaller amount. Nothing was signed.',
+  ],
+  [
     'INVARIANT_FAILED',
     'Ask a developer to check the safety check that failed before any payment of this kind is proposed.',
   ],

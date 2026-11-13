@@ -14,6 +14,7 @@
 // Prerequisites (one time): npm run testnet:provision, then npm run demo:prepare (see docs/RLUSD-TESTNET-RUNBOOK.md).
 // The processes run in the foreground. Press Ctrl+C to stop all three.
 import { spawn, type ChildProcess } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import {
   existsSync,
   mkdirSync,
@@ -37,6 +38,20 @@ import {
   fileRegistryStore,
 } from '../../packages/xrpl/src/node.js';
 import { writeDemoInvoice } from './demo-invoice.js';
+import {
+  approvalNoticeFrom,
+  createNotifier,
+  followAgentLog,
+  noticeFor,
+  type Notifier,
+} from './owner-notify.js';
+import {
+  onRampQuote,
+  paystackTestPayout,
+  RampError,
+  simulatedPayout,
+  type PayoutRail,
+} from './ramp.js';
 import { DEMO_LISTEN } from './prepare.js';
 
 const repoRoot = resolve(fileURLToPath(new URL('.', import.meta.url)), '..', '..');
@@ -71,6 +86,97 @@ function hostedWardenUrl(args: readonly string[]): string | null {
   return url.origin;
 }
 const CONSOLE_PORT = 4180;
+
+/** Owner notifications for this run, set once the demo folder is known. Warden output lines are checked for approvals. */
+let notifier: Notifier | null = null;
+
+/**
+ * The invoice's file name for a move, found by hashing the PDFs in the inbox: the agent names an invoice by the
+ * SHA-256 of its file. Falls back to a short fingerprint when the file has already moved on.
+ */
+function invoiceLabeller(inboxDir: string): (correlationId: string) => string {
+  const known = new Map<string, string>();
+  return (correlationId) => {
+    // The demo inbox outside the repository, under the launcher's own folder.
+
+    if (!known.has(correlationId) && existsSync(inboxDir)) {
+      for (const name of readdirSync(inboxDir).filter((file) =>
+        file.toLowerCase().endsWith('.pdf'),
+      )) {
+        const digest = createHash('sha256')
+          .update(readFileSync(join(inboxDir, name)))
+          .digest('hex');
+        known.set(digest, name.slice(0, -4));
+      }
+    }
+    return known.get(correlationId) ?? `#${correlationId.slice(0, 8)}`;
+  };
+}
+
+/** The invoice record the agent checks against, found by the file fingerprint the agent logs. */
+function invoiceRecordOf(
+  evidenceFile: string,
+  fingerprint: string,
+): {
+  readonly invoiceNumber: string;
+  readonly currency: string;
+  readonly amountMinor: number;
+} | null {
+  try {
+    // The agent's evidence file in the demo folder outside the repository.
+    const file = JSON.parse(readFileSync(evidenceFile, 'utf8')) as {
+      invoices?: {
+        fingerprint?: string;
+        invoiceNumber?: string;
+        currency?: string;
+        amountMinor?: number;
+      }[];
+    };
+    const found = file.invoices?.find((invoice) => invoice.fingerprint === fingerprint);
+    if (
+      found?.invoiceNumber === undefined ||
+      found.currency === undefined ||
+      found.amountMinor === undefined
+    ) {
+      return null;
+    }
+    return {
+      invoiceNumber: found.invoiceNumber,
+      currency: found.currency,
+      amountMinor: found.amountMinor,
+    };
+  } catch {
+    return null;
+  }
+}
+
+const simulatedRail = simulatedPayout();
+
+/**
+ * The supplier payout rail: Paystack test mode when PAYSTACK_SECRET_KEY holds a test key, otherwise simulated. A live
+ * key is refused by the rail itself. The recipient is fictional.
+ */
+function payoutRailFromEnv(): PayoutRail {
+  const key = process.env['PAYSTACK_SECRET_KEY']?.trim() ?? '';
+  if (key === '') {
+    return simulatedRail;
+  }
+  return paystackTestPayout({
+    secretKey: key,
+    recipient: {
+      name: 'Fictional Cape Town Solar Wholesale (Pty) Ltd',
+      accountNumber: process.env['PAYSTACK_TEST_ACCOUNT']?.trim() ?? '0000000000',
+      bankCode: process.env['PAYSTACK_TEST_BANK_CODE']?.trim() ?? null,
+    },
+  });
+}
+
+/** Telegram details for owner notifications, when both are set. Read from the environment or .env, never printed. */
+function telegramVars(): { readonly token: string; readonly chatId: string } | null {
+  const token = process.env['TELEGRAM_BOT_TOKEN']?.trim() ?? '';
+  const chatId = process.env['TELEGRAM_CHAT_ID']?.trim() ?? '';
+  return token === '' || chatId === '' ? null : { token, chatId };
+}
 const CONSOLE_URL = `http://127.0.0.1:${String(CONSOLE_PORT)}`;
 
 /** Environment names that carry secrets. Each child process receives only the ones it needs. */
@@ -81,6 +187,19 @@ class DemoError extends Error {
     super(message);
     this.name = 'DemoError';
   }
+}
+
+/**
+ * The Xaman variables for the Warden process only, when set: they let it ask the owner to sign high-value
+ * payments on their phone. Read from the environment or the repository's .env, and never printed.
+ */
+function ownerApprovalVars(): Record<string, string> {
+  const entries: [string, string][] = [
+    ['XAMAN_API_KEY', process.env['XAMAN_API_KEY']?.trim() ?? ''],
+    ['XAMAN_API_SECRET', process.env['XAMAN_API_SECRET']?.trim() ?? ''],
+    ['XAMAN_USER_TOKEN', process.env['XAMAN_USER_TOKEN']?.trim() ?? ''],
+  ];
+  return Object.fromEntries(entries.filter(([, value]) => value !== ''));
 }
 
 /** A child's environment: the system variables it needs to run, with secrets removed, then its own variables. */
@@ -177,6 +296,10 @@ function start(name: string, args: string[], env: NodeJS.ProcessEnv): Child {
         entry.lines.shift();
       }
       process.stdout.write(`[${name}] ${line}\n`);
+      const approval = name === 'warden' ? approvalNoticeFrom(line, new Date()) : null;
+      if (approval !== null && notifier !== null) {
+        void notifier.send(approval);
+      }
     }
   };
   child.stdout.on('data', keep);
@@ -388,7 +511,7 @@ async function main(): Promise<void> {
 
   // 1. Warden: its own directory, its own keys, no agent or console variables. A hosted Warden is only checked.
   if (hosted === null) {
-    start('warden', [join('apps', 'warden', 'src', 'main.ts')], envFor({}));
+    start('warden', [join('apps', 'warden', 'src', 'main.ts')], envFor(ownerApprovalVars()));
   }
   await waitFor(
     async () => {
@@ -413,6 +536,63 @@ async function main(): Promise<void> {
     );
   }
   const agentLog = join(demoDir, 'agent-log.jsonl');
+  const notificationsFile = join(demoDir, 'owner-notifications.jsonl');
+  const telegram = telegramVars();
+  const activeNotifier = createNotifier({
+    file: notificationsFile,
+    telegram,
+    onError: (message) => {
+      process.stderr.write(`[notify] ${message}\n`);
+    },
+  });
+  notifier = activeNotifier;
+  const labelFor = invoiceLabeller(join(demoDir, 'inbox'));
+  const evidenceFile = join(demoDir, 'evidence-agent.json');
+  const payoutRail = payoutRailFromEnv();
+  const say = (step: string, tone: 'info' | 'good' | 'warn', text: string, id: string): void => {
+    process.stdout.write(`[notify] ${text}\n`);
+    void activeNotifier.send({
+      at: new Date().toISOString(),
+      step,
+      tone,
+      text,
+      correlationId: id,
+    });
+  };
+  followAgentLog(agentLog, (move) => {
+    const record = invoiceRecordOf(evidenceFile, move.correlationId);
+    const label = record?.invoiceNumber ?? labelFor(move.correlationId);
+    const notice = noticeFor(move, label);
+    if (notice !== null) {
+      process.stdout.write(`[notify] ${notice.text}\n`);
+      void activeNotifier.send(notice);
+    }
+    if (record?.currency !== 'ZAR') return;
+    if (move.toState === 'SUBMITTED') {
+      say('onramp', 'info', onRampQuote(record.amountMinor, label).text, move.correlationId);
+    }
+    if (move.toState === 'RECONCILED') {
+      payoutRail
+        .pay({ invoiceNumber: label, amountZarMinor: record.amountMinor })
+        .then((result) => {
+          say('payout', 'good', result.text, move.correlationId);
+        })
+        .catch((error: unknown) => {
+          say(
+            'payout',
+            'warn',
+            `Supplier payout for ${label} not made: ${error instanceof RampError ? error.message : 'the payout rail failed'}. The ledger payment stands.`,
+            move.correlationId,
+          );
+        });
+    }
+  });
+  process.stdout.write(
+    `[demo] supplier payout: ${payoutRail === simulatedRail ? 'simulated locally (set PAYSTACK_SECRET_KEY to a test key for Paystack test mode)' : 'Paystack test mode (no money moves)'}\n`,
+  );
+  process.stdout.write(
+    `[demo] owner notifications: ${telegram === null ? 'console and log only (set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID for Telegram)' : 'console, log and Telegram'}\n`,
+  );
   const agentChild = start(
     'agent',
     [
@@ -455,6 +635,7 @@ async function main(): Promise<void> {
       SIGNOFF_WARDEN_URL: WARDEN_URL,
       SIGNOFF_CONSOLE_MODE: 'live',
       SIGNOFF_CONSOLE_TRANSITIONS: agentLog,
+      SIGNOFF_CONSOLE_NOTIFICATIONS: notificationsFile,
       SIGNOFF_TOKEN_ISSUER: RLUSD_TESTNET.issuer,
       SIGNOFF_RLUSD_ISSUER: RLUSD_TESTNET.issuer,
       SIGNOFF_WARDEN_READER_ID: 'operator-a',

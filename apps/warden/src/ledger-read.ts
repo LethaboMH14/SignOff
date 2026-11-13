@@ -1,6 +1,7 @@
 import {
   desiredSignerList,
   diffSignerList,
+  highValueSignerList,
   LSF_DISABLE_MASTER,
   type LedgerPort,
   type RegistryAccount,
@@ -50,6 +51,8 @@ export interface PreSigningRequest {
   readonly warden: RegistryAccount;
   /** The destination tag the enrolled payee has, or null when it has none. */
   readonly destinationTag: number | null;
+  /** Set for the high-value account: its signer list must be agent, Warden and this owner, quorum 3. */
+  readonly owner?: Pick<RegistryAccount, 'address'>;
 }
 
 /**
@@ -66,7 +69,10 @@ export async function readPreSigning(
   const issuer = await port.account(request.issuer);
   const spendingLine = await port.trustLine(request.spending, asset);
   const destinationLine = await port.trustLine(request.destination, asset);
-  const signers = desiredSignerList(request.agent, request.warden);
+  const signers =
+    request.owner === undefined
+      ? desiredSignerList(request.agent, request.warden)
+      : highValueSignerList(request.agent, request.warden, request.owner);
   return {
     spendingExists: spending !== null,
     masterDisabled: spending !== null && (spending.flags & LSF_DISABLE_MASTER) !== 0,

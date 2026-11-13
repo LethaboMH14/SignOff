@@ -20,6 +20,7 @@ export const WardenReasonCode = z.enum([
   'INVARIANT_FAILED',
   'ACCOUNT_BUSY',
   'RECEIVING_CAPACITY',
+  'OWNER_APPROVAL_UNAVAILABLE',
 ]);
 
 export type WardenReasonCode = z.infer<typeof WardenReasonCode>;

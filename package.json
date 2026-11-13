@@ -38,6 +38,7 @@
     "testnet:synthetic": "tsx scripts/testnet/synthetic.ts",
     "testnet:credential": "tsx scripts/testnet/credential.ts",
     "testnet:funds": "tsx scripts/testnet/funds.ts",
+    "testnet:high-value": "tsx scripts/testnet/high-value.ts",
     "demo:prepare": "tsx scripts/demo/prepare.ts",
     "demo:enrol": "tsx scripts/demo/enrol.ts",
     "demo:credential": "tsx scripts/demo/supplier-credential.ts",

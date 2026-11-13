@@ -1,3 +1,4 @@
+import type { OwnerApprover } from '../../src/owner-approval.js';
 import { randomBytes, randomUUID } from 'node:crypto';
 
 import { Wallet, type Client } from 'xrpl';
@@ -135,6 +136,7 @@ export function configFor(base: Base, overrides: Partial<WardenConfig> = {}): Wa
     listen: { host: '127.0.0.1', port: 0 },
     verifiedPayees: [base.supplierAccount.address],
     supplierDomain: null,
+    highValue: null,
     ...overrides,
   };
 }
@@ -171,7 +173,12 @@ export function wardenDeps(
   base: Base,
   config: WardenConfig,
   evidence: EvidenceRegister,
-  options: { readonly clock?: Clock; readonly log?: EventLog; readonly port?: LedgerPort } = {},
+  options: {
+    readonly clock?: Clock;
+    readonly log?: EventLog;
+    readonly port?: LedgerPort;
+    readonly ownerApprover?: OwnerApprover;
+  } = {},
 ): WardenDeps {
   const clock = options.clock ?? newClock();
   return {
@@ -188,6 +195,7 @@ export function wardenDeps(
       return Promise.resolve();
     },
     newId: () => randomUUID(),
+    ...(options.ownerApprover === undefined ? {} : { ownerApprover: options.ownerApprover }),
   };
 }
 
@@ -195,7 +203,12 @@ export async function openService(
   base: Base,
   config: WardenConfig,
   evidence: EvidenceRegister,
-  options: { readonly clock?: Clock; readonly log?: EventLog; readonly port?: LedgerPort } = {},
+  options: {
+    readonly clock?: Clock;
+    readonly log?: EventLog;
+    readonly port?: LedgerPort;
+    readonly ownerApprover?: OwnerApprover;
+  } = {},
 ): Promise<WardenService> {
   return WardenService.open(wardenDeps(base, config, evidence, options));
 }

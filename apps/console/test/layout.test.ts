@@ -6,7 +6,10 @@ import {
   labelOf,
   MAP_NODES,
   pointOf,
+  sizeOf,
   tokenPosition,
+  VIEW_HEIGHT,
+  VIEW_WIDTH,
 } from '../src/model/layout.js';
 import { AGENT_ACTORS } from '../src/model/states.js';
 
@@ -51,5 +54,47 @@ describe('a busy tray', () => {
     expect(rows.size).toBe(2);
     expect(Math.min(...xs)).toBeGreaterThan(20);
     expect(new Set(places.map((place) => `${String(place.x)},${String(place.y)}`)).size).toBe(14);
+  });
+});
+
+describe('the cards', () => {
+  const box = (node: (typeof MAP_NODES)[number]) => {
+    const { x, y } = pointOf(node);
+    const { width, height } = sizeOf(node);
+    return {
+      left: x - width / 2,
+      right: x + width / 2,
+      top: y - height / 2,
+      bottom: y + height / 2,
+    };
+  };
+
+  it('never overlap each other', () => {
+    for (const a of MAP_NODES) {
+      for (const b of MAP_NODES) {
+        if (a >= b) continue;
+        const p = box(a);
+        const q = box(b);
+        const apart =
+          p.right <= q.left || q.right <= p.left || p.bottom <= q.top || q.bottom <= p.top;
+        expect(apart, `${a} overlaps ${b}`).toBe(true);
+      }
+    }
+  });
+
+  it('stay inside the drawing', () => {
+    for (const node of MAP_NODES) {
+      const b = box(node);
+      expect(b.left).toBeGreaterThanOrEqual(0);
+      expect(b.right).toBeLessThanOrEqual(VIEW_WIDTH);
+      expect(b.top).toBeGreaterThanOrEqual(0);
+      expect(b.bottom).toBeLessThanOrEqual(VIEW_HEIGHT);
+    }
+  });
+
+  it('show the owner approval and the simulated money legs, labelled as simulated', () => {
+    expect(labelOf('approver')).toContain('Owner');
+    expect(labelOf('onramp')).toContain('simulated');
+    expect(labelOf('payout')).toContain('simulated');
   });
 });

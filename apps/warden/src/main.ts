@@ -18,7 +18,8 @@ import {
 } from '../../../packages/xrpl/src/node.js';
 
 import { RequestVerifier } from './auth.js';
-import { loadConfig, loadKeys } from './config.js';
+import { loadConfig, loadKeys, type WardenConfig } from './config.js';
+import { xamanApprover, type OwnerApprover } from './owner-approval.js';
 import { fileEventLog } from './events.js';
 import { watchedEvidenceRegister } from '../../../packages/shared/src/watched-evidence.js';
 import { simulatedIdentityChecker } from './identity.js';
@@ -41,6 +42,38 @@ async function connectFirstAvailable(): Promise<LedgerPort> {
   throw new Error('no testnet endpoint answered');
 }
 
+/**
+ * The owner approver, when the configuration has a high-value route and the Xaman variables are set. Without
+ * them, high-value payments are held (OWNER_APPROVAL_UNAVAILABLE). The variables are never printed.
+ */
+function ownerApproverFor(config: WardenConfig): OwnerApprover | undefined {
+  if (config.highValue === null) {
+    return undefined;
+  }
+  const apiKey = process.env['XAMAN_API_KEY']?.trim() ?? '';
+  const apiSecret = process.env['XAMAN_API_SECRET']?.trim() ?? '';
+  if (apiKey === '' || apiSecret === '') {
+    process.stderr.write(
+      'warden: high-value route configured but no Xaman keys; high-value payments will be held\n',
+    );
+    return undefined;
+  }
+  const userToken = process.env['XAMAN_USER_TOKEN']?.trim() ?? '';
+  return xamanApprover({
+    apiKey,
+    apiSecret,
+    ownerAddress: config.highValue.ownerAddress,
+    userToken: userToken === '' ? null : userToken,
+    expireMinutes: 4,
+    pollMs: 3000,
+    onCreated: ({ link, pushed }) => {
+      process.stdout.write(
+        `warden: owner approval requested (${pushed ? 'pushed to the phone' : 'open this link on the phone'}): ${link}\n`,
+      );
+    },
+  });
+}
+
 async function serve(directory: string): Promise<void> {
   const config = loadConfig(join(directory, 'warden-config.json'));
   const keys = loadKeys(join(directory, 'warden-keys.json'));
@@ -49,7 +82,9 @@ async function serve(directory: string): Promise<void> {
     throw new Error('the Warden key does not match the configured Warden account');
   }
   const port = await connectFirstAvailable();
+  const ownerApprover = ownerApproverFor(config);
   const service = await WardenService.open({
+    ...(ownerApprover === undefined ? {} : { ownerApprover }),
     config,
     wardenWallet,
     log: fileEventLog(join(directory, 'events.jsonl')),

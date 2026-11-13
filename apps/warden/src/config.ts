@@ -60,8 +60,29 @@ export const WardenConfigFile = z.strictObject({
   supplierDomain: z
     .strictObject({ owner: ClassicAddress, sequence: z.int().min(1).max(4_294_967_295) })
     .optional(),
+  /**
+   * Payments at or above the threshold come from a separate high-value account whose signer list is agent,
+   * Warden and the owner, quorum 3, so the ledger itself refuses them until the owner signs. Absent means no
+   * high-value route: every payment comes from the spending account, as before.
+   */
+  highValue: z
+    .strictObject({
+      thresholdMinor: PayableMinorUnits,
+      treasuryAddress: ClassicAddress,
+      ownerAddress: ClassicAddress,
+      /** Extra ledgers before the payment expires, so a person has time to approve on their phone. */
+      approvalWindowLedgers: z.int().min(20).max(1_000),
+    })
+    .optional(),
 });
 export type WardenConfigFile = z.infer<typeof WardenConfigFile>;
+
+export interface HighValueConfig {
+  readonly thresholdMinor: number;
+  readonly treasuryAddress: string;
+  readonly ownerAddress: string;
+  readonly approvalWindowLedgers: number;
+}
 
 /** A ledger asset, with the payable currency it pays. */
 export interface AssetDefinition {
@@ -90,6 +111,7 @@ export interface WardenConfig {
   readonly listen: { readonly host: string; readonly port: number };
   readonly verifiedPayees: readonly string[];
   readonly supplierDomain: { readonly owner: string; readonly sequence: number } | null;
+  readonly highValue: HighValueConfig | null;
 }
 
 export function resolveConfig(file: WardenConfigFile): WardenConfig {
@@ -108,6 +130,7 @@ export function resolveConfig(file: WardenConfigFile): WardenConfig {
     listen: file.listen,
     verifiedPayees: file.verifiedPayees,
     supplierDomain: file.supplierDomain ?? null,
+    highValue: file.highValue ?? null,
   };
 }
 

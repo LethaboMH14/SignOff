@@ -8,7 +8,7 @@ import { ACTOR_LABELS, type AgentActor, type MapNode } from './states.js';
  */
 
 export const VIEW_WIDTH = 1260;
-export const VIEW_HEIGHT = 640;
+export const VIEW_HEIGHT = 750;
 
 export interface Point {
   readonly x: number;
@@ -35,9 +35,15 @@ export const MAP_NODES: readonly MapNode[] = [
   'hold',
   'ledger',
   'paid',
+  'approver',
+  'onramp',
+  'payout',
 ];
 
 const POSITIONS: Readonly<Record<MapNode, Point>> = {
+  approver: { x: 765, y: 480 },
+  onramp: { x: 330, y: 690 },
+  payout: { x: 1100, y: 690 },
   arrival: { x: 62, y: 330 },
   intake: { x: 175, y: 330 },
   screen: { x: 320, y: 190 },
@@ -67,6 +73,9 @@ const LABELS: Readonly<Record<MapNode, string>> = {
   hold: 'Held for a person',
   ledger: 'XRP Ledger (Testnet)',
   paid: 'Paid: validated and reconciled',
+  approver: 'Owner signs on phone',
+  onramp: 'Buyer: kwacha in, RLUSD out (simulated)',
+  payout: 'Supplier: rand payout (simulated)',
 };
 
 /** The place of a node. The key is a closed union that the compiler checks, so it cannot be anything else. */
@@ -114,6 +123,11 @@ export const EDGES: readonly Edge[] = [
   { from: 'screen', to: 'hold', kind: 'branch' },
   { from: 'verifier', to: 'hold', kind: 'branch' },
   { from: 'warden', to: 'hold', kind: 'branch' },
+  // High-value payments only: the owner adds the third signature on their phone, or the payment is held.
+  { from: 'warden', to: 'approver', kind: 'branch' },
+  { from: 'approver', to: 'signer', kind: 'branch' },
+  // The supplier's payout in rand, simulated on Testnet.
+  { from: 'paid', to: 'payout', kind: 'lane' },
 ];
 
 export interface Zone {
@@ -143,6 +157,14 @@ export const ZONES: readonly Zone[] = [
     y: 110,
     width: 362,
     height: 500,
+  },
+  {
+    id: 'money',
+    title: 'Local money in and out: simulated on Testnet',
+    x: 20,
+    y: 650,
+    width: 1222,
+    height: 80,
   },
 ];
 

@@ -29,6 +29,10 @@ const REASON_TEXT: ReadonlyMap<string, string> = new Map<string, string>([
     'RECEIVING_CAPACITY',
     'The supplier account cannot receive this amount yet because it is over the limit it set for this asset.',
   ],
+  [
+    'OWNER_APPROVAL_UNAVAILABLE',
+    'This payment is above the high-value threshold and needs the owner to sign on their phone, but owner approval is not set up.',
+  ],
   ['UNSUPPORTED_TRANSACTION', 'This kind of payment is not allowed.'],
   ['SUPPLIER_NOT_APPROVED', 'The supplier is not approved yet.'],
   [
