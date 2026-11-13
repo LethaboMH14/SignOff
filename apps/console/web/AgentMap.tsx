@@ -1,12 +1,16 @@
 import type { BoardState, TokenState } from '../src/model/board.js';
 import {
+  ARRIVAL_RADIUS,
   EDGES,
+  edgeEnds,
   labelOf,
   MAP_NODES,
   pointOf,
+  sizeOf,
   tokenPosition,
   VIEW_HEIGHT,
   VIEW_WIDTH,
+  ZONES,
   type Point,
 } from '../src/model/layout.js';
 import { ACTOR_LABELS, type MapNode, type Tone } from '../src/model/states.js';
@@ -57,10 +61,50 @@ export function AgentMap({ board }: { readonly board: BoardState }) {
       aria-label={summaryOf(board, tokens.length)}
       className="agent-map"
     >
+      <defs>
+        <marker
+          id="map-arrow"
+          viewBox="0 0 10 10"
+          refX="9"
+          refY="5"
+          markerWidth="7"
+          markerHeight="7"
+          orient="auto-start-reverse"
+        >
+          <path d="M0 0 L10 5 L0 10 Z" className="edge-arrow" />
+        </marker>
+        <marker
+          id="map-arrow-branch"
+          viewBox="0 0 10 10"
+          refX="9"
+          refY="5"
+          markerWidth="7"
+          markerHeight="7"
+          orient="auto-start-reverse"
+        >
+          <path d="M0 0 L10 5 L0 10 Z" className="edge-arrow-branch" />
+        </marker>
+      </defs>
+      <g className="zones">
+        {ZONES.map((zone) => (
+          <g key={zone.id} className={`zone zone-${zone.id}`}>
+            <rect
+              x={zone.x}
+              y={zone.y}
+              width={zone.width}
+              height={zone.height}
+              rx={22}
+              className="zone-box"
+            />
+            <text x={zone.x + 4} y={zone.y - 16} className="zone-title">
+              {zone.title}
+            </text>
+          </g>
+        ))}
+      </g>
       <g className="edges">
         {EDGES.map((edge) => {
-          const from = pointOf(edge.from);
-          const to = pointOf(edge.to);
+          const { from, to } = edgeEnds(edge);
           return (
             <line
               key={`${edge.from}-${edge.to}`}
@@ -68,7 +112,8 @@ export function AgentMap({ board }: { readonly board: BoardState }) {
               y1={from.y}
               x2={to.x}
               y2={to.y}
-              className={`edge edge-${edge.kind}`}
+              className={`edge edge-${edge.kind}${board.activeNode === edge.to ? ' edge-live' : ''}`}
+              markerEnd={edge.kind === 'branch' ? 'url(#map-arrow-branch)' : 'url(#map-arrow)'}
             />
           );
         })}
@@ -77,18 +122,45 @@ export function AgentMap({ board }: { readonly board: BoardState }) {
         {MAP_NODES.map((node) => {
           const point = pointOf(node);
           const active = board.activeNode === node;
-          const radius = node === 'arrival' ? 14 : 30;
+          const { width, height } = sizeOf(node);
           return (
             <g
               key={node}
               className={`node node-${node}${active ? ' node-active' : ''}`}
               transform={`translate(${String(point.x)} ${String(point.y)})`}
             >
-              <circle r={radius} className="node-disc" />
-              {active ? <circle r={30} className="node-pulse" /> : null}
-              <text y={node === 'arrival' ? -22 : 52} textAnchor="middle" className="node-label">
-                {labelOf(node)}
-              </text>
+              {node === 'arrival' ? (
+                <>
+                  <circle r={ARRIVAL_RADIUS} className="node-disc" />
+                  <text y={34} textAnchor="middle" className="node-caption">
+                    {labelOf(node)}
+                  </text>
+                </>
+              ) : (
+                <>
+                  {active ? (
+                    <rect
+                      x={-width / 2 - 6}
+                      y={-height / 2 - 6}
+                      width={width + 12}
+                      height={height + 12}
+                      rx={18}
+                      className="node-pulse"
+                    />
+                  ) : null}
+                  <rect
+                    x={-width / 2}
+                    y={-height / 2}
+                    width={width}
+                    height={height}
+                    rx={14}
+                    className="node-disc"
+                  />
+                  <text y={5} textAnchor="middle" className="node-label">
+                    {labelOf(node)}
+                  </text>
+                </>
+              )}
             </g>
           );
         })}
@@ -103,12 +175,9 @@ export function AgentMap({ board }: { readonly board: BoardState }) {
               style={{ transform: `translate(${String(point.x)}px, ${String(point.y)}px)` }}
             >
               <title>{`Invoice ${token.invoice}: ${token.label}. ${TONE_WORDS[token.tone]}.`}</title>
-              <circle r={15} className="token-disc" />
+              <circle r={13} className="token-disc" />
               <text y={5} textAnchor="middle" className="token-glyph" aria-hidden="true">
                 {TONE_GLYPHS[token.tone]}
-              </text>
-              <text y={34} textAnchor="middle" className="token-id">
-                {token.invoice.slice(0, 4)}
               </text>
             </g>
           );

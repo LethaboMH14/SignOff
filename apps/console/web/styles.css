@@ -180,24 +180,84 @@ button.quiet:hover:not(:disabled) {
 .agent-map {
   display: block;
   width: 100%;
-  min-width: 760px;
+  min-width: 880px;
   height: auto;
 }
 
+/* Zones group the agents by trust boundary. Their titles sit above the box, never on a card. */
+.zone-box {
+  fill: rgba(255, 255, 255, 0.35);
+  stroke: var(--line);
+  stroke-width: 1.5;
+  stroke-dasharray: 8 6;
+}
+
+.zone-warden .zone-box {
+  fill: rgba(20, 33, 61, 0.06);
+}
+
+.zone-title {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  fill: var(--ink-3);
+}
+
+/* Edges: a slow flowing dash shows work moving along the graph; the edge into the agent that just acted runs faster. */
 .edge {
   stroke: var(--track);
-  stroke-width: 3;
+  stroke-width: 2.5;
   fill: none;
+  stroke-dasharray: 10 8;
+  animation: edge-flow 2.4s linear infinite;
 }
 
 .edge-branch {
-  stroke-dasharray: 6 6;
+  stroke: var(--exception);
+  stroke-dasharray: 4 7;
+  animation-duration: 3.2s;
+}
+
+.edge-live {
+  stroke: var(--verified);
+  stroke-width: 3.5;
+  animation-duration: 0.8s;
+}
+
+.edge-arrow {
+  fill: var(--ink-3);
+}
+
+.edge-arrow-branch {
+  fill: var(--exception);
+}
+
+@keyframes edge-flow {
+  to {
+    stroke-dashoffset: -36;
+  }
 }
 
 .node-disc {
   fill: var(--card);
   stroke: var(--ink);
   stroke-width: 2;
+}
+
+.node-warden .node-disc {
+  fill: var(--ink);
+}
+
+.node-warden .node-label,
+.node-paid .node-label {
+  fill: #ffffff;
+}
+
+.node-caption {
+  font-size: 13px;
+  font-weight: 600;
+  fill: var(--ink-3);
 }
 
 .node-arrival .node-disc {
@@ -233,11 +293,11 @@ button.quiet:hover:not(:disabled) {
 
 .node-pulse {
   fill: none;
-  stroke: var(--ink);
+  stroke: var(--verified);
   stroke-width: 3;
   transform-box: fill-box;
   transform-origin: center;
-  animation: pulse 1.2s ease-out infinite;
+  animation: pulse 1.4s ease-out infinite;
 }
 
 @keyframes pulse {
@@ -247,7 +307,7 @@ button.quiet:hover:not(:disabled) {
   }
   to {
     opacity: 0;
-    transform: scale(1.7);
+    transform: scale(1.15);
   }
 }
 
