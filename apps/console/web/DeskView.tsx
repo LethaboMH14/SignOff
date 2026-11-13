@@ -1,6 +1,12 @@
 import { type SubmitEvent, useState } from 'react';
 
-import { type DeskData, type LimitValues, type PendingAction } from './api.js';
+import {
+  type DeskData,
+  type LimitValues,
+  type PendingAction,
+  type TestInvoiceChoice,
+  type TestInvoiceResult,
+} from './api.js';
 import { DISPLAY_STATES, type DeskRow, type DisplayState } from '../src/model/desk.js';
 import { limitChangeOf, limitEffectOf, limitSymbolOf } from '../src/model/limits.js';
 import { nextActionOf } from '../src/model/next-action.js';
@@ -169,22 +175,46 @@ export interface DeskViewProps {
   readonly onOpen: (rowId: string) => void;
   /** Opens the receipt for a paid row, by its attempt id. */
   readonly onReceipt: (attemptId: string) => void;
-  /** Drops a fictional test invoice into the agent's inbox. Present only when the demo launcher started the console. */
-  readonly onSendTestInvoice?: (zarMinor: number) => Promise<string>;
+  /** Writes a fictional test invoice. Present only when the demo launcher started the console. */
+  readonly onSendTestInvoice?: (choice: TestInvoiceChoice) => Promise<TestInvoiceResult>;
+}
+
+/** What the panel says once an invoice is written. */
+export function sentMessageOf(
+  choice: TestInvoiceChoice,
+  sent: TestInvoiceResult,
+  mailTo: string | null,
+): string {
+  const usd = `USD ${(sent.usdMinor / 100).toFixed(2)}`;
+  if (choice.delivery === 'email') {
+    const to = mailTo ?? "SignOff's mailbox";
+    return `Invoice ${sent.invoiceNumber} is ready. Download it, attach it to an email from the supplier's address, and send it to ${to}. Then open the Agent map.`;
+  }
+  return choice.variant === 'bank-change'
+    ? `Invoice ${sent.invoiceNumber}, claiming new bank details, is in the agent's inbox. Open the Agent map to watch the screen stop it.`
+    : `Invoice ${sent.invoiceNumber} is in the agent's inbox (${usd}). Open the Agent map to watch it.`;
 }
 
 /**
- * The demo's own invoice button. It writes a fictional supplier's invoice, with its order and goods receipt, so the
- * operator can watch one invoice travel from inbox to testnet payment without leaving the browser.
+ * The demo's own invoice controls. They write a fictional supplier's invoice, with its order and goods receipt, either
+ * straight into the agent's inbox or ready to email to SignOff's mailbox. The bank-change kind is a fraud attempt: it
+ * has no order behind it and claims new bank details.
  */
 export function TestInvoicePanel({
   onSend,
+  mailTo,
 }: {
-  readonly onSend: (zarMinor: number) => Promise<string>;
+  readonly onSend: (choice: TestInvoiceChoice) => Promise<TestInvoiceResult>;
+  readonly mailTo: string | null;
 }) {
   const [amount, setAmount] = useState('20.00');
+  const [delivery, setDelivery] = useState<TestInvoiceChoice['delivery']>(
+    mailTo === null ? 'inbox' : 'email',
+  );
+  const [variant, setVariant] = useState<TestInvoiceChoice['variant']>('clean');
   const [sending, setSending] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [download, setDownload] = useState<string | null>(null);
   const submit = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     const zarMinor = minorOf(amount);
@@ -193,8 +223,12 @@ export function TestInvoicePanel({
       return;
     }
     setSending(true);
+    setDownload(null);
     try {
-      setMessage(await onSend(zarMinor));
+      const choice: TestInvoiceChoice = { zarMinor, delivery, variant };
+      const sent = await onSend(choice);
+      setMessage(sentMessageOf(choice, sent, mailTo));
+      setDownload(sent.download);
     } catch (failure) {
       setMessage(failure instanceof Error ? failure.message : 'The test invoice was not sent.');
     } finally {
@@ -205,8 +239,13 @@ export function TestInvoicePanel({
     <section className="panel test-invoice" aria-labelledby="test-invoice-title">
       <h2 id="test-invoice-title">Send a test invoice</h2>
       <p className="muted">
-        Testnet demo. A fictional supplier invoice, with its purchase order and goods receipt, goes
-        into the agent&apos;s inbox.
+        Testnet demo. A fictional supplier invoice, with its purchase order and goods receipt.
+        {mailTo === null ? null : (
+          <>
+            {' '}
+            SignOff reads email sent to <strong>{mailTo}</strong>.
+          </>
+        )}
       </p>
       <form
         onSubmit={(event) => {
@@ -223,11 +262,44 @@ export function TestInvoicePanel({
             }}
           />
         </label>
+        <label>
+          How it arrives
+          <select
+            value={delivery}
+            onChange={(event) => {
+              setDelivery(event.target.value === 'email' ? 'email' : 'inbox');
+            }}
+          >
+            <option value="inbox">Straight to the agent</option>
+            <option value="email" disabled={mailTo === null}>
+              By email (I send it)
+            </option>
+          </select>
+        </label>
+        <label>
+          Kind
+          <select
+            value={variant}
+            onChange={(event) => {
+              setVariant(event.target.value === 'bank-change' ? 'bank-change' : 'clean');
+            }}
+          >
+            <option value="clean">Clean invoice</option>
+            <option value="bank-change">Fraud: new bank details</option>
+          </select>
+        </label>
         <button type="submit" disabled={sending}>
-          {sending ? 'Sending…' : 'Send test invoice'}
+          {sending ? 'Writing…' : delivery === 'email' ? 'Prepare invoice' : 'Send test invoice'}
         </button>
       </form>
       {message === null ? null : <p role="status">{message}</p>}
+      {download === null ? null : (
+        <p>
+          <a className="button-link" href={download} download>
+            Download the invoice PDF
+          </a>
+        </p>
+      )}
     </section>
   );
 }
@@ -514,7 +586,7 @@ export function DeskView(props: DeskViewProps) {
         <div className="queue-layout">
           <div className="queue-main">
             {data.testInvoices === true && props.onSendTestInvoice !== undefined ? (
-              <TestInvoicePanel onSend={props.onSendTestInvoice} />
+              <TestInvoicePanel onSend={props.onSendTestInvoice} mailTo={data.mailTo ?? null} />
             ) : null}
             {featured === null ? (
               <section className="panel" aria-labelledby="featured-title">

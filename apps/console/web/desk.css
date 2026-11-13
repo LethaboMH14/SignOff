@@ -1261,3 +1261,23 @@ input {
 .test-invoice input {
   width: 9rem;
 }
+.test-invoice select {
+  font: inherit;
+  font-size: 16px;
+  min-height: 44px;
+  min-width: 11rem;
+  padding: 8px 12px;
+  border: 1px solid var(--ink-3);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--ink);
+}
+.button-link {
+  display: inline-block;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: #fff;
+  text-decoration: none;
+  font-weight: 600;
+}

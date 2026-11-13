@@ -5,6 +5,8 @@
 //   npm run demo                     drops one fresh fictional rand invoice (default R16.00) and runs it end to end
 //   npm run demo -- --zar 20.00      the same with another amount (sized to the RLUSD the spending account holds)
 //   npm run demo -- --provider meta --model <id>  the model provider (groq is the default); the key and address come from .env
+//   npm run demo -- --email          also watches SignOff's mailbox; the run's invoice waits in the outbox for you to
+//                                    email it (see docs/EMAIL-DEMO.md)
 //
 // Prerequisites (one time): npm run testnet:provision, then npm run demo:prepare (see docs/DEMO-RUNBOOK.md).
 // The processes run in the foreground. Press Ctrl+C to stop all three.
@@ -81,6 +83,36 @@ function providerEnv(provider: 'groq' | 'meta'): Record<string, string> {
   return {
     META_API_KEY: need('META_API_KEY', process.env['META_API_KEY']),
     META_API_BASE_URL: base,
+  };
+}
+
+/**
+ * The mail watcher's variables, for its process only: the mailbox, its app password and the allowed senders. Read from
+ * the environment or the repository's .env, and never printed.
+ */
+function mailEnv(): Record<string, string> {
+  const need = (name: string): string => {
+    // eslint-disable-next-line security/detect-object-injection -- the names are the fixed SIGNOFF_MAIL_ settings below
+    const value = process.env[name]?.trim() ?? '';
+    if (value === '') {
+      throw new DemoError(
+        `${name} is not set, in the environment or in .env. --email needs it (see docs/EMAIL-DEMO.md). Nothing was started.`,
+      );
+    }
+    return value;
+  };
+  const optional = (name: string): Record<string, string> => {
+    // eslint-disable-next-line security/detect-object-injection -- the names are the fixed SIGNOFF_MAIL_ settings below
+    const value = process.env[name]?.trim() ?? '';
+    return value === '' ? {} : { [name]: value };
+  };
+  return {
+    SIGNOFF_MAIL_USER: need('SIGNOFF_MAIL_USER'),
+    SIGNOFF_MAIL_PASSWORD: need('SIGNOFF_MAIL_PASSWORD'),
+    SIGNOFF_MAIL_ALLOWED_SENDERS: need('SIGNOFF_MAIL_ALLOWED_SENDERS'),
+    ...optional('SIGNOFF_MAIL_HOST'),
+    ...optional('SIGNOFF_MAIL_PORT'),
+    ...optional('SIGNOFF_MAIL_AUTHSERV'),
   };
 }
 
@@ -230,6 +262,8 @@ async function main(): Promise<void> {
   assertOutsideRepository(localDir, repoRoot);
   loadDotEnv(resolve(repoRoot, '.env'));
   const providerVars = providerEnv(provider);
+  const email = args.includes('--email');
+  const mailVars = email ? mailEnv() : null;
 
   const registry = await fileRegistryStore(join(localDir, 'registry.json')).read();
   if (registry === null) {
@@ -292,10 +326,18 @@ async function main(): Promise<void> {
   // The run's invoice and its evidence are written before the Warden starts. The Warden reads its evidence file only at
   // start-up, so a record written after it started would be missing, and the new invoice would be held.
   archiveInbox(localDir);
-  const invoice = await writeDemoInvoice(zarMinor, localDir);
+  // With --email the run's invoice goes to the outbox, for a person to email to SignOff's mailbox.
+  const invoice = await writeDemoInvoice(zarMinor, localDir, {
+    delivery: email ? 'outbox' : 'inbox',
+  });
   process.stdout.write(
     `[demo] invoice ${invoice.file} R${(zarMinor / 100).toFixed(2)} = USD ${(invoice.usdMinor / 100).toFixed(2)} at USD/ZAR ${invoice.rate} (live)\n`,
   );
+  if (mailVars !== null) {
+    process.stdout.write(
+      `[demo] email mode: attach ${invoice.path} to an email from an allowed sender to ${String(mailVars['SIGNOFF_MAIL_USER'])}\n`,
+    );
+  }
 
   // 1. Warden: its own directory, its own keys, no agent or console variables.
   start('warden', [join('apps', 'warden', 'src', 'main.ts')], envFor({}));
@@ -370,6 +412,7 @@ async function main(): Promise<void> {
       SIGNOFF_WARDEN_READER_SECRET_FILE: readerSecretPath,
       SIGNOFF_CONSOLE_PORT: String(CONSOLE_PORT),
       SIGNOFF_DEMO_DIR: localDir,
+      ...(mailVars === null ? {} : { SIGNOFF_DEMO_MAIL_TO: mailVars['SIGNOFF_MAIL_USER'] ?? '' }),
     }),
   );
   await waitFor(
@@ -381,6 +424,26 @@ async function main(): Promise<void> {
     60_000,
   );
 
+  // 3b. The mail watcher, with --email: the mailbox password and nothing else. It copies accepted PDFs into the inbox.
+  if (mailVars !== null) {
+    const mailChild = start(
+      'mail',
+      [
+        join('apps', 'agent', 'src', 'mail', 'main.ts'),
+        '--inbox',
+        join(demoDir, 'inbox'),
+        '--log',
+        join(demoDir, 'mail-log.jsonl'),
+      ],
+      envFor(mailVars),
+    );
+    await waitFor(
+      () => Promise.resolve(mailChild.lines.some((line) => line.includes('mail watcher running'))),
+      'the mail watcher (check SIGNOFF_MAIL_USER and the app password)',
+      60_000,
+    );
+  }
+
   // 4. Wait for the run's decision. It is read from the agent's own transition log, not from its stdout, because
   // a stdout line can be missed. A decision is the last move of this invoice in a terminal state.
   const terminal = new Set([
@@ -390,7 +453,8 @@ async function main(): Promise<void> {
     'FAILED',
     'RECONCILIATION_EXCEPTION',
   ]);
-  const deadline = Date.now() + 5 * 60_000;
+  // An emailed invoice waits for a person to send it, so that run waits longer.
+  const deadline = Date.now() + (email ? 20 : 5) * 60_000;
   let finalLine: string | null = null;
   while (Date.now() < deadline && finalLine === null) {
     const moves = existsSync(agentLog)
@@ -421,7 +485,7 @@ async function main(): Promise<void> {
   process.stdout.write(
     `[demo] console: ${CONSOLE_URL} (sign in as the demo operator; its password is in ${join(demoDir, 'console-password.txt')})\n`,
   );
-  process.stdout.write('[demo] all three processes are running. Press Ctrl+C to stop them.\n');
+  process.stdout.write('[demo] all processes are running. Press Ctrl+C to stop them.\n');
 }
 
 process.on('SIGINT', () => {

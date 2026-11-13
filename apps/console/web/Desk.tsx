@@ -208,10 +208,10 @@ export function Desk({ session, onSession }: DeskProps) {
       onReceipt={(attemptId) => {
         void openReceipt(attemptId);
       }}
-      onSendTestInvoice={async (zarMinor) => {
-        const sent = await sendTestInvoice(zarMinor, session.csrfToken);
+      onSendTestInvoice={async (choice) => {
+        const sent = await sendTestInvoice(choice, session.csrfToken);
         void refresh();
-        return `Invoice ${sent.invoiceNumber} is in the agent's inbox (USD ${(sent.usdMinor / 100).toFixed(2)}). Open the Agent map to watch it.`;
+        return sent;
       }}
     />
   );

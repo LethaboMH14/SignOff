@@ -7,7 +7,7 @@ import { countsOf, deskRowsOf } from '../model/desk.js';
 import { type Operator, type OperatorStore } from './auth/operators.js';
 import { hashPassword, verifyPassword } from './auth/passwords.js';
 import { LoginGuard, type Session, type SessionStoreApi } from './auth/sessions.js';
-import { cookieOf, readBody, sendEmpty, sendJson } from './http.js';
+import { cookieOf, readBody, SECURITY_HEADERS, sendEmpty, sendJson } from './http.js';
 import type { ConsoleMode } from './app.js';
 import { invoiceDetailOf } from './invoice-view.js';
 import { receiptOf, type ReceiptConfig, type ReceiptLedger } from './receipt.js';
@@ -73,9 +73,30 @@ export interface ApiContext {
   readonly testInvoices?: TestInvoicePort;
 }
 
-export interface TestInvoicePort {
-  send(zarMinor: number): Promise<{ readonly invoiceNumber: string; readonly usdMinor: number }>;
+export interface TestInvoiceRequest {
+  readonly zarMinor: number;
+  /** Straight into the agent's inbox, or prepared for a person to email to SignOff's mailbox. */
+  readonly delivery: 'inbox' | 'email';
+  readonly variant: 'clean' | 'bank-change';
 }
+
+export interface TestInvoiceSent {
+  readonly invoiceNumber: string;
+  readonly usdMinor: number;
+  /** For an invoice to email: the console path that downloads its PDF. */
+  readonly download: string | null;
+}
+
+export interface TestInvoicePort {
+  send(request: TestInvoiceRequest): Promise<TestInvoiceSent>;
+  /** A prepared invoice's PDF from the outbox, by its file name, or null when there is none. */
+  outboxFile(name: string): Promise<Uint8Array | null>;
+  /** SignOff's demo mailbox address, shown to the operator; null when the mail watcher is off. */
+  readonly mailTo: string | null;
+}
+
+/** The names the outbox may serve: the launcher's own invoice numbers, nothing a caller can steer elsewhere. */
+export const OUTBOX_PATH = /^\/api\/demo\/outbox\/(INV-DEMO-\d{14}(?:-B)?\.pdf)$/;
 
 export interface Caller {
   readonly session: Session;
@@ -114,7 +135,11 @@ const Credentials = z.strictObject({
 const StepUpBody = z.strictObject({ password: z.string().min(1).max(256) });
 const PauseBody = z.strictObject({ paused: z.boolean() });
 /** A test invoice in rand: R1.00 to R10,000.00, in cents. */
-const TestInvoiceBody = z.strictObject({ zarMinor: z.number().int().min(100).max(1_000_000) });
+const TestInvoiceBody = z.strictObject({
+  zarMinor: z.number().int().min(100).max(1_000_000),
+  delivery: z.enum(['inbox', 'email']).default('inbox'),
+  variant: z.enum(['clean', 'bank-change']).default('clean'),
+});
 
 const Minor = z.int().min(1).max(1_000_000_000_000);
 const LimitsBody = z
@@ -374,6 +399,7 @@ async function desk(
         pendingLimitChange: pendingViewOf(overview.pendingLimitChange, caller, ctx),
       },
       testInvoices: ctx.testInvoices !== undefined && caller.operator.role === 'operator',
+      mailTo: caller.operator.role === 'operator' ? (ctx.testInvoices?.mailTo ?? null) : null,
       counts: countsOf(rows),
       rows,
     });
@@ -440,11 +466,45 @@ async function testInvoice(
     return;
   }
   try {
-    const sent = await ctx.testInvoices.send(body.zarMinor);
+    const sent = await ctx.testInvoices.send(body);
     sendJson(response, 202, sent);
   } catch {
     sendJson(response, 502, { error: 'the test invoice could not be written' });
   }
+}
+
+/** Downloads a prepared invoice so an operator can email it to SignOff. Operators only. */
+async function outboxRead(
+  request: IncomingMessage,
+  response: ServerResponse,
+  ctx: ApiContext,
+  name: string,
+): Promise<void> {
+  const caller = callerOf(request, ctx);
+  if (caller === null) {
+    notSignedIn(response);
+    return;
+  }
+  if (ctx.testInvoices === undefined) {
+    sendJson(response, 404, { error: 'test invoices are off' });
+    return;
+  }
+  if (caller.operator.role !== 'operator') {
+    sendJson(response, 403, { error: 'only an operator can download test invoices' });
+    return;
+  }
+  const bytes = await ctx.testInvoices.outboxFile(name);
+  if (bytes === null) {
+    sendJson(response, 404, { error: 'no such prepared invoice' });
+    return;
+  }
+  response.writeHead(200, {
+    ...SECURITY_HEADERS,
+    'content-type': 'application/pdf',
+    'content-disposition': `attachment; filename="${name}"`,
+    'cache-control': 'no-store',
+  });
+  response.end(Buffer.from(bytes));
 }
 
 async function limits(
@@ -600,6 +660,11 @@ export async function handleApi(
   const approve = APPROVE_PATH.exec(pathname);
   if (approve !== null && method === 'POST') {
     await approveLimit(request, response, ctx, approve[1] ?? '');
+    return;
+  }
+  const outbox = OUTBOX_PATH.exec(pathname);
+  if (outbox !== null && method === 'GET') {
+    await outboxRead(request, response, ctx, outbox[1] ?? '');
     return;
   }
   const invoice = INVOICE_PATH.exec(pathname);

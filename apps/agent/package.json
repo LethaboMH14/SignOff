@@ -13,7 +13,9 @@
     "serve": "tsx src/main.ts"
   },
   "dependencies": {
+    "imapflow": "2.10.0",
     "jpeg-js": "0.4.4",
+    "mailparser": "3.14.1",
     "pdfjs-dist": "6.5.438",
     "pngjs": "7.0.0",
     "tesseract.js": "7.0.0",

@@ -11,7 +11,9 @@ import {
   moneyOf,
   sastOf,
   shortSastOf,
+  sentMessageOf,
   tabAfter,
+  TestInvoicePanel,
 } from '../web/DeskView.js';
 import { Login } from '../web/Login.js';
 import { slugOf, StateChip, symbolOf } from '../web/StateChip.js';
@@ -318,7 +320,8 @@ describe('the sign-in form', () => {
 });
 
 describe('the test invoice panel', () => {
-  const send = (): Promise<string> => Promise.resolve('sent');
+  const send = () =>
+    Promise.resolve({ invoiceNumber: 'INV-DEMO-1', usdMinor: 108, download: null });
   const withSender = (data: DeskData): string =>
     renderToStaticMarkup(
       <DeskView
@@ -346,5 +349,38 @@ describe('the test invoice panel', () => {
   it('stays hidden when the console has them off, or for a desk with no sender', () => {
     expect(withSender(dataOf({ testInvoices: false }))).not.toContain('Send a test invoice');
     expect(deskOf(dataOf({ testInvoices: true }))).not.toContain('Send a test invoice');
+  });
+});
+
+describe('what the test invoice panel says', () => {
+  const sent = { invoiceNumber: 'INV-DEMO-1', usdMinor: 120, download: '/api/demo/outbox/x.pdf' };
+
+  it('tells the operator where to email a prepared invoice', () => {
+    const choice = { zarMinor: 2000, delivery: 'email', variant: 'clean' } as const;
+    expect(sentMessageOf(choice, sent, 'signoff@example.com')).toContain(
+      'send it to signoff@example.com',
+    );
+    expect(sentMessageOf(choice, sent, null)).toContain("SignOff's mailbox");
+  });
+
+  it('names the amount for a clean invoice and the screen for a fraud attempt', () => {
+    expect(
+      sentMessageOf({ zarMinor: 2000, delivery: 'inbox', variant: 'clean' }, sent, null),
+    ).toContain('USD 1.20');
+    expect(
+      sentMessageOf({ zarMinor: 2000, delivery: 'inbox', variant: 'bank-change' }, sent, null),
+    ).toContain('watch the screen stop it');
+  });
+
+  it('offers email delivery only when the mail watcher runs', () => {
+    const answer = () => Promise.resolve(sent);
+    const on = renderToStaticMarkup(
+      <TestInvoicePanel onSend={answer} mailTo="signoff@example.com" />,
+    );
+    const off = renderToStaticMarkup(<TestInvoicePanel onSend={answer} mailTo={null} />);
+    expect(on).toContain('signoff@example.com');
+    expect(on).toContain('Prepare invoice');
+    expect(off).toContain('Send test invoice');
+    expect(off).toMatch(/<option value="email" disabled=""/);
   });
 });

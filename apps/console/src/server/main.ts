@@ -161,10 +161,24 @@ const api: ApiContext = {
     ? {}
     : {
         testInvoices: {
-          send: async (zarMinor: number) => {
-            const invoice = await writeDemoInvoice(zarMinor, demoDir);
-            return { invoiceNumber: invoice.invoiceNumber, usdMinor: invoice.usdMinor };
+          send: async (request) => {
+            const invoice = await writeDemoInvoice(request.zarMinor, demoDir, {
+              delivery: request.delivery === 'email' ? 'outbox' : 'inbox',
+              variant: request.variant,
+            });
+            return {
+              invoiceNumber: invoice.invoiceNumber,
+              usdMinor: invoice.usdMinor,
+              download: request.delivery === 'email' ? `/api/demo/outbox/${invoice.file}` : null,
+            };
           },
+          outboxFile: (name) => {
+            // The route admits only the launcher's own invoice names, so the path stays inside the outbox.
+            const path = join(demoDir, 'demo', 'outbox', name);
+            // eslint-disable-next-line security/detect-non-literal-fs-filename -- a name the route checked, inside the demo outbox
+            return Promise.resolve(existsSync(path) ? new Uint8Array(readFileSync(path)) : null);
+          },
+          mailTo: process.env['SIGNOFF_DEMO_MAIL_TO'] ?? null,
         },
       }),
 };

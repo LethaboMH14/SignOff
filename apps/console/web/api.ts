@@ -63,6 +63,8 @@ export interface DeskData {
   readonly rows: readonly DeskRow[];
   /** True when this operator may send a fictional test invoice (live demo only). */
   readonly testInvoices?: boolean;
+  /** SignOff's demo mailbox, when the mail watcher runs. */
+  readonly mailTo?: string | null;
 }
 
 export class ApiError extends Error {
@@ -164,12 +166,25 @@ export function setPaused(paused: boolean, csrf: string): Promise<unknown> {
   return request('POST', '/api/control/pause', { paused }, csrf);
 }
 
-/** Drops a fictional test invoice into the agent's inbox. The agent and the Warden check it like any other. */
+export interface TestInvoiceChoice {
+  readonly zarMinor: number;
+  /** Straight into the agent's inbox, or prepared for the operator to email to SignOff's mailbox. */
+  readonly delivery: 'inbox' | 'email';
+  readonly variant: 'clean' | 'bank-change';
+}
+
+export interface TestInvoiceResult {
+  readonly invoiceNumber: string;
+  readonly usdMinor: number;
+  readonly download: string | null;
+}
+
+/** Writes a fictional test invoice. The agent and the Warden check it like any other. */
 export function sendTestInvoice(
-  zarMinor: number,
+  choice: TestInvoiceChoice,
   csrf: string,
-): Promise<{ readonly invoiceNumber: string; readonly usdMinor: number }> {
-  return request('POST', '/api/demo/invoice', { zarMinor }, csrf);
+): Promise<TestInvoiceResult> {
+  return request('POST', '/api/demo/invoice', choice, csrf);
 }
 
 /** Asks for new limits. The answer says whether they applied, or whether a higher one waits for a second operator. */
