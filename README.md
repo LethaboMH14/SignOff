@@ -2,14 +2,63 @@
 
 **An AI accounts-payable agent that cannot move money on its own.**
 
-> **Judges, start here:** [docs/JUDGING.md](docs/JUDGING.md) has a five-minute check (`npm ci && npm run check`, `npm run attack`, `npm run judge:check`), public ledger links for live payments, and where the build stands on each criterion. Release checks run on 13 November are in [docs/RELEASE-CHECKS.md](docs/RELEASE-CHECKS.md).
+[![CI](https://github.com/LethaboMH14/SignOff/actions/workflows/ci.yml/badge.svg)](https://github.com/LethaboMH14/SignOff/actions/workflows/ci.yml)
+&nbsp;XRP Ledger **Testnet** · RLUSD · Node Engine Hackathon 2026, Agentic Finance track · Team Sonar
 
-SignOff reads supplier invoices, checks them against purchasing records, and pays the routine ones without a human click. Every payment needs two signatures. The agent holds one. The second belongs to an independent rulebook service, called Warden, that the agent cannot read, edit or talk its way past. If a payment breaks a rule, Warden withholds its signature, and the XRP Ledger will not accept a payment with only one.
+SignOff reads supplier invoices, checks them against purchasing records, and pays the routine ones without a human click. Every payment needs two signatures. The agent holds one. The second belongs to an independent rulebook service, **Warden**, that the agent cannot read, edit or talk its way past. If a payment breaks a rule, Warden withholds its signature, and the XRP Ledger will not accept a payment with only one. Payments above a threshold need a third signature: the business owner's, on their phone.
 
-> **Status, 12 November 2026. Merged to `main`:** Gate 0, the Gate A ledger layer ([PR #19](https://github.com/LethaboMH14/SignOff/pull/19)), the foundation PRs F1 to F5 and the A5 reconcile fix ([PR #51](https://github.com/LethaboMH14/SignOff/pull/51)). **Merged only into the Gate B branch** `feat/gate-b-warden-controls` (PRs [#48](https://github.com/LethaboMH14/SignOff/pull/48), [#50](https://github.com/LethaboMH14/SignOff/pull/50), [#52](https://github.com/LethaboMH14/SignOff/pull/52), [#53](https://github.com/LethaboMH14/SignOff/pull/53), [#54](https://github.com/LethaboMH14/SignOff/pull/54)), which is not on `main` until Gate B ([PR #27](https://github.com/LethaboMH14/SignOff/pull/27)) is merged. **Open PRs, not merged:** Gate C ([#44](https://github.com/LethaboMH14/SignOff/pull/44), with its agent fix in [#49](https://github.com/LethaboMH14/SignOff/pull/49) merged only into the Gate C branch), the console stack ([#55](https://github.com/LethaboMH14/SignOff/pull/55), [#56](https://github.com/LethaboMH14/SignOff/pull/56), [#57](https://github.com/LethaboMH14/SignOff/pull/57)), the S3 watchdog ([#58](https://github.com/LethaboMH14/SignOff/pull/58)) and the RLUSD proof ([#61](https://github.com/LethaboMH14/SignOff/pull/61)). **RLUSD:** 1 RLUSD was validated on XRPL Testnet (ledger 22255596). The 10 RLUSD run is still open. Live Testnet evidence before that used a test-issued token, not RLUSD.
-> The Warden now signs only at final authorization, after rechecking pause, policy, limits, payee and the ledger, so the agent never holds a usable Warden signature ([issue #45](https://github.com/LethaboMH14/SignOff/issues/45), still open until its owner closes it). The live negative proof covers the pause path ([TEST-LOG T-124](docs/logs/TEST-LOG.md)); a lowered limit and a payout change are covered by offline regression tests ([T-140](docs/logs/TEST-LOG.md)). The agent's model evaluation is SIMULATED. The console, the judge check and a credential check are built and tested in software or on Testnet, as the table below states. The browser measurements pass, but visual review, keyboard checks and a live receipt have not run, and nothing is deployed. No customer has been interviewed and no partner is integrated. The screen mockups were approved for build and will be reworked later. See [Status of every claim](#status-of-every-claim) below.
+**Demo video (under 3 minutes):** _link added at submission_
 
-Built for the [Node Engine Hackathon](https://w3node.io/node-engine) at W3Node, Cape Town, in the Agentic Finance track. Submissions close on Friday 13 November 2026 at 23:59 SAST.
+> Everything here runs on XRPL **Testnet**. Testnet RLUSD has no value. Invoices, suppliers and buyers are fictional. The rand payout to the supplier's bank is **SIMULATED**. Every claim carries a state (Live on Testnet, Simulated, Planned, Not claimed) in [Status of every claim](#status-of-every-claim).
+
+## Live links
+
+| What | Link | What you should see |
+|---|---|---|
+| Demo video | _added at submission_ | The user journey end to end, narrated |
+| Routine payment, co-signed by the hosted Warden | [E1BA2278…4A5E](https://testnet.xrpl.org/transactions/E1BA22785622CBC3FAAEB2236BC4AA782128B8CDA80D412823DAEE1E1A104A5E) | Validated RLUSD payment, two signers (agent + Warden) ([T-268](docs/logs/TEST-LOG.md)) |
+| 10 RLUSD payment | [821333EB…0728](https://testnet.xrpl.org/transactions/821333EBE1DBC5BAE93DDC2BE6872908A62EF7F1617C823A19305E0DF76A0728) | 10 RLUSD delivered, two signers ([T-267](docs/logs/TEST-LOG.md)) |
+| High-value payment, owner approved in Xaman | [2A6FDB95…D9FD](https://testnet.xrpl.org/transactions/2A6FDB95A4D393165A45B64ABA9E07E735AFF7A69C1960F615902CD8D67DD9FD) | Ledger 22300977, three signers (agent + Warden + owner) ([T-273](docs/logs/TEST-LOG.md), [docs/HIGH-VALUE.md](docs/HIGH-VALUE.md)) |
+| Hosted Warden (Railway) | [/v1/health](https://warden-production-4f0fcb91.up.railway.app/v1/health) | `"ready":true`. Every other route refuses an unsigned request with 401 |
+| Operator console, SIMULATED replay (Vercel) | [signoff-console-simulated.vercel.app](https://signoff-console-simulated.vercel.app) | Sign in with the demo viewer account below, open **Agent map**, press "Play a clean invoice" and "Play a bank-detail change attack" |
+
+**Demo viewer account** for the simulated console: _given at submission_. It is a read-only viewer on a replay that never touches the Warden or the ledger, so it guards no real data ([D-154](docs/logs/DECISION-JOURNAL.md)).
+
+## Run it yourself
+
+Requires **Node 24** (`.nvmrc`) and git. Works on Windows, macOS and Linux.
+
+### 1. Two minutes, no keys
+
+```bash
+git clone https://github.com/LethaboMH14/SignOff.git && cd SignOff
+npm ci
+npm run judge:check   # payment and injection tests, plus the labelled-set re-run against the committed result: 0 fail
+npm run attack        # 26 of 26 attack cases held, refused or rejected by the Warden
+```
+
+### 2. Five minutes, no keys
+
+```bash
+npm run check         # format, lint (0 warnings), types, secret scan, 150 test files / 1,681 tests with coverage, build
+npm run demo:verify -- 2A6FDB95A4D393165A45B64ABA9E07E735AFF7A69C1960F615902CD8D67DD9FD
+                      # reads a paid invoice straight from Testnet: validated, tesSUCCESS, RLUSD issuer, signer count
+```
+
+### 3. The full live run (about 15 minutes, free accounts only)
+
+You need a free [Groq API key](https://console.groq.com/keys). Testnet accounts come from the public faucet.
+
+```bash
+cp .env.example .env              # then set GROQ_API_KEY; everything else is optional
+npm run testnet:provision         # six Testnet accounts from the faucet, trust lines, test token
+npm run testnet:signers           # signer list: agent 1 + Warden 1, quorum 2, master key disabled
+npm run testnet:funds -- status   # RLUSD held and the Testnet DEX depth (fund RLUSD as the runbook says)
+npm run demo:prepare              # buyer records, Warden config and keys, agent identity (outside the repo)
+npm run demo                      # starts Warden, agent and console; one fictional invoice goes to Paid
+```
+
+Open http://127.0.0.1:4180 to watch it on the desk and the Agent map. `npm run demo -- --email` adds emailed invoices ([docs/EMAIL-DEMO.md](docs/EMAIL-DEMO.md)); `npm run demo -- --zar 60.00` with the Xaman keys runs a high-value payment the owner approves on their phone ([docs/HIGH-VALUE.md](docs/HIGH-VALUE.md)). Testnet RLUSD is scarce, so demo invoices are R16 to R60; sizing and funding are in [docs/RLUSD-TESTNET-RUNBOOK.md](docs/RLUSD-TESTNET-RUNBOOK.md). Seeds and keys are written to your local SignOff folder, never into the repository.
 
 ## The problem
 
@@ -92,6 +141,8 @@ This positioning was accepted by the team on 10 November 2026 ([ADR 0001](docs/d
 
 ## Status of every claim
 
+Updated 14 November 2026 for judging. Branch and pull-request names in this table record where each item was first built and reviewed; the release branch `release/judging` carries all of them. High-value owner approval is live on Testnet (ledger 22300977, [T-273](docs/logs/TEST-LOG.md)).
+
 | Item | Planned | Live on Testnet | Simulated in demo | Validated with customers |
 |---|---|---|---|---|
 | Agent run on an invoice file | Yes | **Live on Testnet, end to end, on branch feat/credentials-escrow-x402.** One command starts the Warden, the agent and the console; a fictional R20.00 invoice goes from intake to reconciled in about 12 seconds, paid once in RLUSD with two signers ([TEST-LOG T-251](docs/logs/TEST-LOG.md), [T-257](docs/logs/TEST-LOG.md)). Repeated by the operator from their own terminal ([T-260](docs/logs/TEST-LOG.md)). The invoice is a fictional demo invoice written by the launcher. Its fields are read by a live model: the agent log records `groq:openai/gpt-oss-120b`, one call per invoice, on each paid run ([T-260](docs/logs/TEST-LOG.md)) | Built and tested in software: intake, source-quoted extraction, injection screen, matching, decision log and audit export ([TEST-LOG T-076 to T-086](docs/logs/TEST-LOG.md)). Gate C reliability is merged only into the Gate C branch ([PR #49](https://github.com/LethaboMH14/SignOff/pull/49)); the Gate C PR itself is open ([PR #44](https://github.com/LethaboMH14/SignOff/pull/44)), not on `main`. Simulated evaluation on 30 fictional invoices: the pipeline decides 30 of 30 with no false approvals. SIMULATED stand-in, not a model measurement (reproduced by [the judge check](docs/logs/TEST-LOG.md), T-116). That 30-case report was replaced on 12 November by the 62-case [fixture report](apps/agent/results/fixture-eval.md): the pipeline passes 2 of 40 should-hold cases as eligible before the Warden's checks, against 32 of 40 for the single-prompt baseline (regenerated 13 November after five label changes under D-101 and newer screen checks; the judge check re-runs it). FIXTURE stand-ins, no model called | Not claimed |
@@ -121,63 +172,61 @@ This positioning was accepted by the team on 10 November 2026 ([ADR 0001](docs/d
 
 This table will be updated with transaction hashes as items go live.
 
+## How the agent is engineered
+
+| Discipline | What SignOff does | Evidence |
+|---|---|---|
+| **Prompt engineering** | Prompts are versioned and recorded with every decision. The model must quote the source text for each field it extracts, and may leave a field empty instead of guessing; an empty or unquoted field is a hold | [AGENT-RELIABILITY.md §2–3](docs/AGENT-RELIABILITY.md), `apps/agent/src/extract/` |
+| **Context engineering** | A rule-based injection screen reads every document and email before any model does; a bank-change email was quarantined in 9 ms with no model call. The model sees only the invoice text, at most three calls per invoice, and never sees keys, limits or payee records | [T-265](docs/logs/TEST-LOG.md), `apps/agent/src/screen/`, [AGENT-RELIABILITY.md §6](docs/AGENT-RELIABILITY.md) |
+| **Swarm engineering** | Separate roles with separate identities and keys: the agent proposes, the Warden decides and co-signs on its own host, the owner approves large payments on a phone, the console only reads. No role can complete a payment alone, and the ledger enforces it | [TRUST.md](docs/TRUST.md), [T-054](docs/logs/TEST-LOG.md), [T-268](docs/logs/TEST-LOG.md), [T-273](docs/logs/TEST-LOG.md) |
+| **Graph engineering** | The agent is a fixed workflow, not a free-roaming loop: a state table defines every allowed move (received, extracted, evidence verified, Warden-eligible, signed, submitted, validated, reconciled, or held, quarantined, failed), every move is logged, and the console draws that graph live on the Agent map | `apps/agent/src/workflow/states.ts`, [T-259](docs/logs/TEST-LOG.md) |
+
+Measured against a single-prompt baseline on 62 fictional invoices (fixture mode, no model called): 2 of 40 should-hold cases get past the agent stage, against 32 of 40 for the baseline. The Warden still checks every one ([EVALUATION.md](docs/EVALUATION.md)).
+
+## Repository map
+
+| Path | What it is |
+|---|---|
+| [`apps/agent/`](apps/agent/README.md) | The AP agent: intake (folder and email), injection screen, source-quoted extraction, PO and goods-receipt matching, FX, proposal to the Warden, decision log and audit export |
+| [`apps/warden/`](apps/warden/README.md) | The independent rules service: payee, limits, duplicates, pause, credential and high-value checks; builds and co-signs the one payment shape it allows |
+| [`apps/console/`](apps/console/README.md) | The operator console: payment desk, held invoices, limits and pause, receipt, live Agent map, owner notices |
+| [`packages/shared/`](packages/shared/README.md) | Money rules, contracts (Zod), security helpers, logging with redaction, obligation identity |
+| [`packages/xrpl/`](packages/xrpl/README.md) | XRP Ledger layer: provisioning, multisign, reliable submission, failover, rebuild |
+| [`packages/warden-api/`](packages/warden-api/README.md) | The signed HTTP contract between the agent, the console and the Warden |
+| [`scripts/`](scripts/README.md) | Demo launcher, Testnet commands, attack suite, judge check, secret scan, invoice generator |
+| [`deploy/`](deploy/README.md) | Railway (Warden) and Vercel (simulated console) deployment files |
+| [`docs/`](docs/README.md) | Every document, grouped by reader: judging, product and business, architecture and trust, runbooks, logs |
+
+## Commands
+
+| Group | Command | What it does |
+|---|---|---|
+| Check | `npm run check` | Format, lint, types, secret scan, tests with coverage, build |
+| | `npm run attack` · `npm run judge:check` | Warden attack suite · one-command judge check (offline) |
+| Demo | `npm run demo` | Warden, agent and console; one fictional invoice end to end on Testnet |
+| | `npm run demo -- --email` · `-- --zar 60.00` | Emailed invoices · a high-value payment with owner approval |
+| | `npm run demo:verify -- <hash>` | Read a payment from Testnet without the agent or the Warden |
+| Testnet | `npm run testnet:provision` · `testnet:signers` · `testnet:funds -- status` | Accounts · signer list · balances and DEX depth |
+| | `npm run testnet:rejections-rlusd` | Each key alone is refused by the ledger (`tefBAD_QUORUM`) |
+| | `npm run testnet:high-value` | Treasury account with agent + Warden + owner, quorum 3 |
+| Agent | `npm run eval` · `npm run agent:eval -- --provider groq` | Fixture evaluation · live model on the labelled set |
+| Console | `npm run console:serve` · `npm run console:operator -- list` | Serve the console · manage operator accounts |
+
 ## Hackathon scoring
 
-Judges score three areas, taken from the team's BuilderBase dashboard on 9 November 2026.
+Judges score three areas (BuilderBase dashboard). The full scorecard, with every figure sourced, is [docs/JUDGING.md](docs/JUDGING.md).
 
-| Criterion | Weight | Where the build stands today |
+| Criterion | Weight | Where the build stands |
 |---|---|---|
-| Product design | 33% | Mockups approved for build and to be reworked later. The console screens are built and tested in software; the redesigned layout was measured in a browser at phone and desktop widths on the SIMULATED replay with a stub Warden ([TEST-LOG T-131](docs/logs/TEST-LOG.md), [T-132](docs/logs/TEST-LOG.md)); visual review, motion, keyboard checks and the live receipt are UNVERIFIED ([T-133](docs/logs/TEST-LOG.md)) |
-| Technical UX | 34% | Model-to-Warden-to-Testnet RLUSD payments validated end to end: a live model reads a fictional invoice, the Warden co-signs, two signers, a supplier credential check ([TEST-LOG T-251](docs/logs/TEST-LOG.md), [T-257](docs/logs/TEST-LOG.md), [T-260](docs/logs/TEST-LOG.md)); the simulated console is deployed ([T-262](docs/logs/TEST-LOG.md)). Also live: the 10 RLUSD run ([T-267](docs/logs/TEST-LOG.md)), the uncredentialed-supplier hold ([T-266](docs/logs/TEST-LOG.md)), an emailed invoice paid and an emailed bank-change claim quarantined ([T-264](docs/logs/TEST-LOG.md), [T-265](docs/logs/TEST-LOG.md)). The Warden is hosted on Railway, on its own host away from the agent ([T-268](docs/logs/TEST-LOG.md)). Not yet: the Warden key in a key service, the live model's error rate on the labelled set (see the row above) |
-| Business/Market Fit | 33% | Narrative and evidence only, no customer validation |
+| Product design | 33% | A payment desk, held invoices with plain reasons, limits and pause, a receipt with the explorer link, and a live Agent map; owner notices with bells; phone-width layout. No usability test with a finance clerk yet |
+| Technical UX | 34% | Live on Testnet: email-to-validated RLUSD payment in about 21 s with no click (T-264), the hosted Warden on Railway (T-268), the 10 RLUSD run (T-267), owner approval with three signers (T-273), single-key refusals (T-054). 1,681 automated tests, 26 of 26 attacks, CI on every push. Not yet: the Warden key in a key service, an MCP interface |
+| Business/Market Fit | 33% | Sourced African fraud and payment figures, a supplier-led go-to-market, RLUSD rails already in Africa ([BUSINESS.md](docs/BUSINESS.md), [STRATEGY.md](docs/STRATEGY.md)). No customer interview yet |
 
-The track requires an autonomous transaction on XRPL Testnet or Devnet, limits enforced outside the agent's control, and a way for a human operator to change them. See [docs/HACKATHON.md](docs/HACKATHON.md).
+Track requirements: an autonomous Testnet transaction (T-264, T-268), limits enforced outside the agent's control (Warden holds and `tefBAD_QUORUM`, T-054, T-266), and an operator who can change them (console limits and pause, T-095, T-104). See [docs/HACKATHON.md](docs/HACKATHON.md).
 
-## Documents
+## Contributing
 
-| Read this | For |
-|---|---|
-| [docs/RULES.md](docs/RULES.md) | **The working contract:** rules every change must meet, definition of done, phase-close checklist |
-| [docs/PRD.md](docs/PRD.md) | Product requirements: users, goals, requirements, success measures |
-| [docs/ISSUES.md](docs/ISSUES.md) | The build sliced into issues by gate |
-| [docs/logs/](docs/logs/) | Build log, decision journal, test log, security log, phase reports |
-| [BUILD-BRIEF.md](BUILD-BRIEF.md) | The agreed build, flow, stack and acceptance tests |
-| [docs/PROBLEM.md](docs/PROBLEM.md) | Problem statement and sourced evidence with confidence ratings |
-| [docs/SOLUTION.md](docs/SOLUTION.md) | Rules, two-signature design, simpler options considered |
-| [docs/AGENT-RELIABILITY.md](docs/AGENT-RELIABILITY.md) | How hallucination is contained and measured |
-| [docs/ARDUINO-JUDGE-DEMO-RUNBOOK.md](docs/ARDUINO-JUDGE-DEMO-RUNBOOK.md) | Optional Warden Switch stage demo, human veto, safety/failure tests; not yet implemented |
-| [docs/SERVICE-LEVELS.md](docs/SERVICE-LEVELS.md) | Service level targets, failure behaviour, fastest reliability measures |
-| [docs/COMPLIANCE.md](docs/COMPLIANCE.md) | Obligations, who carries them, and what the build does (not legal advice) |
-| [docs/CFO-AGENTIC-FRAUD-SECURITY-RESEARCH-2026-11-10.md](docs/CFO-AGENTIC-FRAUD-SECURITY-RESEARCH-2026-11-10.md) | Implementation requirements: CFO controls, fraud threats, tests, delivery gates (research; none implemented) |
-| [docs/TRUST.md](docs/TRUST.md) | Ledger versus Warden guarantees, keys, enrolment, rotation, recovery |
-| [docs/BUSINESS.md](docs/BUSINESS.md) | Customer, savings, revenue, feasibility, competitors, regulation |
-| [docs/CUSTOMER-DISCOVERY.md](docs/CUSTOMER-DISCOVERY.md) | Interview script, outreach drafts, scorecard and evidence log (no conversations yet) |
-| [docs/PRODUCTION-READINESS.md](docs/PRODUCTION-READINESS.md) | What is in place, what code and which partners stand between Testnet and real money |
-| [docs/STRATEGY.md](docs/STRATEGY.md) | Decisions and research on customers, invoice channels, the Warden engine, fraud gaming, African rails and stablecoins, speed against the traditional method, and asks of sponsors |
-| [docs/EMAIL-DEMO.md](docs/EMAIL-DEMO.md) | Email demo: setup, step-by-step script, troubleshooting |
-| [docs/JUDGING.md](docs/JUDGING.md) | For judges: five-minute check, criteria scorecard, sourced figures |
-| [docs/RELEASE-CHECKS.md](docs/RELEASE-CHECKS.md) | Pre- and post-deploy checks and their 13 November results |
-| [docs/HOSTED-WARDEN.md](docs/HOSTED-WARDEN.md) | The Warden on Railway: setup, running the demo against it, limits |
-| [docs/ENGINEERING.md](docs/ENGINEERING.md) | Repository layout, review process, tests, security, release checks |
-| [docs/HACKATHON.md](docs/HACKATHON.md) | Event facts, rubric, deadlines, what is unknown |
-| [docs/WORKSHOP.md](docs/WORKSHOP.md) | Notes from the Ripple track workshop and what they change |
-| [docs/decisions/](docs/decisions/) | Decision records |
-| [docs/RESEARCH.md](docs/RESEARCH.md) | Source index |
-| [docs/CLAUDE-PLAN.md](docs/CLAUDE-PLAN.md) | Historical plan from 5 November, kept for reference |
-| [CONTRIBUTING.md](CONTRIBUTING.md) · [SECURITY.md](SECURITY.md) | How to work in this repository |
-
-Where documents differ, the build brief takes precedence.
-
-## Developer setup
-
-Requires Node 24 (see `.nvmrc`).
-
-```bash
-npm install    # the one install command: dependencies for every workspace, and the pre-commit secret check in a git checkout
-npm run check  # formatting, lint, types, tests with coverage, and build
-```
-
-Read [docs/RULES.md](docs/RULES.md) before changing anything. Work starts from an issue in [docs/ISSUES.md](docs/ISSUES.md).
+Read [docs/RULES.md](docs/RULES.md) before changing anything; work starts from an issue in [docs/ISSUES.md](docs/ISSUES.md). `npm install` also installs the pre-commit secret check. See [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md). Where documents differ, [BUILD-BRIEF.md](BUILD-BRIEF.md) takes precedence.
 
 ## Honest limits
 

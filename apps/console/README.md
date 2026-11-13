@@ -1,6 +1,6 @@
 # apps/console
 
-The operator console. Built so far: the payment desk with sign-in (D1), the held-invoice view (D2), limit and pause controls with the second approver (D3), and the live agent map (D8). Not built yet: the receipt (D4). See [ISSUES.md](../../docs/ISSUES.md).
+The operator console: the payment desk with sign-in (D1), the held-invoice view (D2), limit and pause controls with the second approver (D3), the receipt (D4), owner notices with bells, and the live Agent map (D8). It runs live against the Testnet demo (`npm run demo`, TEST-LOG T-258, T-259), and a SIMULATED replay is deployed at https://signoff-console-simulated.vercel.app (T-262). See [ISSUES.md](../../docs/ISSUES.md).
 
 ## The payment desk
 
@@ -99,12 +99,12 @@ The console never writes to the agent's log, binds to the loopback address only,
 
 ## What is not claimed
 
-- The replay is simulated. A live run with the Warden has not run, so no ledger or paid move has been shown on this desk or this map.
+- The deployed console is the SIMULATED replay only. Live paid moves on this desk and map come from the local Testnet demo (T-258, T-259), not from the deployed site.
 - The reason texts are drafts: fixed text per code, not yet reviewed.
 - The desk's daily chart from the mockups is not built.
 - The limits form and the approval have been tested in code, not yet checked by eye in the browser (see T-103 in the test log).
 - The phone layout was measured in the built-in browser before the model-call line was added; the final build's phone check is not yet recorded. No accessibility scan has been run (D5).
-- Sign-in has not been tested with a real operator account on a shared machine, and the console is not deployed (D6).
+- Sign-in has not been tested with a real operator account on a shared machine. The deployed site holds viewer accounts only (D6).
 
 ## Tests
 

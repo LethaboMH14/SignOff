@@ -19,7 +19,7 @@ Facts gathered on 9 November 2026 from the public sites and the team's BuilderBa
 | When (SAST) | What | Source |
 |---|---|---|
 | Tue 10 Nov, 09:00 | Three check-in forms open: Project Concept Document, Team Status Update, Technical Foundation Evidence | Dashboard |
-| Fri 13 Nov, 23:59 | Submissions close | Dashboard |
+| Sat 14 Nov, 06:00 | Submissions close (moved from Fri 13 Nov, 23:59; dashboard read 13 Nov, 23:45) | Dashboard |
 | Sat 14 Nov | Judging and pitch | Participant guide, per earlier notes |
 
 An earlier note in this repository listed a checkpoint on 9 November at 17:00. The dashboard showed the forms opening on 10 November. Confirm which applies.

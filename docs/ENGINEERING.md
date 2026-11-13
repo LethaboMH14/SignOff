@@ -1,23 +1,24 @@
 # Engineering plan
 
-How this repository is built, reviewed, tested and released. **Gate 0 and incremental Gate A are merged and CI-tested (owner settings remain open). Gate B (Warden) and Gate C (invoice agent) are implemented and offline-tested on feature branches but not merged. Gate C's labelled evaluation is SIMULATED. One RLUSD payment (1 RLUSD) is validated on Testnet (T-059); the 10 RLUSD run is open. The model-to-Warden Testnet run remains UNVERIFIED.** It is sized for the four days before the deadline. Items marked *stretch* are done only if the core flow works first.
+How this repository is built, reviewed, tested and released. **As of 14 November 2026 (branch `release/judging`): Gates 0 to D and the demo work are built and tested together. Live on Testnet: model-to-Warden RLUSD payments (T-251, T-260), the 10 RLUSD run (T-267), the hosted Warden (T-268) and owner-approved high-value payments (T-273). The labelled evaluation is FIXTURE/SIMULATED (see EVALUATION.md).** The text below is the plan as written before the build, kept for the record. It is sized for the four days before the deadline. Items marked *stretch* are done only if the core flow works first.
 
 ## Repository layout
 
-As built on the merged foundation and feature branches; only Gate 0 and incremental Gate A are merged.
+As built for judging on 14 November 2026.
 
 ```
-packages/shared/  money rules, Zod contracts, security (base58, XRPL seeds, secret patterns),
-                  logging and redaction, obligation key; entries "." (neutral) and "./node"
-packages/xrpl/    Gate A Testnet ledger implementation, signing, reliable send, failover and rebuild (under review)
-apps/warden/      Gate B feature branch: rules, Warden final signature, pause (not merged)
-apps/agent/       Gate C feature branch: invoice extraction, matching, proposals (not merged)
-packages/warden-api/ Gate C feature branch: signed requests, contracts, caller client
-apps/console/     planned, Gate D: operator console
-docs/             problem, solution, business, decisions, logs, runbooks
-scripts/          secret scanner, hook installer, configuration guard tests; Gate A Testnet commands
-.githooks/        pre-commit secret check
-.github/          CI workflow, Dependabot, pull request template
+packages/shared/     money rules, Zod contracts, security (base58, XRPL seeds, secret patterns),
+                     logging and redaction, obligation key; entries "." (neutral) and "./node"
+packages/xrpl/       Testnet ledger layer: provisioning, multisign, reliable send, failover and rebuild
+packages/warden-api/ the Warden's signed HTTP contract and caller client
+apps/warden/         rules, final signature, pause, credential and high-value (owner) checks
+apps/agent/          intake (folder and email), injection screen, extraction, matching, FX, proposals
+apps/console/        operator console: desk, holds, limits and pause, receipt, Agent map, owner notices
+deploy/              Railway (Warden) and Vercel (simulated console)
+docs/                problem, solution, business, decisions, logs, runbooks (index: docs/README.md)
+scripts/             demo launcher, Testnet commands, attack suite, judge check (scripts/README.md)
+.githooks/           pre-commit secret check
+.github/             CI workflow, Dependabot, pull request template
 ```
 
 Warden lives in the same repository but deploys as its own service with its own identity and key. The agent's deployment must have no access to Warden's key.

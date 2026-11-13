@@ -1,6 +1,6 @@
 # Deployment
 
-**Status: the Warden is deployed on Railway** (13 November 2026, TEST-LOG T-268) with `Dockerfile.railway` and `railway-start.mjs`; see [docs/HOSTED-WARDEN.md](../docs/HOSTED-WARDEN.md). The generic `warden/Dockerfile` and the console image below are still not built: the generic Warden image omits `tsx`, which the Warden needs to run, so use `Dockerfile.railway` as the starting point for any other host.
+**Status: the Warden is deployed on Railway** (13 November 2026, TEST-LOG T-268) with `Dockerfile.railway` and `railway-start.mjs`; see [docs/HOSTED-WARDEN.md](../docs/HOSTED-WARDEN.md). **The SIMULATED console is deployed on Vercel** at https://signoff-console-simulated.vercel.app (T-259, T-262), with `console/vercel-output-config.json`. The generic `warden/Dockerfile` and the console image below are still not built: the generic Warden image omits `tsx`, which the Warden needs to run, so use `Dockerfile.railway` as the starting point for any other host.
 
 ## What runs where
 

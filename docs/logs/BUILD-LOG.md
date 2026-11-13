@@ -26,6 +26,14 @@ One entry per working session (rule R-19 in [RULES.md](../RULES.md)), newest fir
 
 ---
 
+### 2026-11-14 00:00 SAST — Sibusiso with Claude (Opus 5.5) — judging release and demo video
+
+- Done: branch `release/judging` from 3e64ab8. README rewritten as the front door (live links, three run levels, engineering table, repository map, commands); `.env.example`; docs index; READMEs for packages/shared, packages/warden-api and scripts; stale statements fixed in JUDGING, HACKATHON (deadline now 06:00 on 14 Nov), ENGINEERING, deploy and console READMEs. Demo video recorded: live Testnet runs on camera, narration in a South African voice (ElevenLabs, Thobeka Majola).
+- Changed decisions: D-154 (demo viewer account), D-155 (owner reviews and merges the judging PR).
+- Evidence: T-274 (full check), T-275 (live runs recorded).
+- Problems / blockers: Paystack test payouts refused for a starter business, so the rand payout stays SIMULATED. ElevenLabs free generations were busy twice.
+- Next: video upload, the URL in the README and on BuilderBase, PR into main, submit before 06:00.
+
 ### 2026-11-10 — Sibusiso with Claude (Haiku 5.5) — D1W Warden operator read routes
 
 - Done: added read-only operator routes to the Warden (`/v1/ops/overview`, `/v1/ops/proposals`, `/v1/ops/proposals/{id}`, `/v1/ops/suppliers`), with views in `apps/warden/src/ops-view.ts` and 11 HTTP tests in `apps/warden/test/ops-routes.test.ts`. Branch `feat/D1W-warden-read`, stacked on `feat/D0-mockups`.

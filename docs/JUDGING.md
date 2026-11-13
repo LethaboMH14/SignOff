@@ -8,13 +8,14 @@ fictional; the rand payout to a supplier is simulated.
 
 | What | How | Expect |
 |---|---|---|
-| The tests | `npm ci && npm run check` | 143 test files, 1,628 tests pass, build succeeds |
+| The tests | `npm ci && npm run check` | 150 test files, 1,681 tests pass, build succeeds |
 | The attacks | `npm run attack` | 26 of 26 attack cases held, refused or rejected as expected |
 | The judge check (offline, no keys) | `npm run judge:check` | 3 pass, 0 fail |
 | A paid invoice on the public ledger | Open [E1BA2278…4A5E](https://testnet.xrpl.org/transactions/E1BA22785622CBC3FAAEB2236BC4AA782128B8CDA80D412823DAEE1E1A104A5E) | Validated RLUSD payment, two signers, co-signed by the hosted Warden |
 | The 10 RLUSD run | [821333EB…0728](https://testnet.xrpl.org/transactions/821333EBE1DBC5BAE93DDC2BE6872908A62EF7F1617C823A19305E0DF76A0728) | 10 RLUSD, two signers |
+| A high-value payment the owner approved on their phone | [2A6FDB95…D9FD](https://testnet.xrpl.org/transactions/2A6FDB95A4D393165A45B64ABA9E07E735AFF7A69C1960F615902CD8D67DD9FD) | Ledger 22300977, three signers: agent, Warden and the owner in Xaman (T-273, [HIGH-VALUE.md](HIGH-VALUE.md)) |
 | The hosted Warden | https://warden-production-4f0fcb91.up.railway.app/v1/health | `"ready":true`; every other route needs a signed request |
-| The console (simulated replay) | https://signoff-console-simulated.vercel.app (sign-in) | "Play a clean invoice" and "Play a bank-detail change attack" |
+| The console (simulated replay) | https://signoff-console-simulated.vercel.app (demo viewer account in the [README](../README.md#live-links)) | "Play a clean invoice" and "Play a bank-detail change attack" |
 
 ## Track requirements (Ripple, Agentic Finance)
 
@@ -47,7 +48,8 @@ finance clerk.
 | A fixed workflow, not a free-roaming agent; at most 3 model calls; every field quotes its source | [AGENT-RELIABILITY.md](AGENT-RELIABILITY.md) |
 | Prompt-injection screen before any model reads a document or email; a real fraud email quarantined in 9 ms with no model call | T-265 |
 | Reliable submission: hash persisted before submit, validated result and delivered amount before "paid" | [SERVICE-LEVELS.md](SERVICE-LEVELS.md) |
-| 1,628 automated tests, 90% coverage, CI on every push, pinned actions, 0 dependency vulnerabilities, secret scan on every commit | [RELEASE-CHECKS](RELEASE-CHECKS.md) |
+| Payments at or above the threshold come from a treasury account with quorum 3: the ledger itself refuses them without the owner's phone signature | T-273, [HIGH-VALUE.md](HIGH-VALUE.md) |
+| 1,681 automated tests, 90% coverage, CI on every push, pinned actions, 0 dependency vulnerabilities, secret scan on every commit | [RELEASE-CHECKS](RELEASE-CHECKS.md) |
 | Measured against a single-prompt baseline: 2 of 40 should-hold cases pass the agent stage, against 32 of 40 for the baseline (fixture mode, 62 cases) | [EVALUATION.md](EVALUATION.md) |
 
 **Gaps:** live models failed their call on 20 to 22 of 30 cases (held, never paid; P7); the Warden key is on a volume,
@@ -79,5 +81,5 @@ redrafted; savings are not claimed.
 | Criterion | Where it is strongest | What would raise it most |
 |---|---|---|
 | Product design | Live map, plain hold reasons, labelled simulation | A phone-width check and one finance clerk using it |
-| Technical UX | Ledger-enforced two keys, separate hosting, attack suite, 1,628 tests | An MCP interface; the live model error rate fixed |
+| Technical UX | Ledger-enforced two keys (three above the threshold), separate hosting, attack suite, 1,681 tests | An MCP interface; the live model error rate fixed |
 | Business fit | Sourced African fraud and payment figures; measured speed | One recorded customer conversation |
