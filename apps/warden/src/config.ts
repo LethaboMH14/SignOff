@@ -56,6 +56,10 @@ export const WardenConfigFile = z.strictObject({
     port: z.int().min(1).max(65_535),
   }),
   verifiedPayees: z.array(ClassicAddress).max(1000),
+  /** The buyer's permissioned domain: a supplier must hold a credential it accepts. Absent means no credential check. */
+  supplierDomain: z
+    .strictObject({ owner: ClassicAddress, sequence: z.int().min(1).max(4_294_967_295) })
+    .optional(),
 });
 export type WardenConfigFile = z.infer<typeof WardenConfigFile>;
 
@@ -85,6 +89,7 @@ export interface WardenConfig {
   readonly submission: { readonly pollMs: number; readonly maxPolls: number };
   readonly listen: { readonly host: string; readonly port: number };
   readonly verifiedPayees: readonly string[];
+  readonly supplierDomain: { readonly owner: string; readonly sequence: number } | null;
 }
 
 export function resolveConfig(file: WardenConfigFile): WardenConfig {
@@ -102,6 +107,7 @@ export function resolveConfig(file: WardenConfigFile): WardenConfig {
     submission: file.submission,
     listen: file.listen,
     verifiedPayees: file.verifiedPayees,
+    supplierDomain: file.supplierDomain ?? null,
   };
 }
 

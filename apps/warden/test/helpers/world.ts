@@ -134,6 +134,7 @@ export function configFor(base: Base, overrides: Partial<WardenConfig> = {}): Wa
     submission: { pollMs: 0, maxPolls: 60 },
     listen: { host: '127.0.0.1', port: 0 },
     verifiedPayees: [base.supplierAccount.address],
+    supplierDomain: null,
     ...overrides,
   };
 }

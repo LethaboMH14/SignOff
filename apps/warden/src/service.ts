@@ -29,6 +29,7 @@ import {
 
 import type { CoSignResult, ProposeResult } from '../../../packages/warden-api/src/contract.js';
 
+import type { CredentialTypeRef } from '../../../packages/xrpl/src/credentials.js';
 import { canonicalJson, fingerprintOf } from './canonical.js';
 import {
   dailyUsage,
@@ -455,6 +456,12 @@ export class WardenService {
         throw new WardenError(409, 'the approved payment asset changed');
       }
       const payee = this.supplierOrThrow(attempt.supplierId).payee;
+      if ((await this.supplierCredentialVerdict(payee.address)) !== null) {
+        throw new WardenError(
+          409,
+          'the supplier no longer holds the credential the buyer requires',
+        );
+      }
       let facts: PreSigningFacts;
       try {
         facts = await readPreSigning(this.deps.port, {
@@ -814,6 +821,50 @@ export class WardenService {
   }
 
   /** Decides one proposal against every rule, in order. The first rule that stops it names the reason. */
+  /**
+   * The supplier credential rule, read from the ledger. The buyer's permissioned domain lists the credentials that
+   * count; the supplier must hold one of them, accepted. Returns null when the rule is off or the supplier passes.
+   * A read that fails holds the payment: the Warden never pays on a check it could not make.
+   */
+  private async supplierCredentialVerdict(payeeAddress: string): Promise<Verdict | null> {
+    const domain = this.deps.config.supplierDomain;
+    if (domain === null) {
+      return null;
+    }
+    const port = this.deps.port;
+    if (port.credentialAccepted === undefined || port.permissionedDomainAccepts === undefined) {
+      return hold(
+        'LEDGER_UNREADABLE',
+        'this ledger connection cannot read the supplier credentials',
+      );
+    }
+    let accepted: readonly CredentialTypeRef[] | null;
+    try {
+      accepted = await port.permissionedDomainAccepts(domain.owner, domain.sequence);
+    } catch {
+      return hold('LEDGER_UNREADABLE', 'the buyer permissioned domain could not be read');
+    }
+    if (accepted === null) {
+      return hold(
+        'SUPPLIER_CREDENTIAL_MISSING',
+        'the buyer permissioned domain is not on the ledger',
+      );
+    }
+    for (const ref of accepted) {
+      try {
+        if (await port.credentialAccepted(payeeAddress, ref.issuer, ref.credentialType)) {
+          return null;
+        }
+      } catch {
+        return hold('LEDGER_UNREADABLE', 'a supplier credential could not be read from the ledger');
+      }
+    }
+    return hold(
+      'SUPPLIER_CREDENTIAL_MISSING',
+      'the supplier holds no accepted credential from the buyer domain',
+    );
+  }
+
   private async evaluate(
     proposal: z.infer<typeof PaymentProposal>,
     fingerprint: string,
@@ -840,6 +891,10 @@ export class WardenService {
     const supplier = this.state.suppliers.get(proposal.supplierId);
     if (supplier?.status !== 'active') {
       return stop(refuse('SUPPLIER_NOT_APPROVED', 'the supplier is not approved'));
+    }
+    const credential = await this.supplierCredentialVerdict(supplier.payee.address);
+    if (credential !== null) {
+      return stop(credential);
     }
     if (supplier.change !== null) {
       return stop(
