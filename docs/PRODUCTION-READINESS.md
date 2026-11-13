@@ -22,7 +22,7 @@ Written 13 November 2026. SignOff moves Testnet RLUSD, which has no real value. 
 
 | # | Item | Why | Effort |
 |---|---|---|---|
-| P1 | Host the Warden on its own server, separate from the agent and the console, with TLS | One machine holding both signing roles defeats the two-signature design | 1 to 2 days |
+| P1 | Host the Warden on its own server, separate from the agent and the console, with TLS | One machine holding both signing roles defeats the two-signature design | **Done on Railway on 13 November** (T-268, docs/HOSTED-WARDEN.md); the console and agent still run on the operator's machine |
 | P2 | Move the Warden and agent keys into a cloud key service or HSM (for example AWS KMS or Azure Key Vault) instead of local files | A stolen laptop must not be a stolen key | 2 to 3 days |
 | P3 | Durable storage for the agent log and Warden decisions (a managed database with backups), replacing local files | Audit trail must survive a disk failure | 2 days |
 | P4 | Alerts: Warden down, payment held, ledger unreadable, limit near, unusual payee change attempt | An operator must know within minutes | 1 day |

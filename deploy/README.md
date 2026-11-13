@@ -1,9 +1,6 @@
-# Deployment (prepared, not deployed)
+# Deployment
 
-**Status: prepared, not deployed.** Nothing here has been built, started or deployed. The Warden and the console need a
-container host with a persistent disk for the Warden and an account the project owner has approved, and neither has been
-confirmed (see the decision in [DECISION-JOURNAL](../docs/logs/DECISION-JOURNAL.md) D-085). Until then the deployment row in
-the test log is UNVERIFIED.
+**Status: the Warden is deployed on Railway** (13 November 2026, TEST-LOG T-268) with `Dockerfile.railway` and `railway-start.mjs`; see [docs/HOSTED-WARDEN.md](../docs/HOSTED-WARDEN.md). The generic `warden/Dockerfile` and the console image below are still not built: the generic Warden image omits `tsx`, which the Warden needs to run, so use `Dockerfile.railway` as the starting point for any other host.
 
 ## What runs where
 

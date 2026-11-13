@@ -44,6 +44,7 @@
     "fx:x402:serve": "tsx scripts/fx/x402-fx-serve.ts",
     "fx:x402:buy": "tsx scripts/fx/x402-fx-buy.ts",
     "demo:verify": "tsx scripts/demo/verify-tx.ts",
+    "demo:hosted-bundle": "tsx scripts/demo/hosted-bundle.ts",
     "demo": "tsx scripts/demo/run-demo.ts",
     "demo:warden": "npm run serve --workspace @signoff/warden",
     "judge:check": "tsx scripts/judge-check.ts",

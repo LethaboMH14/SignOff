@@ -7,6 +7,9 @@
 //   npm run demo -- --provider meta --model <id>  the model provider (groq is the default); the key and address come from .env
 //   npm run demo -- --email          also watches SignOff's mailbox; the run's invoice waits in the outbox for you to
 //                                    email it (see docs/EMAIL-DEMO.md)
+//   npm run demo -- --email --warden-url https://<host>
+//                                    uses a hosted Warden instead of starting one here; email the invoices that
+//                                    `npm run demo:hosted-bundle` put in the outbox (see docs/HOSTED-WARDEN.md)
 //
 // Prerequisites (one time): npm run testnet:provision, then npm run demo:prepare (see docs/RLUSD-TESTNET-RUNBOOK.md).
 // The processes run in the foreground. Press Ctrl+C to stop all three.
@@ -37,7 +40,36 @@ import { writeDemoInvoice } from './demo-invoice.js';
 import { DEMO_LISTEN } from './prepare.js';
 
 const repoRoot = resolve(fileURLToPath(new URL('.', import.meta.url)), '..', '..');
-const WARDEN_URL = `http://${DEMO_LISTEN.host}:${String(DEMO_LISTEN.port)}`;
+const LOCAL_WARDEN_URL = `http://${DEMO_LISTEN.host}:${String(DEMO_LISTEN.port)}`;
+
+/**
+ * The hosted Warden's address from --warden-url, or null for the local Warden. It must be https, because the agent's
+ * signed requests and the Warden's answers cross the internet, and it must be a plain origin.
+ */
+function hostedWardenUrl(args: readonly string[]): string | null {
+  const index = args.indexOf('--warden-url');
+  if (index < 0) {
+    return null;
+  }
+  const text = args[index + 1] ?? '';
+  let url: URL;
+  try {
+    url = new URL(text);
+  } catch {
+    throw new DemoError('--warden-url must be an https address such as https://warden.example.app');
+  }
+  if (
+    url.protocol !== 'https:' ||
+    url.username !== '' ||
+    url.password !== '' ||
+    url.search !== ''
+  ) {
+    throw new DemoError(
+      '--warden-url must be a plain https address with no user, password or query',
+    );
+  }
+  return url.origin;
+}
 const CONSOLE_PORT = 4180;
 const CONSOLE_URL = `http://127.0.0.1:${String(CONSOLE_PORT)}`;
 
@@ -264,6 +296,13 @@ async function main(): Promise<void> {
   const providerVars = providerEnv(provider);
   const email = args.includes('--email');
   const mailVars = email ? mailEnv() : null;
+  const hosted = hostedWardenUrl(args);
+  const WARDEN_URL = hosted ?? LOCAL_WARDEN_URL;
+  if (hosted !== null && !email) {
+    throw new DemoError(
+      '--warden-url needs --email: the hosted Warden only knows the invoices prepared by npm run demo:hosted-bundle, which you email. Nothing was started.',
+    );
+  }
 
   const registry = await fileRegistryStore(join(localDir, 'registry.json')).read();
   if (registry === null) {
@@ -304,14 +343,15 @@ async function main(): Promise<void> {
   const readerSecretPath = join(localDir, 'demo', 'operator-a.secret');
   writeFileSync(readerSecretPath, `${operatorSecret}\n`, { mode: 0o600 });
 
-  // A process that is already listening means a demo is running: refuse rather than start a second copy.
-  const alreadyUp = await getJson(`${WARDEN_URL}/v1/health`).then(
+  // A local Warden that is already listening means a demo is running: refuse rather than start a second copy. With a
+  // hosted Warden, a local one must not run either: two Wardens would sign for the same spending account.
+  const alreadyUp = await getJson(`${LOCAL_WARDEN_URL}/v1/health`).then(
     () => true,
     () => false,
   );
   if (alreadyUp) {
     throw new DemoError(
-      `a Warden already answers at ${WARDEN_URL}. Stop it first. Nothing was started.`,
+      `a Warden already answers at ${LOCAL_WARDEN_URL}. Stop it first. Nothing was started.`,
     );
   }
   // A lock left by a process that was killed is removed only here, when no Warden or console answers, so no run is live.
@@ -323,24 +363,33 @@ async function main(): Promise<void> {
     }
   }
 
-  // The run's invoice and its evidence are written before the Warden starts. The Warden reads its evidence file only at
-  // start-up, so a record written after it started would be missing, and the new invoice would be held.
   archiveInbox(localDir);
-  // With --email the run's invoice goes to the outbox, for a person to email to SignOff's mailbox.
-  const invoice = await writeDemoInvoice(zarMinor, localDir, {
-    delivery: email ? 'outbox' : 'inbox',
-  });
-  process.stdout.write(
-    `[demo] invoice ${invoice.file} R${(zarMinor / 100).toFixed(2)} = USD ${(invoice.usdMinor / 100).toFixed(2)} at USD/ZAR ${invoice.rate} (live)\n`,
-  );
+  // The run's invoice and its evidence are written before the Warden starts. With a hosted Warden no invoice is
+  // written: its records would stay on this machine, so the hosted Warden would hold it for missing evidence.
+  const invoice =
+    hosted === null
+      ? await writeDemoInvoice(zarMinor, localDir, {
+          // With --email the run's invoice goes to the outbox, for a person to email to SignOff's mailbox.
+          delivery: email ? 'outbox' : 'inbox',
+        })
+      : null;
+  if (invoice !== null) {
+    process.stdout.write(
+      `[demo] invoice ${invoice.file} R${(zarMinor / 100).toFixed(2)} = USD ${(invoice.usdMinor / 100).toFixed(2)} at USD/ZAR ${invoice.rate} (live)\n`,
+    );
+  }
   if (mailVars !== null) {
     process.stdout.write(
-      `[demo] email mode: attach ${invoice.path} to an email from an allowed sender to ${String(mailVars['SIGNOFF_MAIL_USER'])}\n`,
+      invoice === null
+        ? `[demo] hosted Warden ${WARDEN_URL}: email one of the invoices that npm run demo:hosted-bundle put in ${join(demoDir, 'outbox')} to ${String(mailVars['SIGNOFF_MAIL_USER'])}\n`
+        : `[demo] email mode: attach ${invoice.path} to an email from an allowed sender to ${String(mailVars['SIGNOFF_MAIL_USER'])}\n`,
     );
   }
 
-  // 1. Warden: its own directory, its own keys, no agent or console variables.
-  start('warden', [join('apps', 'warden', 'src', 'main.ts')], envFor({}));
+  // 1. Warden: its own directory, its own keys, no agent or console variables. A hosted Warden is only checked.
+  if (hosted === null) {
+    start('warden', [join('apps', 'warden', 'src', 'main.ts')], envFor({}));
+  }
   await waitFor(
     async () => {
       const health = await getJson(`${WARDEN_URL}/v1/health`).catch(() => null);
@@ -411,7 +460,8 @@ async function main(): Promise<void> {
       SIGNOFF_WARDEN_READER_ID: 'operator-a',
       SIGNOFF_WARDEN_READER_SECRET_FILE: readerSecretPath,
       SIGNOFF_CONSOLE_PORT: String(CONSOLE_PORT),
-      SIGNOFF_DEMO_DIR: localDir,
+      // The desk's "Send a test invoice" writes records on this machine, which a hosted Warden cannot see.
+      ...(hosted === null ? { SIGNOFF_DEMO_DIR: localDir } : {}),
       ...(mailVars === null ? {} : { SIGNOFF_DEMO_MAIL_TO: mailVars['SIGNOFF_MAIL_USER'] ?? '' }),
     }),
   );
@@ -456,7 +506,7 @@ async function main(): Promise<void> {
   // An emailed invoice waits for a person to send it, so that run waits longer.
   const deadline = Date.now() + (email ? 20 : 5) * 60_000;
   let finalLine: string | null = null;
-  while (Date.now() < deadline && finalLine === null) {
+  while (invoice !== null && Date.now() < deadline && finalLine === null) {
     const moves = existsSync(agentLog)
       ? readFileSync(agentLog, 'utf8')
           .split(String.fromCharCode(10))
@@ -478,10 +528,12 @@ async function main(): Promise<void> {
       });
     }
   }
-  process.stdout.write(
-    `[demo] agent decision for ${invoice.file}: ${finalLine ?? 'no decision within 5 minutes'}
+  if (invoice !== null) {
+    process.stdout.write(
+      `[demo] agent decision for ${invoice.file}: ${finalLine ?? 'no decision within 5 minutes'}
 `,
-  );
+    );
+  }
   process.stdout.write(
     `[demo] console: ${CONSOLE_URL} (sign in as the demo operator; its password is in ${join(demoDir, 'console-password.txt')})\n`,
   );
