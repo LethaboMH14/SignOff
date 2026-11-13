@@ -8,7 +8,7 @@
 //   npm run demo -- --email          also watches SignOff's mailbox; the run's invoice waits in the outbox for you to
 //                                    email it (see docs/EMAIL-DEMO.md)
 //
-// Prerequisites (one time): npm run testnet:provision, then npm run demo:prepare (see docs/DEMO-RUNBOOK.md).
+// Prerequisites (one time): npm run testnet:provision, then npm run demo:prepare (see docs/RLUSD-TESTNET-RUNBOOK.md).
 // The processes run in the foreground. Press Ctrl+C to stop all three.
 import { spawn, type ChildProcess } from 'node:child_process';
 import {
