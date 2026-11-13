@@ -439,3 +439,12 @@ button.quiet:hover:not(:disabled) {
 .feed-empty {
   color: var(--ink-2);
 }
+
+/* The simulated console's replay buttons, above the map. */
+.replay {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin: 0 0 12px;
+}

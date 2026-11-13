@@ -1,4 +1,4 @@
-import { useEffect, useReducer } from 'react';
+import { useCallback, useEffect, useReducer } from 'react';
 
 import { applyMovement, emptyBoard, type BoardState } from '../src/model/board.js';
 import { parseMapEvent, toMovement, type MapEventInput } from '../src/model/states.js';
@@ -10,6 +10,11 @@ export interface StreamState {
   readonly status: ConnectionStatus;
   readonly mode: string | null;
   readonly damaged: number;
+}
+
+/** The stream's state, and a way to add a move that did not come from the server (the simulated replay). */
+export interface StreamHandle extends StreamState {
+  readonly inject: (event: MapEventInput) => void;
 }
 
 export type StreamAction =
@@ -76,8 +81,11 @@ function isPollBody(value: unknown): value is PollBody {
  * Follows the server's log by asking for the moves after the last one shown. It asks again after POLL_MS, so it works on
  * hosts that cannot hold a connection open. A failed request shows as reconnecting, and the next request tries again.
  */
-export function useEventStream(url: string): StreamState {
+export function useEventStream(url: string): StreamHandle {
   const [state, dispatch] = useReducer(streamReducer, INITIAL_STREAM);
+  const inject = useCallback((event: MapEventInput) => {
+    dispatch({ type: 'movement', event });
+  }, []);
 
   useEffect(() => {
     let after = 0;
@@ -144,5 +152,5 @@ export function useEventStream(url: string): StreamState {
     };
   }, [activeNode, lastSeq]);
 
-  return state;
+  return { ...state, inject };
 }

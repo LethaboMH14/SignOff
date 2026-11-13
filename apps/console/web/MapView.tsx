@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
-import { type Movement } from '../src/model/states.js';
+import { type MapEventInput, type Movement } from '../src/model/states.js';
+import { REPLAY_STEP_MS, type ReplayKind, replayEvents } from './replay.js';
 import { AgentMap } from './AgentMap.js';
 import { Feed } from './Feed.js';
 import { type ConnectionStatus, useEventStream } from './useEventStream.js';
@@ -44,6 +45,62 @@ export function lastMoveLabel(moves: readonly Movement[]): string {
 }
 
 /** The agents' map and the feed of what happened, from the console's event stream. */
+/**
+ * The buttons that replay one scripted invoice on the map. Shown only on the simulated console. The moves stay in this
+ * browser tab; nothing is sent to the server.
+ */
+export function ReplayControls({
+  lastSeq,
+  onMove,
+}: {
+  readonly lastSeq: number;
+  readonly onMove: (event: MapEventInput) => void;
+}) {
+  const [playing, setPlaying] = useState(false);
+  const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
+  useEffect(
+    () => () => {
+      timers.current.forEach(clearTimeout);
+    },
+    [],
+  );
+  const play = (kind: ReplayKind) => {
+    const events = replayEvents(kind, lastSeq);
+    setPlaying(true);
+    timers.current = events.map((event, index) =>
+      setTimeout(() => {
+        onMove(event);
+        if (index === events.length - 1) {
+          setPlaying(false);
+        }
+      }, REPLAY_STEP_MS * index),
+    );
+  };
+  return (
+    <div className="replay" role="group" aria-label="Simulated replay">
+      <span className="badge">SIMULATED</span>
+      <button
+        type="button"
+        disabled={playing}
+        onClick={() => {
+          play('paid');
+        }}
+      >
+        Play a clean invoice
+      </button>
+      <button
+        type="button"
+        disabled={playing}
+        onClick={() => {
+          play('fraud');
+        }}
+      >
+        Play a bank-detail change attack
+      </button>
+    </div>
+  );
+}
+
 export function MapView() {
   const stream = useEventStream('/api/transitions');
   const [frozen, setFrozen] = useState<readonly Movement[] | null>(null);
@@ -75,6 +132,9 @@ export function MapView() {
             held for a person. Paid appears only after the ledger validates the payment and
             reconciliation records it.
           </p>
+          {stream.mode === 'simulated' ? (
+            <ReplayControls lastSeq={stream.board.lastSeq} onMove={stream.inject} />
+          ) : null}
           <div className="map-scroll">
             <AgentMap board={stream.board} />
           </div>

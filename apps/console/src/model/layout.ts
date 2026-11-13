@@ -177,14 +177,20 @@ export function edgeEnds(edge: Edge): { readonly from: Point; readonly to: Point
 /** Tokens that share a place are spread sideways in a tray above the card, so each one stays visible. */
 const TOKEN_SPREAD = 30;
 
+/** How many tokens sit side by side before the tray starts another row, so a busy tray stays inside its zone. */
+export const TRAY_ROW = 7;
+
 export function tokenPosition(node: MapNode, slot: number): Point {
   const base = pointOf(node);
-  const step = Math.ceil(slot / 2) * TOKEN_SPREAD;
-  const offset = slot % 2 === 1 ? step : -step;
-  // The two end cards take arrows from above, so their tray sits below them, clear of every arrow.
-  const half = sizeOf(node).height / 2 + 20;
+  const row = Math.floor(slot / TRAY_ROW);
+  const place = slot % TRAY_ROW;
+  const step = Math.ceil(place / 2) * TOKEN_SPREAD;
+  const offset = place % 2 === 1 ? step : -step;
+  // The two end cards take arrows from above, so their tray sits below them, clear of every arrow. Further rows move
+  // away from the card.
+  const half = sizeOf(node).height / 2 + 20 + row * TOKEN_SPREAD;
   const below = node === 'hold' || node === 'paid';
-  return { x: base.x + (slot === 0 ? 0 : offset), y: below ? base.y + half : base.y - half };
+  return { x: base.x + (place === 0 ? 0 : offset), y: below ? base.y + half : base.y - half };
 }
 
 export function isActorNode(node: MapNode): node is AgentActor {

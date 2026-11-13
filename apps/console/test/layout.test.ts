@@ -42,3 +42,14 @@ describe('the map geometry', () => {
     expect(tokenPosition('warden', 0).x).toBe(pointOf('warden').x);
   });
 });
+
+describe('a busy tray', () => {
+  it('starts a second row instead of running out of its zone', () => {
+    const places = Array.from({ length: 14 }, (_, slot) => tokenPosition('hold', slot));
+    const xs = places.map((place) => place.x);
+    const rows = new Set(places.map((place) => place.y));
+    expect(rows.size).toBe(2);
+    expect(Math.min(...xs)).toBeGreaterThan(20);
+    expect(new Set(places.map((place) => `${String(place.x)},${String(place.y)}`)).size).toBe(14);
+  });
+});
