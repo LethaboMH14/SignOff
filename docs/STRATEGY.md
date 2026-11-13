@@ -23,7 +23,7 @@ Read with [PROBLEM.md](PROBLEM.md) (the evidence of the problem), [BUSINESS.md](
 
 | Pain | Who feels it | How SignOff answers it | State |
 |---|---|---|---|
-| A fraudster emails "our bank details have changed" and the buyer pays the wrong account | Buyer loses the money; supplier loses the payment and often the customer | The destination never comes from a document or an email. Only a payout record the supplier signed, with a waiting period and a second person for any change | Live on Testnet with a test-issued token (payee checks, T-071); bank-detail email quarantined (T-262, simulated replay; ATK-01) |
+| A fraudster emails "our bank details have changed" and the buyer pays the wrong account | Buyer loses the money; supplier loses the payment and often the customer | The destination never comes from a document or an email. Only a payout record the supplier signed, with a waiting period and a second person for any change | Live on Testnet with a test-issued token (payee checks, T-071); a real bank-detail fraud email quarantined in 9 ms with no model call, nothing paid (T-265; ATK-01) |
 | A person phones the supplier before every payment, so every payment waits | Buyer's clerk; supplier's cash flow | Routine invoices that match the order, the goods receipt and the signed record are paid without a click | Live on Testnet, about 14 s from file to validated payment (T-260) |
 | An AI that reads invoices can be tricked by hidden text | Anyone automating accounts payable | The model only reads fields. It cannot sign, cannot choose the payee, and an independent Warden must co-sign | Live on Testnet: single-key payments refused with `tefBAD_QUORUM` (T-054) |
 | Cross-border payments are slow and costly | Both sides | RLUSD settles in seconds on XRPL. The local-currency leg depends on a partner | Ledger leg live; payout leg simulated |
@@ -273,7 +273,7 @@ Tokenisation means representing a real-world asset or claim as a token on a ledg
 | Warden holds on a test token | Duplicates, payee, receipt, limit, concurrency, pause, lowered limit, non-payment co-signature | Testnet, TST token | Live (T-071) |
 | Labelled set, agent pipeline against a single-prompt baseline | Pipeline: 2 of 41 should-hold cases passed as eligible (4.9%, 95% CI 1.3% to 16.1%), 1 of 21 clean invoices held, 59 of 62 decisions right. Baseline: 35 of 41 false approvals. The Warden's own checks come after this step | 62 fictional invoices, FIXTURE stand-ins, no model called ([fixture report](../apps/agent/results/fixture-eval.md)) | Simulated. The earlier 30-case run had none (T-116) |
 | Live models on the labelled set | Model call failed on 20 to 22 of 30 cases; all of those held, none paid | One run per provider | Measured on a separate branch; not merged |
-| Today's email tests | One real email invoice held `OVER_LIMIT`, nothing paid; after the limit was raised, the next was paid once with two signers | Two invoices (T-264) | Live on Testnet |
+| Today's email tests | One real email invoice held `OVER_LIMIT`, nothing paid; after the limit was raised, the next was paid once with two signers; a real "our bank details have changed" email was quarantined before any model read it, nothing paid | Three invoices (T-264, T-265) | Live mailbox; payments on Testnet |
 
 Never present these as "zero risk" (rule R-5). They are small, fictional test sets.
 
