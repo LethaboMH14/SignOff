@@ -31,3 +31,5 @@ Thumbs.db
 # Agent runtime data: the watched inbox holds invoices, and the state folder holds the decision log. Neither is committed.
 /apps/agent/inbox/
 /apps/agent/state/
+.xrpl-devex/
+.claude/settings.local.json
