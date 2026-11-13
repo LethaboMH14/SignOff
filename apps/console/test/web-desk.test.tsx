@@ -316,3 +316,35 @@ describe('the sign-in form', () => {
     expect(markup).not.toContain('role="alert"');
   });
 });
+
+describe('the test invoice panel', () => {
+  const send = (): Promise<string> => Promise.resolve('sent');
+  const withSender = (data: DeskData): string =>
+    renderToStaticMarkup(
+      <DeskView
+        data={data}
+        error={null}
+        busy={false}
+        pending={null}
+        onTogglePause={NO_OP}
+        onRequestLimits={NO_OP}
+        onApprove={NO_OP}
+        onConfirm={NO_OP_ASYNC}
+        onCancelConfirm={NO_OP}
+        onOpen={NO_OP}
+        onReceipt={NO_OP}
+        onSendTestInvoice={send}
+      />,
+    );
+
+  it('shows when the console says test invoices are on', () => {
+    const markup = withSender(dataOf({ testInvoices: true }));
+    expect(markup).toContain('Send a test invoice');
+    expect(markup).toContain('Testnet demo');
+  });
+
+  it('stays hidden when the console has them off, or for a desk with no sender', () => {
+    expect(withSender(dataOf({ testInvoices: false }))).not.toContain('Send a test invoice');
+    expect(deskOf(dataOf({ testInvoices: true }))).not.toContain('Send a test invoice');
+  });
+});

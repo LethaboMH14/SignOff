@@ -20,7 +20,7 @@ import {
 import { RequestVerifier } from './auth.js';
 import { loadConfig, loadKeys } from './config.js';
 import { fileEventLog } from './events.js';
-import { loadEvidence } from './evidence.js';
+import { watchedEvidenceRegister } from '../../../packages/shared/src/watched-evidence.js';
 import { simulatedIdentityChecker } from './identity.js';
 import { createWardenServer } from './server.js';
 import { WardenService } from './service.js';
@@ -55,7 +55,7 @@ async function serve(directory: string): Promise<void> {
     log: fileEventLog(join(directory, 'events.jsonl')),
     journal: fileJournalStore(join(directory, 'payments-journal.jsonl')),
     port,
-    evidence: loadEvidence(join(directory, 'evidence.json')),
+    evidence: watchedEvidenceRegister(join(directory, 'evidence.json')),
     identity: simulatedIdentityChecker(new Set(config.verifiedPayees)),
     now: () => new Date(),
     sleep: (ms) => new Promise((done) => setTimeout(done, ms)),

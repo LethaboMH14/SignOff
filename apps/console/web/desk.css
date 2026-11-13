@@ -1245,3 +1245,19 @@ input {
     transition: none !important;
   }
 }
+
+/* The demo's test invoice panel: one amount and one button on a line. */
+.test-invoice form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-end;
+}
+.test-invoice label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.test-invoice input {
+  width: 9rem;
+}

@@ -15,6 +15,7 @@ import { type ConsoleMode, createConsoleServer } from './app.js';
 import { type Operator, loadOperators } from './auth/operators.js';
 import { LoginGuard, SessionStore } from './auth/sessions.js';
 import { type ReceiptLedger, TESTNET_EXPLORER } from './receipt.js';
+import { writeDemoInvoice } from '../../../../scripts/demo/demo-invoice.js';
 
 /**
  * The console's entry point. It listens on the loopback address only, unless the operator names another host. It reads
@@ -136,6 +137,8 @@ function lazyLedgerOf(): ReceiptLedger {
   };
 }
 
+const demoDir = process.env['SIGNOFF_DEMO_DIR'];
+
 const api: ApiContext = {
   operators: loadOperators(operatorsPath),
   sessions: new SessionStore(() => Date.now()),
@@ -153,6 +156,17 @@ const api: ApiContext = {
     explorerBase: process.env['SIGNOFF_EXPLORER_BASE'] ?? TESTNET_EXPLORER,
     demoRandPerUnit: process.env['SIGNOFF_DEMO_RAND_PER_UNIT'] ?? null,
   },
+  // Only the demo launcher sets SIGNOFF_DEMO_DIR. Then an operator can drop a fictional test invoice into the inbox.
+  ...(demoDir === undefined || mode !== 'live'
+    ? {}
+    : {
+        testInvoices: {
+          send: async (zarMinor: number) => {
+            const invoice = await writeDemoInvoice(zarMinor, demoDir);
+            return { invoiceNumber: invoice.invoiceNumber, usdMinor: invoice.usdMinor };
+          },
+        },
+      }),
 };
 
 const server = createConsoleServer({

@@ -61,6 +61,8 @@ export interface DeskData {
   readonly overview: DeskOverview;
   readonly counts: Readonly<Record<DisplayState, number>>;
   readonly rows: readonly DeskRow[];
+  /** True when this operator may send a fictional test invoice (live demo only). */
+  readonly testInvoices?: boolean;
 }
 
 export class ApiError extends Error {
@@ -160,6 +162,14 @@ export function loadDesk(): Promise<DeskData> {
 
 export function setPaused(paused: boolean, csrf: string): Promise<unknown> {
   return request('POST', '/api/control/pause', { paused }, csrf);
+}
+
+/** Drops a fictional test invoice into the agent's inbox. The agent and the Warden check it like any other. */
+export function sendTestInvoice(
+  zarMinor: number,
+  csrf: string,
+): Promise<{ readonly invoiceNumber: string; readonly usdMinor: number }> {
+  return request('POST', '/api/demo/invoice', { zarMinor }, csrf);
 }
 
 /** Asks for new limits. The answer says whether they applied, or whether a higher one waits for a second operator. */

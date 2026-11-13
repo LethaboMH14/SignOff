@@ -66,6 +66,15 @@ export interface ApiContext {
   readonly ledger: ReceiptLedger | null;
   /** The receipt's settings: the token issuer, the explorer, and the placeholder rate for the SIMULATED rand figure. */
   readonly receipts: ReceiptConfig;
+  /**
+   * Drops a fictional test invoice into the agent's inbox, with its order and goods receipt. Present only when the demo
+   * launcher runs the console in live mode. The agent and the Warden still check the invoice as they would any other.
+   */
+  readonly testInvoices?: TestInvoicePort;
+}
+
+export interface TestInvoicePort {
+  send(zarMinor: number): Promise<{ readonly invoiceNumber: string; readonly usdMinor: number }>;
 }
 
 export interface Caller {
@@ -104,6 +113,8 @@ const Credentials = z.strictObject({
 
 const StepUpBody = z.strictObject({ password: z.string().min(1).max(256) });
 const PauseBody = z.strictObject({ paused: z.boolean() });
+/** A test invoice in rand: R1.00 to R10,000.00, in cents. */
+const TestInvoiceBody = z.strictObject({ zarMinor: z.number().int().min(100).max(1_000_000) });
 
 const Minor = z.int().min(1).max(1_000_000_000_000);
 const LimitsBody = z
@@ -362,6 +373,7 @@ async function desk(
         usageToday: overview.usageToday,
         pendingLimitChange: pendingViewOf(overview.pendingLimitChange, caller, ctx),
       },
+      testInvoices: ctx.testInvoices !== undefined && caller.operator.role === 'operator',
       counts: countsOf(rows),
       rows,
     });
@@ -400,6 +412,36 @@ async function pause(
   } catch (error) {
     const failure = wardenFailure(error);
     sendJson(response, failure.status, { error: failure.message });
+  }
+}
+
+/** Sends a fictional test invoice to the agent's inbox. Operators only, from this console's page, with its form token. */
+async function testInvoice(
+  request: IncomingMessage,
+  response: ServerResponse,
+  ctx: ApiContext,
+): Promise<void> {
+  const caller = callerOf(request, ctx);
+  if (caller === null) {
+    notSignedIn(response);
+    return;
+  }
+  if (ctx.testInvoices === undefined) {
+    sendJson(response, 404, { error: 'test invoices are off; start the console with the demo launcher' });
+    return;
+  }
+  if (!changeAllowed(request, response, ctx, caller, false)) {
+    return;
+  }
+  const body = await jsonBody(request, response, TestInvoiceBody);
+  if (body === null) {
+    return;
+  }
+  try {
+    const sent = await ctx.testInvoices.send(body.zarMinor);
+    sendJson(response, 202, sent);
+  } catch {
+    sendJson(response, 502, { error: 'the test invoice could not be written' });
   }
 }
 
@@ -543,6 +585,10 @@ export async function handleApi(
   }
   if (pathname === '/api/control/pause' && method === 'POST') {
     await pause(request, response, ctx);
+    return;
+  }
+  if (pathname === '/api/demo/invoice' && method === 'POST') {
+    await testInvoice(request, response, ctx);
     return;
   }
   if (pathname === '/api/limits' && method === 'POST') {

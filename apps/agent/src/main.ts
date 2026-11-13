@@ -18,8 +18,7 @@ import { Wallet } from 'xrpl';
 
 import { loadDotEnv } from '../../../packages/shared/src/node.js';
 
-import { evidenceRegister } from '../../../packages/shared/src/evidence-register.js';
-import { EvidenceFile } from '../../../packages/shared/src/schemas/evidence.js';
+import { watchedEvidenceRegister } from '../../../packages/shared/src/watched-evidence.js';
 import { WardenClient, coSignAsAgent } from '../../../packages/warden-api/src/client.js';
 
 import { auditToCsv, buildAuditExport } from './audit/export.js';
@@ -385,7 +384,7 @@ async function runCommand(args: readonly string[]): Promise<void> {
   });
   const model = chain.client;
 
-  const evidence = evidenceRegister(EvidenceFile.parse(readJson(evidencePath)));
+  const evidence = watchedEvidenceRegister(evidencePath);
   const suppliers = parseSupplierMaster(readJson(suppliersPath));
   const stateDir = dirname(logPath);
   mkdirSync(stateDir, { recursive: true });

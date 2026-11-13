@@ -169,6 +169,67 @@ export interface DeskViewProps {
   readonly onOpen: (rowId: string) => void;
   /** Opens the receipt for a paid row, by its attempt id. */
   readonly onReceipt: (attemptId: string) => void;
+  /** Drops a fictional test invoice into the agent's inbox. Present only when the demo launcher started the console. */
+  readonly onSendTestInvoice?: (zarMinor: number) => Promise<string>;
+}
+
+/**
+ * The demo's own invoice button. It writes a fictional supplier's invoice, with its order and goods receipt, so the
+ * operator can watch one invoice travel from inbox to testnet payment without leaving the browser.
+ */
+export function TestInvoicePanel({
+  onSend,
+}: {
+  readonly onSend: (zarMinor: number) => Promise<string>;
+}) {
+  const [amount, setAmount] = useState('20.00');
+  const [sending, setSending] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const submit = async (event: SubmitEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const zarMinor = minorOf(amount);
+    if (zarMinor === null || zarMinor < 100 || zarMinor > 1_000_000) {
+      setMessage('Enter an amount from R1.00 to R10,000.00.');
+      return;
+    }
+    setSending(true);
+    try {
+      setMessage(await onSend(zarMinor));
+    } catch (failure) {
+      setMessage(failure instanceof Error ? failure.message : 'The test invoice was not sent.');
+    } finally {
+      setSending(false);
+    }
+  };
+  return (
+    <section className="panel test-invoice" aria-labelledby="test-invoice-title">
+      <h2 id="test-invoice-title">Send a test invoice</h2>
+      <p className="muted">
+        Testnet demo. A fictional supplier invoice, with its purchase order and goods receipt, goes
+        into the agent&apos;s inbox.
+      </p>
+      <form
+        onSubmit={(event) => {
+          void submit(event);
+        }}
+      >
+        <label>
+          Amount in rand
+          <input
+            inputMode="decimal"
+            value={amount}
+            onChange={(event) => {
+              setAmount(event.target.value);
+            }}
+          />
+        </label>
+        <button type="submit" disabled={sending}>
+          {sending ? 'Sending…' : 'Send test invoice'}
+        </button>
+      </form>
+      {message === null ? null : <p role="status">{message}</p>}
+    </section>
+  );
 }
 
 function StepUp({
@@ -452,6 +513,9 @@ export function DeskView(props: DeskViewProps) {
       >
         <div className="queue-layout">
           <div className="queue-main">
+            {data.testInvoices === true && props.onSendTestInvoice !== undefined ? (
+              <TestInvoicePanel onSend={props.onSendTestInvoice} />
+            ) : null}
             {featured === null ? (
               <section className="panel" aria-labelledby="featured-title">
                 <h2 id="featured-title">No invoice yet</h2>

@@ -24,11 +24,6 @@ import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
 
 import { loadDotEnv } from '../../packages/shared/src/node.js';
-import { sha256OfBytes } from '../../packages/shared/src/node.js';
-import { resolveUsdZarRate } from '../../packages/shared/src/fx/index.js';
-import { EvidenceFile } from '../../packages/shared/src/schemas/evidence.js';
-import { writeTextPdf } from '../../apps/agent/tools/lib/pdf-writer.js';
-import { conversionOf } from '../../apps/agent/src/workflow/fx-convert.js';
 import { AGENT_POLICY_VERSION } from '../../apps/agent/src/config.js';
 import { requireAccount, RLUSD_TESTNET } from '../../packages/xrpl/src/index.js';
 import {
@@ -36,10 +31,10 @@ import {
   defaultLocalDir,
   fileRegistryStore,
 } from '../../packages/xrpl/src/node.js';
-import { DEMO_LISTEN, DEMO_INVOICE } from './prepare.js';
+import { writeDemoInvoice } from './demo-invoice.js';
+import { DEMO_LISTEN } from './prepare.js';
 
 const repoRoot = resolve(fileURLToPath(new URL('.', import.meta.url)), '..', '..');
-const SUPPLIER_ID = DEMO_INVOICE.supplierId;
 const WARDEN_URL = `http://${DEMO_LISTEN.host}:${String(DEMO_LISTEN.port)}`;
 const CONSOLE_PORT = 4180;
 const CONSOLE_URL = `http://127.0.0.1:${String(CONSOLE_PORT)}`;
@@ -184,115 +179,6 @@ async function getJson(
   return { status: response.status, body };
 }
 
-/** The run's new invoice: a fictional rand invoice with a unique number, written to the inbox. */
-async function makeInvoice(
-  zarMinor: number,
-  localDir: string,
-): Promise<{ file: string; fingerprint: string; usdMinor: number; rate: string }> {
-  const rate = await resolveUsdZarRate({ mode: 'live' });
-  const conversion = conversionOf(zarMinor, rate);
-  const stamp = new Date()
-    .toISOString()
-    .replace(/[-:TZ.]/g, '')
-    .slice(0, 14);
-  const number = `INV-DEMO-${stamp}`;
-  const po = `PO-DEMO-${stamp}`;
-  const printedDate = new Date().toISOString().slice(0, 10);
-  const totalPrinted = (zarMinor / 100).toFixed(2);
-  const bytes = writeTextPdf([
-    [
-      DEMO_INVOICE.supplierName,
-      `Invoice number: ${number}`,
-      `Invoice date: ${printedDate}`,
-      'Currency: ZAR',
-      `Total due: ${totalPrinted}`,
-      `PO number: ${po}`,
-      `Bank account: ${DEMO_INVOICE.payeeAccountPrinted}`,
-      'FICTIONAL TEST INVOICE. NOT A REAL DOCUMENT.',
-    ],
-  ]);
-  const fingerprint = sha256OfBytes(bytes);
-  const file = `${number}.pdf`;
-  const inbox = join(localDir, 'demo', 'inbox');
-  mkdirSync(inbox, { recursive: true });
-  writeFileSync(join(inbox, file), bytes);
-
-  const receivedAt = `${printedDate}T09:00:00.000Z`;
-  const agentPath = join(localDir, 'demo', 'evidence-agent.json');
-  const agentEvidence = EvidenceFile.parse(JSON.parse(readFileSync(agentPath, 'utf8')) as unknown);
-  writeFileSync(
-    agentPath,
-    `${JSON.stringify(
-      EvidenceFile.parse({
-        ...agentEvidence,
-        invoices: [
-          ...agentEvidence.invoices,
-          {
-            fingerprint,
-            supplierId: SUPPLIER_ID,
-            invoiceNumber: number,
-            currency: 'ZAR',
-            amountMinor: zarMinor,
-            purchaseOrderId: po,
-            payeeAccountAsPrinted: DEMO_INVOICE.payeeAccountPrinted,
-          },
-        ],
-        purchaseOrders: [
-          ...agentEvidence.purchaseOrders,
-          { purchaseOrderId: po, supplierId: SUPPLIER_ID, currency: 'ZAR', amountMinor: zarMinor },
-        ],
-        goodsReceipts: [
-          ...agentEvidence.goodsReceipts,
-          { purchaseOrderId: po, receivedMinor: zarMinor, receivedAt },
-        ],
-      }),
-      null,
-      2,
-    )}\n`,
-  );
-
-  const wardenPath = join(localDir, 'warden', 'evidence.json');
-  const wardenEvidence = EvidenceFile.parse(
-    JSON.parse(readFileSync(wardenPath, 'utf8')) as unknown,
-  );
-  writeFileSync(
-    wardenPath,
-    `${JSON.stringify(
-      EvidenceFile.parse({
-        ...wardenEvidence,
-        invoices: [
-          ...wardenEvidence.invoices,
-          {
-            fingerprint,
-            supplierId: SUPPLIER_ID,
-            invoiceNumber: number,
-            currency: 'USD',
-            amountMinor: conversion.amountMinor,
-            purchaseOrderId: po,
-            payeeAccountAsPrinted: null,
-          },
-        ],
-        purchaseOrders: [
-          ...wardenEvidence.purchaseOrders,
-          {
-            purchaseOrderId: po,
-            supplierId: SUPPLIER_ID,
-            currency: 'USD',
-            amountMinor: conversion.amountMinor,
-          },
-        ],
-        goodsReceipts: [
-          ...wardenEvidence.goodsReceipts,
-          { purchaseOrderId: po, receivedMinor: conversion.amountMinor, receivedAt },
-        ],
-      }),
-      null,
-      2,
-    )}\n`,
-  );
-  return { file, fingerprint, usdMinor: conversion.amountMinor, rate: conversion.rate };
-}
-
 /**
  * Moves the invoices of earlier runs out of the inbox. The agent reads every file in the inbox at start-up, so an
  * invoice left there would be processed again. The files are moved, not deleted, so their records stay on disk.
@@ -406,7 +292,7 @@ async function main(): Promise<void> {
   // The run's invoice and its evidence are written before the Warden starts. The Warden reads its evidence file only at
   // start-up, so a record written after it started would be missing, and the new invoice would be held.
   archiveInbox(localDir);
-  const invoice = await makeInvoice(zarMinor, localDir);
+  const invoice = await writeDemoInvoice(zarMinor, localDir);
   process.stdout.write(
     `[demo] invoice ${invoice.file} R${(zarMinor / 100).toFixed(2)} = USD ${(invoice.usdMinor / 100).toFixed(2)} at USD/ZAR ${invoice.rate} (live)\n`,
   );
@@ -483,6 +369,7 @@ async function main(): Promise<void> {
       SIGNOFF_WARDEN_READER_ID: 'operator-a',
       SIGNOFF_WARDEN_READER_SECRET_FILE: readerSecretPath,
       SIGNOFF_CONSOLE_PORT: String(CONSOLE_PORT),
+      SIGNOFF_DEMO_DIR: localDir,
     }),
   );
   await waitFor(
