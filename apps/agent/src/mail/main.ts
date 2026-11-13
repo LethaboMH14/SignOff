@@ -1,7 +1,7 @@
 import { resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 
-import { connectImap, type ImapSettings } from './imap.js';
+import { connectImap, type ImapSettings, isAuthFailure } from './imap.js';
 import { sendersOf } from './admit.js';
 import { type MailboxPort, pollOnce, type WatchOptions, withTimeout } from './watch.js';
 
@@ -37,11 +37,15 @@ async function onFreshConnection<T>(
   settings: ImapSettings,
   work: (port: MailboxPort) => Promise<T>,
 ): Promise<T> {
-  const mailbox = await connectImap(settings);
+  const mailbox = await withTimeout(connectImap(settings), CHECK_TIMEOUT_MS);
+  const running = work(mailbox.port);
   try {
-    return await withTimeout(work(mailbox.port), CHECK_TIMEOUT_MS);
+    return await withTimeout(running, CHECK_TIMEOUT_MS);
   } finally {
     await mailbox.close();
+    // A timed-out check must not overlap the next one, which would handle the same message twice. Closing the
+    // connection makes its pending calls fail, so this wait is short.
+    await withTimeout(running, CHECK_TIMEOUT_MS).catch(() => undefined);
   }
 }
 
@@ -78,6 +82,12 @@ async function main(): Promise<void> {
       const reason = error instanceof Error ? error.message : 'unknown';
       const detail = (error as { responseText?: unknown }).responseText;
       const why = typeof detail === 'string' && detail !== '' ? detail : reason;
+      if (!isAuthFailure(error)) {
+        // A network failure or a slow server is not a password problem; say so, so nobody re-checks a good password.
+        throw new Error(
+          `the mail server could not be reached (${why.slice(0, 160)}). Check the connection and start again. Nothing was started.`,
+        );
+      }
       throw new Error(
         `the mail server refused the sign-in (${why}). SIGNOFF_MAIL_PASSWORD must be the 16-letter Google app password for SIGNOFF_MAIL_USER, not the normal password. Nothing was started.`,
       );

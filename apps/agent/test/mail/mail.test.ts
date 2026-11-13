@@ -237,6 +237,20 @@ describe('the mailbox watcher', () => {
     expect(log).not.toContain('attacker');
   });
 
+  it('does not deliver a message twice when it was decided but could not be marked read', async () => {
+    const box = new FakeMailbox(new Map([[7, rawMessage(SUPPLIER, PASS, PDF)]]));
+    const failingOnce = Object.assign(Object.create(box) as FakeMailbox, {
+      markRead: () => Promise.reject(new Error('read ECONNRESET')),
+    });
+    await expect(pollOnce(failingOnce, 7, optionsIn(dir))).rejects.toThrow('ECONNRESET');
+    // The next check finds the message still unread; it is only marked read, not delivered or logged again.
+    await pollOnce(box, 7, optionsIn(dir));
+    expect(box.read).toEqual([7]);
+    expect(readdirSync(join(dir, 'inbox'))).toHaveLength(1);
+    const lines = readFileSync(join(dir, 'mail-log.jsonl'), 'utf8').trim().split('\n');
+    expect(lines).toHaveLength(1);
+  });
+
   it('leaves email that arrived before it started alone', async () => {
     const box = new FakeMailbox(new Map([[2, rawMessage(SUPPLIER, PASS, PDF)]]));
     const next = await pollOnce(box, 3, optionsIn(dir));

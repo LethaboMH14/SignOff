@@ -9,7 +9,7 @@
 //
 // The bundle holds the Warden's key, so it is written outside the repository with owner-only permissions, and only
 // its path and size are printed. Paste it into Railway yourself; never into chat or a repository.
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gzipSync } from 'node:zlib';
@@ -55,6 +55,15 @@ async function main(): Promise<void> {
   }
   const localDir = defaultLocalDir();
   assertOutsideRepository(localDir, repoRoot);
+
+  // Every Warden file must be there before any invoice is written, so a missing one leaves nothing half-made.
+  for (const name of BUNDLE_FILES) {
+    if (!existsSync(join(localDir, 'warden', name))) {
+      throw new Error(
+        `the local Warden folder has no ${name}; run npm run demo:prepare first. Nothing was written.`,
+      );
+    }
+  }
 
   const made: string[] = [];
   for (let index = 0; index < Number(countText); index += 1) {

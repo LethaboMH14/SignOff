@@ -105,16 +105,22 @@ describe('recognition with the vendored data', () => {
 });
 
 describe('fail closed when the language data is not the data that was pinned', () => {
-  it('stops with a named reason when the data folder has no language files', async () => {
-    const empty = join(scratch, 'empty');
-    mkdirSync(empty);
-    const recogniser = createOcrRecogniser(empty);
-    const rejection = await recogniser
-      .recognise(renderPng(LINES), 'PNG', 'eng')
-      .catch((error: unknown) => error);
-    expect(rejection).toBeInstanceOf(OcrError);
-    expect((rejection as OcrError).reason).toBe('OCR_LANGUAGE_DATA_MISSING');
-  });
+  // Rendering the page and starting the check can take over 5 s on a loaded machine (seen in the full suite on 13 Nov),
+  // so this test has the same limit as the other OCR tests.
+  it(
+    'stops with a named reason when the data folder has no language files',
+    async () => {
+      const empty = join(scratch, 'empty');
+      mkdirSync(empty);
+      const recogniser = createOcrRecogniser(empty);
+      const rejection = await recogniser
+        .recognise(renderPng(LINES), 'PNG', 'eng')
+        .catch((error: unknown) => error);
+      expect(rejection).toBeInstanceOf(OcrError);
+      expect((rejection as OcrError).reason).toBe('OCR_LANGUAGE_DATA_MISSING');
+    },
+    OCR_TIMEOUT_MS,
+  );
 
   it(
     'stops with a named reason when a language file no longer matches its pinned hash',

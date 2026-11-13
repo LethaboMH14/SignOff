@@ -10,6 +10,18 @@ export interface ImapSettings {
   readonly password: string;
 }
 
+/** How long a polite LOGOUT may take before the connection is simply closed. */
+export const LOGOUT_LIMIT_MS = 3000;
+
+/** True when the server refused the credentials, as opposed to a network failure or a timeout. */
+export function isAuthFailure(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    (error as { authenticationFailed?: unknown }).authenticationFailed === true
+  );
+}
+
 /** The mailbox over IMAP with TLS. Every call takes the INBOX lock for its own duration. */
 export async function connectImap(settings: ImapSettings): Promise<{
   readonly port: MailboxPort;
@@ -63,10 +75,23 @@ export async function connectImap(settings: ImapSettings): Promise<{
 
   return {
     port,
+    // LOGOUT waits for the server. On a stalled connection it would never answer, so it gets a few seconds, and then
+    // the socket is closed regardless (the hang this watcher was rebuilt to avoid).
     close: async () => {
-      await client.logout().catch(() => {
+      const loggedOut = await Promise.race([
+        client.logout().then(
+          () => true,
+          () => false,
+        ),
+        new Promise<boolean>((done) => {
+          setTimeout(() => {
+            done(false);
+          }, LOGOUT_LIMIT_MS).unref();
+        }),
+      ]);
+      if (!loggedOut) {
         client.close();
-      });
+      }
     },
   };
 }

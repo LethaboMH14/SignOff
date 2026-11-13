@@ -36,13 +36,28 @@ if (!existsSync(join(directory, 'warden-keys.json'))) {
     );
     process.exit(1);
   }
-  const files = JSON.parse(gunzipSync(Buffer.from(bundle.trim(), 'base64')).toString('utf8'));
-  let written = 0;
-  for (const [name, content] of Object.entries(files)) {
+  let files;
+  try {
+    files = JSON.parse(gunzipSync(Buffer.from(bundle.trim(), 'base64')).toString('utf8'));
+  } catch {
+    // A parse error message can quote the text it failed on, which here holds the Warden key. Print fixed text only.
+    process.stderr.write(
+      'railway-start: SIGNOFF_WARDEN_BUNDLE could not be read; paste it again\n',
+    );
+    process.exit(1);
+  }
+  const entries = Object.entries(files);
+  for (const [name, content] of entries) {
     if (!ALLOWED.has(name) || typeof content !== 'string') {
       process.stderr.write(`railway-start: refused an unexpected bundle entry\n`);
       process.exit(1);
     }
+  }
+  // The keys file marks a seeded volume, so it is written last: a start that dies part-way leaves no keys file, and
+  // the next start seeds again.
+  entries.sort(([a], [b]) => Number(a === 'warden-keys.json') - Number(b === 'warden-keys.json'));
+  let written = 0;
+  for (const [name, content] of entries) {
     const path = join(directory, name);
     writeFileSync(path, content, { mode: 0o600 });
     chmodSync(path, 0o600);

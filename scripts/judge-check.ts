@@ -76,7 +76,7 @@ function testCheck(name: string, files: readonly string[]): JudgeCheck {
   return { name, status: 'PASS', label: 'SIMULATED', note: passed, detail: passed };
 }
 
-/** Re-runs the simulated labelled set into a temporary folder, so the committed result is never overwritten. */
+/** Re-runs the labelled set in fixture mode (no model is called) into a temporary folder, and compares it with the committed fixture-eval.json, which replaced simulated-eval.json on 12 November. */
 function reproduceSimulated(): JudgeCheck {
   const folder = mkdtempSync(join(tmpdir(), 'signoff-judge-'));
   try {
@@ -88,8 +88,8 @@ function reproduceSimulated(): JudgeCheck {
     if (run.status !== 0) {
       process.stderr.write(run.stderr);
     }
-    const generated = run.status === 0 ? readResult(join(folder, 'simulated-eval.json')) : null;
-    return simulatedCheckOf(readResult(join(RESULTS, 'simulated-eval.json')), generated);
+    const generated = run.status === 0 ? readResult(join(folder, 'fixture-eval.json')) : null;
+    return simulatedCheckOf(readResult(join(RESULTS, 'fixture-eval.json')), generated);
   } finally {
     rmSync(folder, { recursive: true, force: true });
   }

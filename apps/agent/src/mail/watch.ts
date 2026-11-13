@@ -1,5 +1,12 @@
 /* eslint-disable security/detect-non-literal-fs-filename -- the inbox and log paths are named by the operator at start-up */
-import { appendFileSync, mkdirSync, renameSync, writeFileSync } from 'node:fs';
+import {
+  appendFileSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  renameSync,
+  writeFileSync,
+} from 'node:fs';
 import { join } from 'node:path';
 
 import { simpleParser } from 'mailparser';
@@ -82,6 +89,27 @@ function deliver(decision: MailDecision, inboxDir: string): readonly string[] {
   });
 }
 
+/** The logged decision for a message UID, or null. A malformed log line is ignored. */
+function decidedBefore(logPath: string, uid: number): MailLogEntry | null {
+  if (!existsSync(logPath)) {
+    return null;
+  }
+  for (const line of readFileSync(logPath, 'utf8').split('\n')) {
+    if (line.trim() === '') {
+      continue;
+    }
+    try {
+      const entry = JSON.parse(line) as MailLogEntry;
+      if (entry.uid === uid) {
+        return entry;
+      }
+    } catch {
+      // A torn last line from a crash is not a decision.
+    }
+  }
+  return null;
+}
+
 /** Decides one message, delivers what is accepted, records the decision and marks the message read. */
 export async function handleMessage(
   port: MailboxPort,
@@ -89,6 +117,13 @@ export async function handleMessage(
   options: WatchOptions,
 ): Promise<MailLogEntry> {
   const now = options.now ?? (() => new Date());
+  // A message decided before but not marked read (the connection dropped in between) is only marked read now. Deciding
+  // it again would deliver the same invoice twice.
+  const earlier = decidedBefore(options.logPath, uid);
+  if (earlier !== null) {
+    await port.markRead(uid);
+    return earlier;
+  }
   const raw = await port.source(uid);
   let decision: MailDecision;
   if (raw === null) {

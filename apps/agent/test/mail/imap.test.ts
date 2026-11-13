@@ -4,7 +4,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 /** A stand-in for the IMAP library: it records the calls the adapter makes and answers from a small mailbox. */
 const calls: string[] = [];
-const state: { search: number[] | false; released: number } = { search: [7, 3, 12], released: 0 };
+const state: { search: number[] | false; released: number; logoutHangs: boolean } = {
+  search: [7, 3, 12],
+  released: 0,
+  logoutHangs: false,
+};
 
 const clients: EventEmitter[] = [];
 
@@ -52,13 +56,15 @@ vi.mock('imapflow', async () => {
       }
       logout(): Promise<void> {
         calls.push('logout');
-        return Promise.reject(new Error('already closed'));
+        return state.logoutHangs
+          ? new Promise<void>(() => undefined)
+          : Promise.reject(new Error('already closed'));
       }
     },
   };
 });
 
-const { connectImap } = await import('../../src/mail/imap.js');
+const { connectImap, isAuthFailure, LOGOUT_LIMIT_MS } = await import('../../src/mail/imap.js');
 
 const SETTINGS = { host: 'imap.example', port: 993, user: 'u@example.com', password: 'p' };
 
@@ -66,6 +72,7 @@ beforeEach(() => {
   calls.length = 0;
   state.search = [7, 3, 12];
   state.released = 0;
+  state.logoutHangs = false;
 });
 
 describe('the IMAP adapter', () => {
@@ -108,5 +115,25 @@ describe('the IMAP adapter', () => {
     expect(() => client?.emit('error', reset)).not.toThrow();
     expect(written).toHaveBeenCalledWith('mail connection error: ECONNRESET\n');
     written.mockRestore();
+  });
+
+  it('closes the socket when the server never answers LOGOUT, instead of hanging the watcher', async () => {
+    vi.useFakeTimers();
+    try {
+      state.logoutHangs = true;
+      const { close } = await connectImap(SETTINGS);
+      const closing = close();
+      await vi.advanceTimersByTimeAsync(LOGOUT_LIMIT_MS);
+      await expect(closing).resolves.toBeUndefined();
+      expect(calls).toContain('close');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('tells a refused password apart from a network failure', () => {
+    expect(isAuthFailure(Object.assign(new Error('x'), { authenticationFailed: true }))).toBe(true);
+    expect(isAuthFailure(Object.assign(new Error('x'), { code: 'ETIMEDOUT' }))).toBe(false);
+    expect(isAuthFailure(null)).toBe(false);
   });
 });
