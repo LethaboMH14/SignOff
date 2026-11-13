@@ -1093,7 +1093,13 @@ export class WardenService {
       return stop(hold('LEDGER_UNREADABLE', 'the payment could not be prepared from the ledger'));
     }
     return {
-      decision: this.decisionOf('ALLOW', [], fingerprint, now),
+      decision: this.decisionOf(
+        'ALLOW',
+        [],
+        fingerprint,
+        now,
+        route.owner === undefined ? {} : { ownerApprovalRequired: true },
+      ),
       attempt: {
         attemptId: proposal.attemptId,
         scopedKey,
@@ -1461,6 +1467,7 @@ export class WardenService {
     reasons: readonly { readonly code: WardenReasonCode; readonly message: string }[],
     fingerprint: string,
     now: Date,
+    extra: { readonly ownerApprovalRequired?: boolean } = {},
   ): WardenDecision {
     return WardenDecision.parse({
       schemaVersion: 1,
@@ -1469,6 +1476,7 @@ export class WardenService {
       evaluatedAt: now.toISOString(),
       decision: kind,
       reasons: [...reasons],
+      ...extra,
     });
   }
 

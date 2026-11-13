@@ -519,7 +519,12 @@ async function submit(
   move('SIGNED', 'signer', 'OK');
 
   // 8. Submit. The state is written before the request leaves, so a crash in between is visible on restart.
-  move('SUBMITTED', 'submitter', 'SENT');
+  // A high-value payment waits here for the owner's phone signature, so the map shows the token at the approval card.
+  move(
+    'SUBMITTED',
+    'submitter',
+    answer.decision.ownerApprovalRequired === true ? 'OWNER_APPROVAL_REQUESTED' : 'SENT',
+  );
   let result: CoSignResult;
   try {
     result = await warden.coSign(attemptId, blob);

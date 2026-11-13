@@ -206,3 +206,37 @@ describe('the high-value route', () => {
     expect(requests).toHaveLength(0);
   });
 });
+
+describe('the high-value answer to the agent', () => {
+  it('tells the agent that the owner must sign before the Warden co-signs', async () => {
+    const w = await world({ phone: 'approve' });
+    const { reply } = await proposeAndAgentSign(w);
+    expect(reply.decision).toMatchObject({ decision: 'ALLOW', ownerApprovalRequired: true });
+  });
+
+  it('does not ask for the owner on a routine payment', async () => {
+    const base = await provisionedBase();
+    const config = configFor(base, {
+      highValue: {
+        thresholdMinor: 1_000_000,
+        treasuryAddress: base.spending.address,
+        ownerAddress: Wallet.generate().address,
+        approvalWindowLedgers: 300,
+      },
+    });
+    const clock = newClock();
+    const service = await openService(base, config, evidenceFrom([STANDARD]), { clock });
+    await service.enrolSupplier(
+      {
+        supplierId: SUPPLIER,
+        payee: { address: base.supplierAccount.address, destinationTag: null },
+        publicKey: generateSupplierKey().publicKey,
+      },
+      OPERATOR_A,
+    );
+    await service.approveSupplier(SUPPLIER, OPERATOR_B);
+    const reply = await service.propose(proposalFor(newAttemptId(), STANDARD, config, clock.now));
+    expect(reply.decision.decision).toBe('ALLOW');
+    expect(reply.decision).not.toHaveProperty('ownerApprovalRequired');
+  });
+});

@@ -33,6 +33,10 @@ const REASON_TEXT: ReadonlyMap<string, string> = new Map<string, string>([
     'OWNER_APPROVAL_UNAVAILABLE',
     'This payment is above the high-value threshold and needs the owner to sign on their phone, but owner approval is not set up.',
   ],
+  [
+    'OWNER_APPROVAL_REQUESTED',
+    'This payment is above the high-value threshold. The owner has been asked to sign on their phone, and nothing is sent until they do.',
+  ],
   ['UNSUPPORTED_TRANSACTION', 'This kind of payment is not allowed.'],
   ['SUPPLIER_NOT_APPROVED', 'The supplier is not approved yet.'],
   [

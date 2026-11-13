@@ -121,3 +121,50 @@ describe('owner notifications', () => {
     expect(seen).toEqual(['EXTRACTED']);
   });
 });
+
+describe('owner email notices', () => {
+  const notice = {
+    at: '2026-11-13T19:00:00.000Z',
+    step: 'paid',
+    tone: 'good' as const,
+    text: 'Invoice INV-9 paid in Testnet RLUSD and reconciled.',
+    correlationId: 'abc',
+  };
+
+  it('emails the owner each notice, with a Testnet footer, to the configured address only', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'notify-'));
+    const sent: { from: string; to: string; subject: string; text: string }[] = [];
+    const notifier = createNotifier({
+      file: join(dir, 'n.jsonl'),
+      telegram: null,
+      email: {
+        from: 'demo@example.test',
+        to: 'owner@example.test',
+        transport: { sendMail: (m) => Promise.resolve(sent.push(m)) },
+      },
+    });
+    await notifier.send(notice);
+    expect(sent).toHaveLength(1);
+    expect(sent[0]?.to).toBe('owner@example.test');
+    expect(sent[0]?.subject).toBe('SignOff (Testnet): Paid, paid');
+    expect(sent[0]?.text).toContain('Testnet only');
+  });
+
+  it('reports a failed email without any credential text', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'notify-'));
+    const errors: string[] = [];
+    const notifier = createNotifier({
+      file: join(dir, 'n.jsonl'),
+      telegram: null,
+      email: {
+        from: 'demo@example.test',
+        to: 'owner@example.test',
+        transport: { sendMail: () => Promise.reject(new Error('535 bad password')) },
+      },
+      onError: (m) => errors.push(m),
+    });
+    await notifier.send(notice);
+    expect(errors).toEqual(['Email could not be sent (the mailbox refused or was unreachable)']);
+    expect(readFileSync(join(dir, 'n.jsonl'), 'utf8')).toContain('INV-9');
+  });
+});

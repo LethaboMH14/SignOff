@@ -94,7 +94,9 @@ export function paystackTestPayout(options: PaystackOptions): PayoutRail {
     });
     const json = (await res.json()) as { status?: boolean; message?: string; data?: unknown };
     if (!res.ok || json.status !== true) {
-      throw new RampError(`Paystack test mode refused ${path} (HTTP ${String(res.status)})`);
+      throw new RampError(
+        `Paystack test mode refused ${path} (HTTP ${String(res.status)}): ${json.message ?? 'no reason given'}`,
+      );
     }
     return json.data;
   };

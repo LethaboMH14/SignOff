@@ -105,13 +105,17 @@ export interface Movement {
 const SHORT_ID_LENGTH = 8;
 
 /** Where the token goes on the map for a state change. Held and failed moves leave the main lane. */
-export function nodeOf(state: AgentState, actor: AgentActor): MapNode {
+/** The reason the agent logs for a submission that waits for the owner's phone signature. */
+export const OWNER_WAIT_REASON = 'OWNER_APPROVAL_REQUESTED';
+
+export function nodeOf(state: AgentState, actor: AgentActor, reasonCode = ''): MapNode {
   switch (state) {
     case 'HELD':
     case 'QUARANTINED':
     case 'RECONCILIATION_EXCEPTION':
       return 'hold';
     case 'SUBMITTED':
+      return reasonCode === OWNER_WAIT_REASON ? 'approver' : 'ledger';
     case 'VALIDATED':
     case 'FAILED':
       return 'ledger';
@@ -146,7 +150,7 @@ export function toMovement(event: MapEventInput): Movement {
     at: event.at,
     invoice: event.correlationId.slice(0, SHORT_ID_LENGTH),
     actor: event.actor,
-    node: nodeOf(event.toState, event.actor),
+    node: nodeOf(event.toState, event.actor, event.reasonCode),
     toState: event.toState,
     label: STATE_LABELS[event.toState],
     tone: toneOf(event.toState),

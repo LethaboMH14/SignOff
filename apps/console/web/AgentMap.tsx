@@ -1,4 +1,5 @@
 import type { BoardState, TokenState } from '../src/model/board.js';
+import type { Movement } from '../src/model/states.js';
 import {
   ARRIVAL_RADIUS,
   EDGES,
@@ -51,9 +52,25 @@ function summaryOf(board: BoardState, tokenCount: number): string {
   return `${String(tokenCount)} invoices on the map. The latest move: invoice ${latest.invoice}, ${ACTOR_LABELS[latest.actor]}, ${latest.label}.`;
 }
 
+/**
+ * The places where the owner was told something recently. Every logged move except the ledger's validation has a
+ * notice, so a bell on a place means a move happened there in the recent history. The bell is a reading of the log,
+ * not a delivery receipt; the owner's messages live in the notification log and on Telegram.
+ */
+export function notifiedPlacesOf(history: readonly Movement[]): ReadonlySet<MapNode> {
+  const places = new Set<MapNode>();
+  for (const move of history) {
+    if (move.toState !== 'VALIDATED') {
+      places.add(move.node);
+    }
+  }
+  return places;
+}
+
 export function AgentMap({ board }: { readonly board: BoardState }) {
   const tokens = Object.values(board.tokens).sort((a, b) => a.seq - b.seq);
   const places = placesOf(tokens);
+  const notified = notifiedPlacesOf(board.history);
   return (
     <svg
       viewBox={`0 0 ${String(VIEW_WIDTH)} ${String(VIEW_HEIGHT)}`}
@@ -159,6 +176,19 @@ export function AgentMap({ board }: { readonly board: BoardState }) {
                   <text y={5} textAnchor="middle" className="node-label">
                     {labelOf(node)}
                   </text>
+                  {notified.has(node) ? (
+                    <g
+                      className="node-bell"
+                      transform={`translate(${String(width / 2 - 2)} ${String(-height / 2 + 2)})`}
+                    >
+                      <title>The owner was told about this step.</title>
+                      <circle r={11} fill="#E3A33B" stroke="#15211C" strokeWidth={1.5} />
+                      <path
+                        d="M-4 3 L-4 -1 Q-4 -5 0 -5 Q4 -5 4 -1 L4 3 L5 5 L-5 5 Z M-1.5 6.5 Q0 8 1.5 6.5"
+                        fill="#15211C"
+                      />
+                    </g>
+                  ) : null}
                 </>
               )}
             </g>

@@ -10,6 +10,7 @@ import {
   AGENT_ACTORS,
   AGENT_STATES,
   nodeOf,
+  OWNER_WAIT_REASON,
   type MapEventInput,
   parseMapEvent,
   reasonTextOf,
@@ -196,5 +197,16 @@ describe('the replay of the labelled set', () => {
       const record = JSON.parse(line) as { readonly reasonCode: string };
       expect(reasonTextOf(record.reasonCode)).not.toContain('no plain text yet');
     }
+  });
+});
+
+describe('the owner approval token', () => {
+  it('sits on the approval card while a high-value payment waits for the owner', () => {
+    expect(nodeOf('SUBMITTED', 'submitter', OWNER_WAIT_REASON)).toBe('approver');
+  });
+
+  it('sits on the ledger for an ordinary submission, and after the owner signs', () => {
+    expect(nodeOf('SUBMITTED', 'submitter', 'SENT')).toBe('ledger');
+    expect(nodeOf('VALIDATED', 'warden', 'PAID')).toBe('ledger');
   });
 });

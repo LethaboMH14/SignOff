@@ -47,6 +47,8 @@ export const WardenDecision = z.discriminatedUnion('decision', [
     ...DecisionCommon,
     decision: z.literal('ALLOW'),
     reasons: z.array(WardenReason).length(0),
+    /** True when the Warden will not co-sign until the owner signs too (a high-value payment). Optional, so older answers still parse. */
+    ownerApprovalRequired: z.boolean().optional(),
   }),
   z.strictObject({
     ...DecisionCommon,

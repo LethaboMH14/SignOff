@@ -1,8 +1,10 @@
-// Owner notifications: one plain-language message for each step an invoice takes, from "received" to "paid",
+// Owner notifications (email and Telegram, when set): one plain-language message for each step an invoice takes, from "received" to "paid",
 // plus the high-value approval request. Messages go to a local file the console reads (always) and to Telegram
 // when TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID are set. Nothing secret is written: no keys, seeds or tokens, only
 // the invoice file name, the step, the reason in words, and the public ledger hash.
 import { appendFileSync, existsSync, readFileSync, statSync } from 'node:fs';
+
+import { emailFor, type MailTransport } from './owner-email.js';
 
 import { reasonTextOf } from '../../apps/console/src/model/reasons.js';
 
@@ -130,6 +132,12 @@ export interface NotifierOptions {
   /** The file the console reads; one JSON notice per line. */
   readonly file: string;
   readonly telegram: { readonly token: string; readonly chatId: string } | null;
+  /** The owner's address and the demo mailbox transport, or null for no email. */
+  readonly email?: {
+    readonly from: string;
+    readonly to: string;
+    readonly transport: MailTransport;
+  } | null;
   readonly fetchFn?: typeof fetch;
   readonly onError?: (message: string) => void;
 }
@@ -145,6 +153,19 @@ export function createNotifier(options: NotifierOptions): Notifier {
       // The demo folder outside the repository, passed in by the launcher.
       // eslint-disable-next-line security/detect-non-literal-fs-filename
       appendFileSync(options.file, `${JSON.stringify(notice)}\n`);
+      if (options.email) {
+        const mail = emailFor(notice);
+        try {
+          await options.email.transport.sendMail({
+            from: options.email.from,
+            to: options.email.to,
+            subject: mail.subject,
+            text: mail.text,
+          });
+        } catch {
+          options.onError?.('Email could not be sent (the mailbox refused or was unreachable)');
+        }
+      }
       if (options.telegram === null) return;
       try {
         const res = await fetchFn(

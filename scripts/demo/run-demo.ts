@@ -38,6 +38,7 @@ import {
   fileRegistryStore,
 } from '../../packages/xrpl/src/node.js';
 import { writeDemoInvoice } from './demo-invoice.js';
+import { gmailTransport } from './owner-email.js';
 import {
   approvalNoticeFrom,
   createNotifier,
@@ -538,9 +539,17 @@ async function main(): Promise<void> {
   const agentLog = join(demoDir, 'agent-log.jsonl');
   const notificationsFile = join(demoDir, 'owner-notifications.jsonl');
   const telegram = telegramVars();
+  const ownerTo = process.env['OWNER_NOTIFY_EMAIL']?.trim() ?? '';
+  const mailUser = process.env['SIGNOFF_MAIL_USER']?.trim() ?? '';
+  const mailPass = process.env['SIGNOFF_MAIL_PASSWORD']?.trim() ?? '';
+  const emailNotice =
+    ownerTo === '' || mailUser === '' || mailPass === ''
+      ? null
+      : { from: mailUser, to: ownerTo, transport: gmailTransport(mailUser, mailPass) };
   const activeNotifier = createNotifier({
     file: notificationsFile,
     telegram,
+    email: emailNotice,
     onError: (message) => {
       process.stderr.write(`[notify] ${message}\n`);
     },
