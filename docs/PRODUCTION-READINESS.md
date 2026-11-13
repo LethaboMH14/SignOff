@@ -27,7 +27,7 @@ Written 13 November 2026. SignOff moves Testnet RLUSD, which has no real value. 
 | P3 | Durable storage for the agent log and Warden decisions (a managed database with backups), replacing local files | Audit trail must survive a disk failure | 2 days |
 | P4 | Alerts: Warden down, payment held, ledger unreadable, limit near, unusual payee change attempt | An operator must know within minutes | 1 day |
 | P5 | A real identity provider with MFA for the hosted console. Sign-in already has a guard against repeated failures (`LoginGuard`); per-route rate limits on the API are not built | Public exposure | 1 to 2 days |
-| P6 | The 10 RLUSD run and a live negative run (uncredentialed supplier held) on Testnet | Open items in the README | Hours |
+| P6 | ~~The 10 RLUSD run and a live negative run (uncredentialed supplier held) on Testnet~~ Done on 13 November (T-266, T-267) | Was open in the README | Done |
 | P7 | Live model error rate on the labelled set brought down, then measured again | The pipeline model call failed on 20 to 22 of 30 cases in the last measurement; a hold is safe but slow | Days |
 | P8 | Accounting link (Xero or Sage) for purchase orders and goods receipts, instead of an evidence file | Customers will not maintain a JSON file | 1 to 2 weeks |
 | P9 | Bank account verification (AVS-R) through a provider, replacing the simulated allow-list | Supplier enrolment must check the real account | Depends on the provider |

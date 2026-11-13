@@ -29,7 +29,7 @@ The build sliced into small, reviewable issues. Each maps to a requirement in [P
 |---|---|---|---|---|---|---|---|
 | A1 | Testnet provisioning script | One command creates spending, reserve and supplier accounts, funds XRP, opens RLUSD trust lines, records addresses (no seeds) | F1, F3 | M | Sibusiso (AI-assisted) | [#20](https://github.com/LethaboMH14/SignOff/issues/20) | Review |
 | A2 | Signer list | Agent 1, Warden 1, quorum 2; master key disabled; no regular key; verified by reading the account back | A1 | S | Sibusiso (AI-assisted) | [#21](https://github.com/LethaboMH14/SignOff/issues/21) | Review |
-| A3 | Two-signature payment | Validated RLUSD payment with expected delivered amount; hash logged | A2 | M | Sibusiso (AI-assisted) | [#22](https://github.com/LethaboMH14/SignOff/issues/22) | Review (1 RLUSD validated, T-059; 10 RLUSD run still open) |
+| A3 | Two-signature payment | Validated RLUSD payment with expected delivered amount; hash logged | A2 | M | Sibusiso (AI-assisted) | [#22](https://github.com/LethaboMH14/SignOff/issues/22) | Review (1 RLUSD validated, T-059; 10 RLUSD validated, T-267) |
 | A4 | Single-key rejections | Agent alone and Warden alone rejected; result codes logged | A2 | S | Sibusiso (AI-assisted) | [#23](https://github.com/LethaboMH14/SignOff/issues/23) | Review |
 | A5 | Reliable submission | Expiry set, persist before submit, reconcile by validated history, no blind resubmit; timeout test | A3 | M | Sibusiso (AI-assisted) | [#24](https://github.com/LethaboMH14/SignOff/issues/24) | Review |
 | A6 | Node failover | Second Testnet node; failover keeps exact transaction identity | A5 | S | Sibusiso (AI-assisted) | [#25](https://github.com/LethaboMH14/SignOff/issues/25) | Review |
@@ -39,7 +39,7 @@ The build sliced into small, reviewable issues. Each maps to a requirement in [P
 
 | ID | Title | Acceptance criteria | Depends | Size | Owner | GH | Status |
 |---|---|---|---|---|---|---|---|
-| B1 | Warden service skeleton | Separate deployment and identity; authenticated proposal endpoint; holds its own key only | F2, A3 | M | Sibusiso (AI-assisted) | [#28](https://github.com/LethaboMH14/SignOff/issues/28) | Review (live with a test-issued token, T-071; 1 RLUSD validated on Testnet, T-059; the 10 RLUSD run is open) |
+| B1 | Warden service skeleton | Separate deployment and identity; authenticated proposal endpoint; holds its own key only | F2, A3 | M | Sibusiso (AI-assisted) | [#28](https://github.com/LethaboMH14/SignOff/issues/28) | Review (live with a test-issued token, T-071; 1 RLUSD validated on Testnet, T-059; 10 RLUSD validated, T-267) |
 | B2 | Obligation identity and reservation | Stable identity; atomic reservation; one unresolved attempt per payable; concurrency test | B1 | M | Sibusiso (AI-assisted) | [#29](https://github.com/LethaboMH14/SignOff/issues/29) | Review (T-069, T-071) |
 | B3 | Verified supplier and destination | Destination only from enrolled supplier record; changed payee held | B1 | S | Sibusiso (AI-assisted) | [#30](https://github.com/LethaboMH14/SignOff/issues/30) | Review (T-069, T-071) |
 | B4 | Three-way match | Invoice vs purchase order vs goods received, with tolerances; mismatch held | B1 | M | Sibusiso (AI-assisted) | [#31](https://github.com/LethaboMH14/SignOff/issues/31) | Review (T-069, T-071) |
