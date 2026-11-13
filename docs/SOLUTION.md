@@ -28,7 +28,7 @@ Be precise about the split: **the ledger guarantees only that no single key can 
 - **Operator console.** Where a finance person sets limits, approves suppliers, pauses the system and reads why something was held.
 - **Ledger.** An XRPL account that requires two signatures. Settlement is in RLUSD on Testnet.
 
-The agent reaches Warden through an MCP tool (`propose_payment`, plus read-only queries). The track description says agents should be "powered by MCPs", so this interface is part of the design, not an extra.
+**Planned, not built:** the agent was to reach the Warden through an MCP tool (`propose_payment`, plus read-only queries), because the track description says agents should be "powered by MCPs". As built (13 November), the agent calls the Warden's signed HTTP API (`POST /v1/proposals`); there is no MCP server or client in the code.
 
 ## The rules
 

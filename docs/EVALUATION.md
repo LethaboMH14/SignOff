@@ -32,17 +32,17 @@ with a negligible effect, and it is reported as a trade-off, not as a win.
 
 ## Results (fixture mode, n = 62 cases)
 
-Rates show the count, the denominator and a 95% Wilson interval.
+Rates show the count, the denominator and a 95% Wilson interval. Regenerated on 13 November 2026. Since the 12 November run, owner decision D-101 (read South African amounts) changed five labels: messy-05, messy-06 and messy-09 from HOLD to ELIGIBLE, and messy-03 and messy-10 from ELIGIBLE to HOLD (non-rand currency). Newer screen checks quarantine some cases before extraction, which lowers field recall. `npm run judge:check` re-runs this table and compares it with the committed file; the paired statistics below are from the 12 November run and are reproduced exactly in [fixture-eval.md](../apps/agent/results/fixture-eval.md).
 
 | Measure | Swarm (agent) | Single-prompt baseline |
 | --- | --- | --- |
-| False approvals (label HOLD, decided ELIGIBLE), n = 41 HOLD cases | 2/41 = 4.9% (95% CI 1.3% to 16.1%) | 35/41 = 85.4% (95% CI 71.6% to 93.1%) |
-| False holds (label ELIGIBLE, decided HOLD), n = 21 ELIGIBLE cases | 1/21 = 4.8% (95% CI 0.8% to 22.7%) | 1/21 = 4.8% (95% CI 0.8% to 22.7%) |
-| Decision accuracy, n = 62 | 59/62 = 95.2% (95% CI 86.7% to 98.3%) | 26/62 = 41.9% (95% CI 30.5% to 54.3%) |
-| Expected reason named, holds with a labelled reason, n = 41 | 39/41 = 95.1% (95% CI 83.9% to 98.7%) | not applicable: no reasons given |
-| Field precision, values read, n = 365 | 365/365 = 100.0% (95% CI 99.0% to 100.0%) | 421/421 = 100.0% (95% CI 99.1% to 100.0%) |
-| Field recall, labelled values, n = 425 | 365/425 = 85.9% (95% CI 82.2% to 88.9%) | 421/425 = 99.1% (95% CI 97.6% to 99.6%) |
-| Fields invented or wrong | 0/365 = 0.0% | 0/421 = 0.0% |
+| False approvals (label HOLD, decided ELIGIBLE), n = 40 HOLD cases | 2/40 = 5.0% (95% CI 1.4% to 16.5%) | 32/40 = 80.0% (95% CI 65.2% to 89.5%) |
+| False holds (label ELIGIBLE, decided HOLD), n = 22 ELIGIBLE cases | 1/22 = 4.5% (95% CI 0.8% to 21.8%) | 1/22 = 4.5% (95% CI 0.8% to 21.8%) |
+| Decision accuracy, n = 62 | 59/62 = 95.2% (95% CI 86.7% to 98.3%) | 29/62 = 46.8% (95% CI 34.9% to 59.0%) |
+| Expected reason named, holds with a labelled reason, n = 40 | 38/40 = 95.0% (95% CI 83.5% to 98.6%) | not applicable: no reasons given |
+| Field precision, values read | 340/340 = 100.0% (95% CI 98.9% to 100.0%) | 407/407 = 100.0% (95% CI 99.1% to 100.0%) |
+| Field recall, labelled values, n = 425 | 340/425 = 80.0% (95% CI 75.9% to 83.5%) | 407/425 = 95.8% (95% CI 93.4% to 97.3%) |
+| Fields invented or wrong | 0/340 = 0.0% | 0/407 = 0.0% |
 | Correctly left empty, n = 9 | 9/9 = 100.0% (95% CI 70.1% to 100.0%) | 9/9 = 100.0% (95% CI 70.1% to 100.0%) |
 
 ### Swarm against baseline: statistics (paired over the same 62 cases)

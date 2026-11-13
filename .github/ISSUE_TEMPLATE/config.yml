@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security issue
+    url: https://github.com/LethaboMH14/SignOff/blob/main/SECURITY.md
+    about: Report anything that could move money wrongly or expose a key privately, not as a public issue.
