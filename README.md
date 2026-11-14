@@ -7,7 +7,7 @@
 
 SignOff reads supplier invoices, checks them against purchasing records, and pays the routine ones without a human click. Every payment needs two signatures. The agent holds one. The second belongs to an independent rulebook service, **Warden**, that the agent cannot read, edit or talk its way past. If a payment breaks a rule, Warden withholds its signature, and the XRP Ledger will not accept a payment with only one. Payments above a threshold need a third signature: the business owner's, on their phone.
 
-**Demo video (under 3 minutes):** _link added at submission_
+**Demo video (under 3 minutes):** https://youtu.be/E-KNlWaLGmI
 
 > Everything here runs on XRPL **Testnet**. Testnet RLUSD has no value. Invoices, suppliers and buyers are fictional. The rand payout to the supplier's bank is **SIMULATED**. Every claim carries a state (Live on Testnet, Simulated, Planned, Not claimed) in [Status of every claim](#status-of-every-claim).
 
@@ -15,14 +15,14 @@ SignOff reads supplier invoices, checks them against purchasing records, and pay
 
 | What | Link | What you should see |
 |---|---|---|
-| Demo video | _added at submission_ | The user journey end to end, narrated |
+| Demo video | [youtu.be/E-KNlWaLGmI](https://youtu.be/E-KNlWaLGmI) | The user journey end to end, narrated |
 | Routine payment, co-signed by the hosted Warden | [E1BA2278…4A5E](https://testnet.xrpl.org/transactions/E1BA22785622CBC3FAAEB2236BC4AA782128B8CDA80D412823DAEE1E1A104A5E) | Validated RLUSD payment, two signers (agent + Warden) ([T-268](docs/logs/TEST-LOG.md)) |
 | 10 RLUSD payment | [821333EB…0728](https://testnet.xrpl.org/transactions/821333EBE1DBC5BAE93DDC2BE6872908A62EF7F1617C823A19305E0DF76A0728) | 10 RLUSD delivered, two signers ([T-267](docs/logs/TEST-LOG.md)) |
 | High-value payment, owner approved in Xaman | [2A6FDB95…D9FD](https://testnet.xrpl.org/transactions/2A6FDB95A4D393165A45B64ABA9E07E735AFF7A69C1960F615902CD8D67DD9FD) | Ledger 22300977, three signers (agent + Warden + owner) ([T-273](docs/logs/TEST-LOG.md), [docs/HIGH-VALUE.md](docs/HIGH-VALUE.md)) |
 | Hosted Warden (Railway) | [/v1/health](https://warden-production-4f0fcb91.up.railway.app/v1/health) | `"ready":true`. Every other route refuses an unsigned request with 401 |
 | Operator console, SIMULATED replay (Vercel) | [signoff-console-simulated.vercel.app](https://signoff-console-simulated.vercel.app) | Sign in with the demo viewer account below, open **Agent map**, press "Play a clean invoice" and "Play a bank-detail change attack" |
 
-**Demo viewer account** for the simulated console: _given at submission_. It is a read-only viewer on a replay that never touches the Warden or the ledger, so it guards no real data ([D-154](docs/logs/DECISION-JOURNAL.md)).
+**Judge logins** for the simulated console are shown on its sign-in page: a read-only viewer and a judge operator. It is a read-only viewer on a replay that never touches the Warden or the ledger, so it guards no real data ([D-154](docs/logs/DECISION-JOURNAL.md)).
 
 ## Run it yourself
 
