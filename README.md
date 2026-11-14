@@ -58,7 +58,7 @@ npm run demo:prepare              # buyer records, Warden config and keys, agent
 npm run demo                      # starts Warden, agent and console; one fictional invoice goes to Paid
 ```
 
-Open http://127.0.0.1:4180 to watch it on the desk and the Agent map. `npm run demo -- --email` adds emailed invoices ([docs/EMAIL-DEMO.md](docs/EMAIL-DEMO.md)); `npm run demo -- --zar 60.00` with the Xaman keys runs a high-value payment the owner approves on their phone ([docs/HIGH-VALUE.md](docs/HIGH-VALUE.md)). Testnet RLUSD is scarce, so demo invoices are R16 to R60; sizing and funding are in [docs/RLUSD-TESTNET-RUNBOOK.md](docs/RLUSD-TESTNET-RUNBOOK.md). Seeds and keys are written to your local SignOff folder, never into the repository.
+Open http://127.0.0.1:4180 to watch it on the desk and the Agent map. `npm run demo -- --email` adds emailed invoices ([docs/EMAIL-DEMO.md](docs/EMAIL-DEMO.md)); `npm run demo -- --zar 60.00` with the Xaman keys runs a high-value payment the owner approves on their phone ([docs/HIGH-VALUE.md](docs/HIGH-VALUE.md)). A fresh Testnet account has no RLUSD, so fund it first (see `npm run testnet:funds -- status`). The public Testnet DEX was thin on 13 November (about 4 RLUSD available), so if funding is not possible, the published payments above are the reference and `npm run demo:verify` checks them. Demo invoices are R16 to R60; sizing and funding are in [docs/RLUSD-TESTNET-RUNBOOK.md](docs/RLUSD-TESTNET-RUNBOOK.md). Seeds and keys are written to your local SignOff folder, never into the repository.
 
 ## The problem
 
@@ -164,7 +164,7 @@ Updated 14 November 2026 for judging. Branch and pull-request names in this tabl
 | Limits, second approver for increases, and pause (D3, D3W) | Yes. A second approver for increases is a proposed rule ([ISSUES](docs/ISSUES.md)) | Not run on Testnet | Built and tested in software ([TEST-LOG T-095, T-104](docs/logs/TEST-LOG.md)); the browser check has not run ([T-103](docs/logs/TEST-LOG.md), UNVERIFIED) | Not claimed |
 | Mobile layout and accessibility (D5) | Yes | Not applicable | Built; keyboard and accessibility scan in software ([TEST-LOG T-107](docs/logs/TEST-LOG.md)); phone-width browser check UNVERIFIED ([T-108](docs/logs/TEST-LOG.md)) | Not claimed |
 | Motion: opening sequence and transitions (D7, proposed) | Yes, proposed | Not applicable | Built; reduced motion turns it off, and the Paid tick appears only after validation ([TEST-LOG T-109](docs/logs/TEST-LOG.md)); runtime checks UNVERIFIED ([T-110](docs/logs/TEST-LOG.md)) | Not claimed |
-| Deployment and health checks (D6) | Yes: Warden and console on separate hosts; the host and budget await the owner's confirmation ([D-085](docs/logs/DECISION-JOURNAL.md)) | Synthetic check read the validated ledger; the account and Warden checks were not set up ([TEST-LOG T-112](docs/logs/TEST-LOG.md)). **The Warden is hosted on Railway, on its own host away from the agent**, at https://warden-production-4f0fcb91.up.railway.app: it co-signed a paid invoice there, ledger 22293838 ([T-268](docs/logs/TEST-LOG.md), [docs/HOSTED-WARDEN.md](docs/HOSTED-WARDEN.md)). Its key is on a Railway volume, not a key service. The agent and the live console run on the operator's machine | **Deployed: the SIMULATED console** at https://signoff-console-simulated.vercel.app, behind sign-in, with a health route and 401 for signed-out reads ([T-259](docs/logs/TEST-LOG.md), [T-262](docs/logs/TEST-LOG.md)). Visitors can replay a clean invoice or a bank-detail change attack on the map; the replay stays in their browser | Not claimed |
+| Deployment and health checks (D6) | Yes: Warden and console on separate hosts; the host and budget await the owner's confirmation ([D-085](docs/logs/DECISION-JOURNAL.md)) | Synthetic check read the validated ledger; the account and Warden checks were not set up ([TEST-LOG T-112](docs/logs/TEST-LOG.md)). **The Warden is hosted on Railway, on its own host away from the agent**, at https://warden-production-4f0fcb91.up.railway.app (health check: /v1/health): it co-signed a paid invoice there, ledger 22293838 ([T-268](docs/logs/TEST-LOG.md), [docs/HOSTED-WARDEN.md](docs/HOSTED-WARDEN.md)). Its key is on a Railway volume, not a key service. The agent and the live console run on the operator's machine | **Deployed: the SIMULATED console** at https://signoff-console-simulated.vercel.app, behind sign-in, with a health route and 401 for signed-out reads ([T-259](docs/logs/TEST-LOG.md), [T-262](docs/logs/TEST-LOG.md)). Visitors can replay a clean invoice or a bank-detail change attack on the map; the replay stays in their browser | Not claimed |
 | Judge check: one command (E3) | Yes ([ISSUES](docs/ISSUES.md)) | Testnet payments UNVERIFIED: the offline command submits none ([TEST-LOG T-116](docs/logs/TEST-LOG.md); this PR's run is logged in T-141) | `npm run judge:check`: payment and injection tests pass, and the simulated labelled set re-runs and matches the committed result, SIMULATED ([T-116](docs/logs/TEST-LOG.md)). Live results UNVERIFIED on this branch | Not claimed |
 | Armed-mode heartbeat watchdog (S3, stretch) | Stretch | Not built on this branch | Built and tested on branch feat/S3-watchdog (T-101 there); open in [PR #58](https://github.com/LethaboMH14/SignOff/pull/58), not merged | Not claimed |
 | Customer problem, pricing, willingness to pay | Not applicable | Not applicable | Not applicable | Not validated: no customer has been interviewed ([ISSUES E1](docs/ISSUES.md)) |
@@ -211,18 +211,6 @@ Measured against a single-prompt baseline on 62 fictional invoices (fixture mode
 | | `npm run testnet:high-value` | Treasury account with agent + Warden + owner, quorum 3 |
 | Agent | `npm run eval` · `npm run agent:eval -- --provider groq` | Fixture evaluation · live model on the labelled set |
 | Console | `npm run console:serve` · `npm run console:operator -- list` | Serve the console · manage operator accounts |
-
-## Hackathon scoring
-
-Judges score three areas (BuilderBase dashboard). The full scorecard, with every figure sourced, is [docs/JUDGING.md](docs/JUDGING.md).
-
-| Criterion | Weight | Where the build stands |
-|---|---|---|
-| Product design | 33% | A payment desk, held invoices with plain reasons, limits and pause, a receipt with the explorer link, and a live Agent map; owner notices with bells; phone-width layout. No usability test with a finance clerk yet |
-| Technical UX | 34% | Live on Testnet: email-to-validated RLUSD payment in about 21 s with no click (T-264), the hosted Warden on Railway (T-268), the 10 RLUSD run (T-267), owner approval with three signers (T-273), single-key refusals (T-054). 1,681 automated tests, 26 of 26 attacks, CI on every push. Not yet: the Warden key in a key service, an MCP interface |
-| Business/Market Fit | 33% | Sourced African fraud and payment figures, a supplier-led go-to-market, RLUSD rails already in Africa ([BUSINESS.md](docs/BUSINESS.md), [STRATEGY.md](docs/STRATEGY.md)). No customer interview yet |
-
-Track requirements: an autonomous Testnet transaction (T-264, T-268), limits enforced outside the agent's control (Warden holds and `tefBAD_QUORUM`, T-054, T-266), and an operator who can change them (console limits and pause, T-095, T-104). See [docs/HACKATHON.md](docs/HACKATHON.md).
 
 ## Contributing
 

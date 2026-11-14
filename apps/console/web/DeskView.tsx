@@ -177,6 +177,8 @@ export interface DeskViewProps {
   readonly onReceipt: (attemptId: string) => void;
   /** Writes a fictional test invoice. Present only when the demo launcher started the console. */
   readonly onSendTestInvoice?: (choice: TestInvoiceChoice) => Promise<TestInvoiceResult>;
+  /** The tab the desk opens on (the queue when left out). */
+  readonly initialTab?: DeskTab;
 }
 
 /** What the panel says once an invoice is written. */
@@ -490,7 +492,7 @@ export function LimitsForm({
  */
 export function DeskView(props: DeskViewProps) {
   const { data, error, busy, pending } = props;
-  const [tab, setTab] = useState<DeskTab>('queue');
+  const [tab, setTab] = useState<DeskTab>(props.initialTab ?? 'queue');
   if (data === null) {
     return (
       <section className="desk" aria-label="Payment desk">
