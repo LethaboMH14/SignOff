@@ -15,6 +15,8 @@ const FUNDING_DROPS = 100_000_000n;
 export interface FakeLine {
   balance: number;
   limit: number;
+  /** Frozen by the issuer. A frozen line reports freeze_peer, as the ledger does. */
+  frozen?: boolean;
 }
 
 export interface FakeAccount {
@@ -153,6 +155,15 @@ export class FakeLedger {
 
   line(holder: string, currency: string, issuer: string): FakeLine | undefined {
     return this.accounts.get(holder)?.lines.get(lineKey(currency, issuer));
+  }
+
+  /** Test helper: the issuer freezes or unfreezes a holder's line, as an issuer's TrustSet would. */
+  setLineFrozen(holder: string, currency: string, issuer: string, frozen: boolean): void {
+    const line = this.accounts.get(holder)?.lines.get(lineKey(currency, issuer));
+    if (line === undefined) {
+      throw new Error('the holder has no such trust line');
+    }
+    line.frozen = frozen;
   }
 
   /** Validates every open transaction into the next ledger, then moves the index forward. */
@@ -488,6 +499,7 @@ export class FakeLedger {
               account: issuer,
               balance: String(line.balance),
               limit: String(line.limit),
+              freeze_peer: line.frozen === true,
             };
           })
           .filter((line) => peer === undefined || line.account === peer);

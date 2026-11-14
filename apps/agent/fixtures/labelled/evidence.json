@@ -1,0 +1,1183 @@
+{
+  "schemaVersion": 1,
+  "invoices": [
+    {
+      "fingerprint": "0a74c8b78de709fb2ab587898cf5d78d7dd8a8c04cd0750fce8fbb0cac8fb4df",
+      "supplierId": "SUP-TST001",
+      "invoiceNumber": "INV-TST-0101",
+      "currency": "ZAR",
+      "amountMinor": 123450,
+      "purchaseOrderId": "PO-TST-0101",
+      "payeeAccountAsPrinted": "FICT-ACC-1001"
+    },
+    {
+      "fingerprint": "d0b0bf1e77ce05f57a0076a00c1002c79a2aa5d0790d14e161a0577538192e19",
+      "supplierId": "SUP-TST002",
+      "invoiceNumber": "INV-TST-0102",
+      "currency": "ZAR",
+      "amountMinor": 250000,
+      "purchaseOrderId": "PO-TST-0102",
+      "payeeAccountAsPrinted": "FICT-ACC-1002"
+    },
+    {
+      "fingerprint": "8e95f36eb62a0e2b3ff767ebe74793a74a323a63d6ea3775d81cd0f2b97dcc8b",
+      "supplierId": "SUP-TST003",
+      "invoiceNumber": "INV-TST-0103",
+      "currency": "ZAR",
+      "amountMinor": 1875000,
+      "purchaseOrderId": "PO-TST-0103",
+      "payeeAccountAsPrinted": "FICT-ACC-1003"
+    },
+    {
+      "fingerprint": "163baafee0feae4d79ceb341cf31f4034c2ad7f9dedcf8d18db9b97a93b50991",
+      "supplierId": "SUP-TST004",
+      "invoiceNumber": "INV-TST-0104",
+      "currency": "ZAR",
+      "amountMinor": 42110,
+      "purchaseOrderId": "PO-TST-0104",
+      "payeeAccountAsPrinted": "FICT-ACC-1004"
+    },
+    {
+      "fingerprint": "c9b0607e96a2fe447c8b8613db648919711fb4042eb6010c5c8fd6869aa810a0",
+      "supplierId": "SUP-TST005",
+      "invoiceNumber": "INV-TST-0105",
+      "currency": "ZAR",
+      "amountMinor": 999999,
+      "purchaseOrderId": "PO-TST-0105",
+      "payeeAccountAsPrinted": "FICT-ACC-1005"
+    },
+    {
+      "fingerprint": "83e6a4e9d4f2030299a372888cba93956d3aebfaf0dc7361fe19d77c95519c71",
+      "supplierId": "SUP-TST001",
+      "invoiceNumber": "INV-TST-0106",
+      "currency": "ZAR",
+      "amountMinor": 57500,
+      "purchaseOrderId": "PO-TST-0106",
+      "payeeAccountAsPrinted": "FICT-ACC-1001"
+    },
+    {
+      "fingerprint": "b73bd89c76f8c2efe5ce7da23f94b52afce9ba7b9261a2b527562e3c54b1c61f",
+      "supplierId": "SUP-TST002",
+      "invoiceNumber": "INV-TST-0107",
+      "currency": "ZAR",
+      "amountMinor": 330000,
+      "purchaseOrderId": "PO-TST-0107",
+      "payeeAccountAsPrinted": "FICT-ACC-1002"
+    },
+    {
+      "fingerprint": "1b7287cd6935a473b120fcb7fec1fef82b9c0ea215379df844392cb60c5ae1bd",
+      "supplierId": "SUP-TST003",
+      "invoiceNumber": "INV-TST-0108",
+      "currency": "ZAR",
+      "amountMinor": 6666,
+      "purchaseOrderId": "PO-TST-0108",
+      "payeeAccountAsPrinted": "FICT-ACC-1003"
+    },
+    {
+      "fingerprint": "9babe80b227079ca9f34d3c07d1ac81eabf33d88442ee182b5e08ec8c1f44dde",
+      "supplierId": "SUP-TST004",
+      "invoiceNumber": "INV-TST-0109",
+      "currency": "ZAR",
+      "amountMinor": 1200000,
+      "purchaseOrderId": "PO-TST-0109",
+      "payeeAccountAsPrinted": "FICT-ACC-1004"
+    },
+    {
+      "fingerprint": "5ed9314d490f4bb708cba2a7a7e5221096f9f0dd10c7fc970d91eb2024b653b0",
+      "supplierId": "SUP-TST005",
+      "invoiceNumber": "INV-TST-0110",
+      "currency": "ZAR",
+      "amountMinor": 84525,
+      "purchaseOrderId": "PO-TST-0110",
+      "payeeAccountAsPrinted": "FICT-ACC-1005"
+    },
+    {
+      "fingerprint": "9a79e182ab41a736fe2e7792fe1968e587b506e8f7a2616f64891b3fbb943ff5",
+      "supplierId": "SUP-TST001",
+      "invoiceNumber": "INV-TST-0111",
+      "currency": "ZAR",
+      "amountMinor": 123450,
+      "purchaseOrderId": "PO-TST-0111",
+      "payeeAccountAsPrinted": "FICT-ACC-1001"
+    },
+    {
+      "fingerprint": "e349a018c67e4fc8b7c16ae636e3de194043b2bcf7265738158704a9da219b3e",
+      "supplierId": "SUP-TST002",
+      "invoiceNumber": "INV-TST-0112",
+      "currency": "ZAR",
+      "amountMinor": 250000,
+      "purchaseOrderId": "PO-TST-0112",
+      "payeeAccountAsPrinted": "FICT-ACC-1002"
+    },
+    {
+      "fingerprint": "6792d40054b5df049f644676394b76494dfb7ed6df70305566320136134319e0",
+      "supplierId": "SUP-TST005",
+      "invoiceNumber": "INV-TST-0113",
+      "currency": "USD",
+      "amountMinor": 125000,
+      "purchaseOrderId": "PO-TST-0113",
+      "payeeAccountAsPrinted": "FICT-ACC-1005"
+    },
+    {
+      "fingerprint": "82a43c9812a6be602cb352cfe19725928706dae429980c19dd97bb290e3526bf",
+      "supplierId": "SUP-TST003",
+      "invoiceNumber": "INV-TST-0114",
+      "currency": "ZAR",
+      "amountMinor": 1875000,
+      "purchaseOrderId": "PO-TST-0114",
+      "payeeAccountAsPrinted": "FICT-ACC-1003"
+    },
+    {
+      "fingerprint": "2b243101b284bd7d0d05f3936b897fd29f7a06a3a0ac8f888ecf3672e0ebe993",
+      "supplierId": "SUP-TST003",
+      "invoiceNumber": "INV-TST-0115",
+      "currency": "ZAR",
+      "amountMinor": 1234567,
+      "purchaseOrderId": "PO-TST-0115",
+      "payeeAccountAsPrinted": "FICT-ACC-1003"
+    },
+    {
+      "fingerprint": "41d86413b9e1ef088149180fe84ddc27ab287590c2320e45a54cb85e4f928b24",
+      "supplierId": "SUP-TST004",
+      "invoiceNumber": "INV-TST-0116",
+      "currency": "ZAR",
+      "amountMinor": 1234567,
+      "purchaseOrderId": "PO-TST-0116",
+      "payeeAccountAsPrinted": "FICT-ACC-1004"
+    },
+    {
+      "fingerprint": "e37bd0a4d7067ea85fc0fbe2ddecda363e47b90bfcabb2a984e37322ac02d2b2",
+      "supplierId": "SUP-TST001",
+      "invoiceNumber": "INV-TST-0117",
+      "currency": "ZAR",
+      "amountMinor": 123450,
+      "purchaseOrderId": "PO-TST-0117",
+      "payeeAccountAsPrinted": "FICT-ACC-1001"
+    },
+    {
+      "fingerprint": "26ff9b48933a1ab556be0ec36bcfa6bdea434acff01c5fe2540440a3b1bc9fec",
+      "supplierId": "SUP-TST002",
+      "invoiceNumber": "INV-TST-0118",
+      "currency": "ZAR",
+      "amountMinor": 250000,
+      "purchaseOrderId": "PO-TST-0118",
+      "payeeAccountAsPrinted": "FICT-ACC-1002"
+    },
+    {
+      "fingerprint": "076b4b47151ebca91726568c90d430eeb1f293e7faf91798ff62fc33b74699c8",
+      "supplierId": "SUP-TST003",
+      "invoiceNumber": "INV-TST-0119",
+      "currency": "ZAR",
+      "amountMinor": 1875000,
+      "purchaseOrderId": "PO-TST-0119",
+      "payeeAccountAsPrinted": "FICT-ACC-1003"
+    },
+    {
+      "fingerprint": "809052331caa1ed0ae2ff4f6a70d0ba53e376075183ccb976284e1b725ee344b",
+      "supplierId": "SUP-TST004",
+      "invoiceNumber": "INV-TST-0120",
+      "currency": "ZAR",
+      "amountMinor": 42110,
+      "purchaseOrderId": "PO-TST-0120",
+      "payeeAccountAsPrinted": "FICT-ACC-1004"
+    },
+    {
+      "fingerprint": "c3b8c0a541a9d02309a43d623438e80f81cc91d83a9ac15f48c4dd6d4db1f935",
+      "supplierId": "SUP-TST005",
+      "invoiceNumber": "INV-TST-0121",
+      "currency": "ZAR",
+      "amountMinor": 999999,
+      "purchaseOrderId": "PO-TST-0121",
+      "payeeAccountAsPrinted": "FICT-ACC-1005"
+    },
+    {
+      "fingerprint": "620a86cd8ade565f0f3249387877af50ea2cb54aa319056c5dd453ba5df900ed",
+      "supplierId": "SUP-TST001",
+      "invoiceNumber": "INV-TST-0122",
+      "currency": "ZAR",
+      "amountMinor": 57500,
+      "purchaseOrderId": "PO-TST-0122",
+      "payeeAccountAsPrinted": "FICT-ACC-1001"
+    },
+    {
+      "fingerprint": "cbc6920143288e2e815fffe6b62474d71d7c57c92e14ba1fa3d4afe41f73a122",
+      "supplierId": "SUP-TST002",
+      "invoiceNumber": "INV-TST-0123",
+      "currency": "ZAR",
+      "amountMinor": 330000,
+      "purchaseOrderId": "PO-TST-0123",
+      "payeeAccountAsPrinted": "FICT-ACC-1002"
+    },
+    {
+      "fingerprint": "d409d3d25796a10fef9ef0d8e33bcf03a5ede08a7095745a0fc6f26c03a67fc7",
+      "supplierId": "SUP-TST003",
+      "invoiceNumber": "INV-TST-0124",
+      "currency": "ZAR",
+      "amountMinor": 6666,
+      "purchaseOrderId": "PO-TST-0124",
+      "payeeAccountAsPrinted": "FICT-ACC-1003"
+    },
+    {
+      "fingerprint": "8af7bc89a486a856aed1bcc1104dd94a12ab3ff90835c59ee8034c755dd1bc56",
+      "supplierId": "SUP-TST004",
+      "invoiceNumber": "INV-TST-0125",
+      "currency": "ZAR",
+      "amountMinor": 1200000,
+      "purchaseOrderId": "PO-TST-0125",
+      "payeeAccountAsPrinted": "FICT-ACC-1004"
+    },
+    {
+      "fingerprint": "44388e81a6a5d30840ffa229685aabd13daf3c92d12ac21ce844eb5dc37ccf27",
+      "supplierId": "SUP-TST005",
+      "invoiceNumber": "INV-TST-0126",
+      "currency": "ZAR",
+      "amountMinor": 84525,
+      "purchaseOrderId": "PO-TST-0126",
+      "payeeAccountAsPrinted": "FICT-ACC-1005"
+    },
+    {
+      "fingerprint": "e4b57300c325b4c518983e9534e46217dd830ac2eee8eb19bcea49ce359ab172",
+      "supplierId": "SUP-TST001",
+      "invoiceNumber": "INV-TST-0127",
+      "currency": "ZAR",
+      "amountMinor": 123450,
+      "purchaseOrderId": "PO-TST-0127",
+      "payeeAccountAsPrinted": "FICT-ACC-9001"
+    },
+    {
+      "fingerprint": "2460ab245a37d45c096c6b3dd30203118005b2bbf71b1531db079635492f2d8f",
+      "supplierId": "SUP-TST002",
+      "invoiceNumber": "INV-TST-0128",
+      "currency": "ZAR",
+      "amountMinor": 250000,
+      "purchaseOrderId": "PO-TST-0128",
+      "payeeAccountAsPrinted": "FICT-ACC-9002"
+    },
+    {
+      "fingerprint": "64ffa180b0fff7e7f8fdfef9c0ae3a877333a2433a4f6a96e8134dfe12de7eb5",
+      "supplierId": "SUP-TST003",
+      "invoiceNumber": "INV-TST-0129",
+      "currency": "ZAR",
+      "amountMinor": 1875000,
+      "purchaseOrderId": "PO-TST-0129",
+      "payeeAccountAsPrinted": "FICT-ACC-9003"
+    },
+    {
+      "fingerprint": "3e7de4b6c3d059bbf5539e6b3929f10194a008c7e2141524a764daf14d2dd3cf",
+      "supplierId": "SUP-TST004",
+      "invoiceNumber": "INV-TST-0130",
+      "currency": "ZAR",
+      "amountMinor": 42110,
+      "purchaseOrderId": "PO-TST-0130",
+      "payeeAccountAsPrinted": "FICT-ACC-9004"
+    },
+    {
+      "fingerprint": "95158715c801546d94832fc0e5d3dbc0abd32a70f251255c560f5a9d398a526a",
+      "supplierId": "SUP-TST002",
+      "invoiceNumber": "INV-TST-0131",
+      "currency": "ZAR",
+      "amountMinor": 187500,
+      "purchaseOrderId": "PO-TST-0131",
+      "payeeAccountAsPrinted": "FICT-ACC-1002"
+    },
+    {
+      "fingerprint": "6c2de6eb997cc3e5b2c8c3878f934aff62796743f58b96980b8349381530be68",
+      "supplierId": "SUP-TST004",
+      "invoiceNumber": "INV-TST-0132",
+      "currency": "ZAR",
+      "amountMinor": 6420,
+      "purchaseOrderId": "PO-TST-0132",
+      "payeeAccountAsPrinted": "FICT-ACC-1004"
+    },
+    {
+      "fingerprint": "c758cba0def321354e4fecd7969f8d14afd90a08c21213784c3846e959ab6bbe",
+      "supplierId": "SUP-TST001",
+      "invoiceNumber": "INV-TST-0133",
+      "currency": "ZAR",
+      "amountMinor": 742075,
+      "purchaseOrderId": "PO-TST-0133",
+      "payeeAccountAsPrinted": "FICT-ACC-1001"
+    },
+    {
+      "fingerprint": "c6731b0725deb1d7b65b5bb74df5e03642e59da84d0982ad21787491be4d23b0",
+      "supplierId": "SUP-TST005",
+      "invoiceNumber": "INV-TST-0134",
+      "currency": "ZAR",
+      "amountMinor": 33000,
+      "purchaseOrderId": "PO-TST-0134",
+      "payeeAccountAsPrinted": "FICT-ACC-1005"
+    },
+    {
+      "fingerprint": "5385c8e2d14c5dbb81f15c5faad659ec49a7f034cb921922b2c904aa29800e20",
+      "supplierId": "SUP-TST004",
+      "invoiceNumber": "INV-TST-0135",
+      "currency": "ZAR",
+      "amountMinor": 330000,
+      "purchaseOrderId": "PO-TST-0135",
+      "payeeAccountAsPrinted": "FICT-ACC-1004"
+    },
+    {
+      "fingerprint": "6ac83b4f8244cb1b86600b2b0a8af6f034f794fa0a79ba88687bfddc56ed302f",
+      "supplierId": "SUP-TST002",
+      "invoiceNumber": "INV-TST-0136",
+      "currency": "ZAR",
+      "amountMinor": 441000,
+      "purchaseOrderId": "PO-TST-0136",
+      "payeeAccountAsPrinted": "FICT-ACC-1002"
+    },
+    {
+      "fingerprint": "384f609dd2304ea47e03957ab8560635b4e1a9b9c9f3df5f538104523de6eb1b",
+      "supplierId": "SUP-TST003",
+      "invoiceNumber": "INV-TST-0137",
+      "currency": "ZAR",
+      "amountMinor": 250000,
+      "purchaseOrderId": "PO-TST-0137",
+      "payeeAccountAsPrinted": "FICT-ACC-1003"
+    },
+    {
+      "fingerprint": "c2cbf6dbca1a2dd13736911f1ba3a44ae9fa4e1439545d5594300fc9b5661e03",
+      "supplierId": "SUP-TST005",
+      "invoiceNumber": "INV-TST-0138",
+      "currency": "USD",
+      "amountMinor": 88000,
+      "purchaseOrderId": "PO-TST-0138",
+      "payeeAccountAsPrinted": "FICT-ACC-1005"
+    },
+    {
+      "fingerprint": "b1d34254b0bc92ba0c1e733fb53d502290a8da5ac15a9331c1fdff70eac1de1c",
+      "supplierId": "SUP-TST002",
+      "invoiceNumber": "INV-TST-0139",
+      "currency": "ZAR",
+      "amountMinor": 187500,
+      "purchaseOrderId": "PO-TST-0139",
+      "payeeAccountAsPrinted": "FICT-ACC-1002"
+    },
+    {
+      "fingerprint": "faaafcb79e5de4c83f7f13eecd986a296fa2347bf087c5030b5f8d40ef4f2286",
+      "supplierId": "SUP-TST004",
+      "invoiceNumber": "INV-TST-0140",
+      "currency": "ZAR",
+      "amountMinor": 6420,
+      "purchaseOrderId": "PO-TST-0140",
+      "payeeAccountAsPrinted": "FICT-ACC-1004"
+    },
+    {
+      "fingerprint": "bbbe8f2525330fec4460d6960a99bd6b0a34dc1a6a9206fca3370a5de5d9bc64",
+      "supplierId": "SUP-TST001",
+      "invoiceNumber": "INV-TST-0141",
+      "currency": "ZAR",
+      "amountMinor": 742075,
+      "purchaseOrderId": "PO-TST-0141",
+      "payeeAccountAsPrinted": "FICT-ACC-1001"
+    },
+    {
+      "fingerprint": "e1db269dde78752b8f483d0fa35c74e1502f47f5ee8fef51adab88e0e29f16d7",
+      "supplierId": "SUP-TST005",
+      "invoiceNumber": "INV-TST-0142",
+      "currency": "ZAR",
+      "amountMinor": 33000,
+      "purchaseOrderId": "PO-TST-0142",
+      "payeeAccountAsPrinted": "FICT-ACC-1005"
+    },
+    {
+      "fingerprint": "02c0d643f52336c2b5694e996d7524fd07113b4ae92608e9f25af8723a6dcf7c",
+      "supplierId": "SUP-TST001",
+      "invoiceNumber": "INV-TST-0143",
+      "currency": "ZAR",
+      "amountMinor": 150000,
+      "purchaseOrderId": "PO-TST-0143",
+      "payeeAccountAsPrinted": "FICT-ACC-1001"
+    },
+    {
+      "fingerprint": "7cf1b011ea08b82fd5157940cd2bd104543ee1be3349c0bc0c255ada72fb847a",
+      "supplierId": "SUP-TST002",
+      "invoiceNumber": "INV-TST-0144",
+      "currency": "ZAR",
+      "amountMinor": 94000,
+      "purchaseOrderId": "PO-TST-0144",
+      "payeeAccountAsPrinted": "FICT-ACC-1002"
+    },
+    {
+      "fingerprint": "b390ac7835d89733358bea34dce65e56304c1e034fa9a8a0e7f8b1af25ea3ff9",
+      "supplierId": "SUP-TST004",
+      "invoiceNumber": "INV-TST-0145",
+      "currency": "ZAR",
+      "amountMinor": 5555,
+      "purchaseOrderId": "PO-TST-0145",
+      "payeeAccountAsPrinted": "FICT-ACC-1004"
+    },
+    {
+      "fingerprint": "ad146e711996637e8101a5a7b71e85531bf93652b9e2e2534bc5a56e063d9224",
+      "supplierId": "SUP-TST005",
+      "invoiceNumber": "INV-TST-0146",
+      "currency": "ZAR",
+      "amountMinor": 221000,
+      "purchaseOrderId": "PO-TST-0146",
+      "payeeAccountAsPrinted": "FICT-ACC-1005"
+    },
+    {
+      "fingerprint": "d312d3778ec73d92955b113eff8d58b64f0b159274129653a1a4dc0f4dd65736",
+      "supplierId": "SUP-TST002",
+      "invoiceNumber": "INV-TST-0147",
+      "currency": "ZAR",
+      "amountMinor": 187500,
+      "purchaseOrderId": "PO-TST-0147",
+      "payeeAccountAsPrinted": "FICT-ACC-9005"
+    },
+    {
+      "fingerprint": "ca823cdd720d10c96be23b8cc508eae8cc082df7723f80bc99d8f45d14d695ba",
+      "supplierId": "SUP-TST003",
+      "invoiceNumber": "INV-TST-0148",
+      "currency": "ZAR",
+      "amountMinor": 94000,
+      "purchaseOrderId": "PO-TST-0148",
+      "payeeAccountAsPrinted": "FICT-ACC-1001"
+    },
+    {
+      "fingerprint": "8aaa4ad499be7dc3a6988615c776c1d838a32fb6753442b1c7bcf4fd94883ed4",
+      "supplierId": "SUP-TST004",
+      "invoiceNumber": "INV-TST-0149",
+      "currency": "ZAR",
+      "amountMinor": 5555,
+      "purchaseOrderId": "PO-TST-0149",
+      "payeeAccountAsPrinted": "FICT-ACC-9007"
+    },
+    {
+      "fingerprint": "29455ba20835965a69f27ebc343e53c8170111e46b3fcaeaadd63e0ddf274a7d",
+      "supplierId": "SUP-TST005",
+      "invoiceNumber": "INV-TST-0150",
+      "currency": "ZAR",
+      "amountMinor": 33000,
+      "purchaseOrderId": "PO-TST-0150",
+      "payeeAccountAsPrinted": "FICT-ACC-9008"
+    },
+    {
+      "fingerprint": "3d04923add5b514da8e9c74f30895c252f1b67497ca1a2632a0046f765e59630",
+      "supplierId": "SUP-TST001",
+      "invoiceNumber": "INV-TST-0151",
+      "currency": "ZAR",
+      "amountMinor": 500000,
+      "purchaseOrderId": "PO-TST-0151",
+      "payeeAccountAsPrinted": "FICT-ACC-1001"
+    },
+    {
+      "fingerprint": "2677107110932a3eb7016d2e90f24f236da360f79d2ef7fca0c2c3726ef44c17",
+      "supplierId": "SUP-TST002",
+      "invoiceNumber": "INV-TST-0152",
+      "currency": "ZAR",
+      "amountMinor": 275000,
+      "purchaseOrderId": "PO-TST-0152",
+      "payeeAccountAsPrinted": "FICT-ACC-1002"
+    },
+    {
+      "fingerprint": "d46abfd4f47c20a4d4ff7939155f61cae4a1cd84277b8a2b3634b33bab25cfd3",
+      "supplierId": "SUP-TST003",
+      "invoiceNumber": "INV-TST-0153",
+      "currency": "ZAR",
+      "amountMinor": 1875000,
+      "purchaseOrderId": "PO-TST-0153",
+      "payeeAccountAsPrinted": "FICT-ACC-1003"
+    },
+    {
+      "fingerprint": "52ee229b380598a3af52610274ed0e89157b744bf445ead747876581ef49c77b",
+      "supplierId": "SUP-TST004",
+      "invoiceNumber": "INV-TST-0154",
+      "currency": "ZAR",
+      "amountMinor": 42110,
+      "purchaseOrderId": "PO-TST-0154",
+      "payeeAccountAsPrinted": "FICT-ACC-1004"
+    },
+    {
+      "fingerprint": "1a2d8b1fa6d9da7876b448679396c9e7ba37b43bd015b3e8f3b3530af44a8efa",
+      "supplierId": "SUP-TST005",
+      "invoiceNumber": "INV-TST-0155",
+      "currency": "ZAR",
+      "amountMinor": 999999,
+      "purchaseOrderId": "PO-TST-0155",
+      "payeeAccountAsPrinted": "FICT-ACC-1005"
+    },
+    {
+      "fingerprint": "2a92dd7e29f6c5191a7ab3eda0cd79f609ad677f19bcdfda62f7febe3d88617f",
+      "supplierId": "SUP-TST001",
+      "invoiceNumber": "INV-TST-0156",
+      "currency": "ZAR",
+      "amountMinor": 123450,
+      "purchaseOrderId": "PO-TST-0156",
+      "payeeAccountAsPrinted": "FICT-ACC-1001"
+    },
+    {
+      "fingerprint": "dc47c28b58f5fd7ded98c30b488bae22fdbd02b46f8f00cee22676b0f1bfff21",
+      "supplierId": "SUP-TST001",
+      "invoiceNumber": "INV-TST-0101",
+      "currency": "ZAR",
+      "amountMinor": 123450,
+      "purchaseOrderId": "PO-TST-0101",
+      "payeeAccountAsPrinted": "FICT-ACC-1001"
+    },
+    {
+      "fingerprint": "042fcb4929dc8ba4f1531a90074a18aba498fb2dbe1b1a3702467fddf3a7505c",
+      "supplierId": "SUP-TST002",
+      "invoiceNumber": "INV-TST-0102",
+      "currency": "ZAR",
+      "amountMinor": 250000,
+      "purchaseOrderId": "PO-TST-0102",
+      "payeeAccountAsPrinted": "FICT-ACC-1002"
+    },
+    {
+      "fingerprint": "1af95bdcc81762194b7b3fafa3919254fe7717fd192fcc2f314c98c6420869a4",
+      "supplierId": "SUP-TST003",
+      "invoiceNumber": "INV-TST-0103",
+      "currency": "ZAR",
+      "amountMinor": 1875000,
+      "purchaseOrderId": "PO-TST-0103",
+      "payeeAccountAsPrinted": "FICT-ACC-1003"
+    },
+    {
+      "fingerprint": "381d20bbc05d9b9727a1b7ddd614a27f7b2efb3ec8d64a48ff24f0baa96e3687",
+      "supplierId": "SUP-TST004",
+      "invoiceNumber": "INV-TST-0104",
+      "currency": "ZAR",
+      "amountMinor": 42110,
+      "purchaseOrderId": "PO-TST-0104",
+      "payeeAccountAsPrinted": "FICT-ACC-1004"
+    },
+    {
+      "fingerprint": "1fbbc7e24c37c6b3d5bbd82dbe42b4238581f3df33f3abdba7c0d3742eb1939d",
+      "supplierId": "SUP-TST005",
+      "invoiceNumber": "INV-TST-0105",
+      "currency": "ZAR",
+      "amountMinor": 999999,
+      "purchaseOrderId": "PO-TST-0105",
+      "payeeAccountAsPrinted": "FICT-ACC-1005"
+    },
+    {
+      "fingerprint": "92ee1eabf9dcbddb0c210404726b8fe66a2bb552826c19ebc0663ebae0245103",
+      "supplierId": "SUP-TST001",
+      "invoiceNumber": "INV-TST-0106",
+      "currency": "ZAR",
+      "amountMinor": 57500,
+      "purchaseOrderId": "PO-TST-0106",
+      "payeeAccountAsPrinted": "FICT-ACC-1001"
+    }
+  ],
+  "purchaseOrders": [
+    {
+      "purchaseOrderId": "PO-TST-0101",
+      "supplierId": "SUP-TST001",
+      "currency": "ZAR",
+      "amountMinor": 123450
+    },
+    {
+      "purchaseOrderId": "PO-TST-0102",
+      "supplierId": "SUP-TST002",
+      "currency": "ZAR",
+      "amountMinor": 250000
+    },
+    {
+      "purchaseOrderId": "PO-TST-0103",
+      "supplierId": "SUP-TST003",
+      "currency": "ZAR",
+      "amountMinor": 1875000
+    },
+    {
+      "purchaseOrderId": "PO-TST-0104",
+      "supplierId": "SUP-TST004",
+      "currency": "ZAR",
+      "amountMinor": 42110
+    },
+    {
+      "purchaseOrderId": "PO-TST-0105",
+      "supplierId": "SUP-TST005",
+      "currency": "ZAR",
+      "amountMinor": 999999
+    },
+    {
+      "purchaseOrderId": "PO-TST-0106",
+      "supplierId": "SUP-TST001",
+      "currency": "ZAR",
+      "amountMinor": 57500
+    },
+    {
+      "purchaseOrderId": "PO-TST-0107",
+      "supplierId": "SUP-TST002",
+      "currency": "ZAR",
+      "amountMinor": 330000
+    },
+    {
+      "purchaseOrderId": "PO-TST-0108",
+      "supplierId": "SUP-TST003",
+      "currency": "ZAR",
+      "amountMinor": 6666
+    },
+    {
+      "purchaseOrderId": "PO-TST-0109",
+      "supplierId": "SUP-TST004",
+      "currency": "ZAR",
+      "amountMinor": 1200000
+    },
+    {
+      "purchaseOrderId": "PO-TST-0110",
+      "supplierId": "SUP-TST005",
+      "currency": "ZAR",
+      "amountMinor": 84525
+    },
+    {
+      "purchaseOrderId": "PO-TST-0111",
+      "supplierId": "SUP-TST001",
+      "currency": "ZAR",
+      "amountMinor": 123450
+    },
+    {
+      "purchaseOrderId": "PO-TST-0112",
+      "supplierId": "SUP-TST002",
+      "currency": "ZAR",
+      "amountMinor": 250000
+    },
+    {
+      "purchaseOrderId": "PO-TST-0113",
+      "supplierId": "SUP-TST005",
+      "currency": "USD",
+      "amountMinor": 125000
+    },
+    {
+      "purchaseOrderId": "PO-TST-0114",
+      "supplierId": "SUP-TST003",
+      "currency": "ZAR",
+      "amountMinor": 1875000
+    },
+    {
+      "purchaseOrderId": "PO-TST-0115",
+      "supplierId": "SUP-TST003",
+      "currency": "ZAR",
+      "amountMinor": 1234567
+    },
+    {
+      "purchaseOrderId": "PO-TST-0116",
+      "supplierId": "SUP-TST004",
+      "currency": "ZAR",
+      "amountMinor": 1234567
+    },
+    {
+      "purchaseOrderId": "PO-TST-0117",
+      "supplierId": "SUP-TST001",
+      "currency": "ZAR",
+      "amountMinor": 123450
+    },
+    {
+      "purchaseOrderId": "PO-TST-0118",
+      "supplierId": "SUP-TST002",
+      "currency": "ZAR",
+      "amountMinor": 250000
+    },
+    {
+      "purchaseOrderId": "PO-TST-0119",
+      "supplierId": "SUP-TST003",
+      "currency": "ZAR",
+      "amountMinor": 1875000
+    },
+    {
+      "purchaseOrderId": "PO-TST-0120",
+      "supplierId": "SUP-TST004",
+      "currency": "ZAR",
+      "amountMinor": 42110
+    },
+    {
+      "purchaseOrderId": "PO-TST-0121",
+      "supplierId": "SUP-TST005",
+      "currency": "ZAR",
+      "amountMinor": 999999
+    },
+    {
+      "purchaseOrderId": "PO-TST-0122",
+      "supplierId": "SUP-TST001",
+      "currency": "ZAR",
+      "amountMinor": 57500
+    },
+    {
+      "purchaseOrderId": "PO-TST-0123",
+      "supplierId": "SUP-TST002",
+      "currency": "ZAR",
+      "amountMinor": 330000
+    },
+    {
+      "purchaseOrderId": "PO-TST-0124",
+      "supplierId": "SUP-TST003",
+      "currency": "ZAR",
+      "amountMinor": 6666
+    },
+    {
+      "purchaseOrderId": "PO-TST-0125",
+      "supplierId": "SUP-TST004",
+      "currency": "ZAR",
+      "amountMinor": 1200000
+    },
+    {
+      "purchaseOrderId": "PO-TST-0126",
+      "supplierId": "SUP-TST005",
+      "currency": "ZAR",
+      "amountMinor": 84525
+    },
+    {
+      "purchaseOrderId": "PO-TST-0127",
+      "supplierId": "SUP-TST001",
+      "currency": "ZAR",
+      "amountMinor": 123450
+    },
+    {
+      "purchaseOrderId": "PO-TST-0128",
+      "supplierId": "SUP-TST002",
+      "currency": "ZAR",
+      "amountMinor": 250000
+    },
+    {
+      "purchaseOrderId": "PO-TST-0129",
+      "supplierId": "SUP-TST003",
+      "currency": "ZAR",
+      "amountMinor": 1875000
+    },
+    {
+      "purchaseOrderId": "PO-TST-0130",
+      "supplierId": "SUP-TST004",
+      "currency": "ZAR",
+      "amountMinor": 42110
+    },
+    {
+      "purchaseOrderId": "PO-TST-0131",
+      "supplierId": "SUP-TST002",
+      "currency": "ZAR",
+      "amountMinor": 187500
+    },
+    {
+      "purchaseOrderId": "PO-TST-0132",
+      "supplierId": "SUP-TST004",
+      "currency": "ZAR",
+      "amountMinor": 6420
+    },
+    {
+      "purchaseOrderId": "PO-TST-0133",
+      "supplierId": "SUP-TST001",
+      "currency": "ZAR",
+      "amountMinor": 742075
+    },
+    {
+      "purchaseOrderId": "PO-TST-0134",
+      "supplierId": "SUP-TST005",
+      "currency": "ZAR",
+      "amountMinor": 33000
+    },
+    {
+      "purchaseOrderId": "PO-TST-0135",
+      "supplierId": "SUP-TST004",
+      "currency": "ZAR",
+      "amountMinor": 330000
+    },
+    {
+      "purchaseOrderId": "PO-TST-0136",
+      "supplierId": "SUP-TST002",
+      "currency": "ZAR",
+      "amountMinor": 441000
+    },
+    {
+      "purchaseOrderId": "PO-TST-0137",
+      "supplierId": "SUP-TST003",
+      "currency": "ZAR",
+      "amountMinor": 250000
+    },
+    {
+      "purchaseOrderId": "PO-TST-0138",
+      "supplierId": "SUP-TST005",
+      "currency": "USD",
+      "amountMinor": 88000
+    },
+    {
+      "purchaseOrderId": "PO-TST-0139",
+      "supplierId": "SUP-TST002",
+      "currency": "ZAR",
+      "amountMinor": 187500
+    },
+    {
+      "purchaseOrderId": "PO-TST-0140",
+      "supplierId": "SUP-TST004",
+      "currency": "ZAR",
+      "amountMinor": 6420
+    },
+    {
+      "purchaseOrderId": "PO-TST-0141",
+      "supplierId": "SUP-TST001",
+      "currency": "ZAR",
+      "amountMinor": 742075
+    },
+    {
+      "purchaseOrderId": "PO-TST-0142",
+      "supplierId": "SUP-TST005",
+      "currency": "ZAR",
+      "amountMinor": 33000
+    },
+    {
+      "purchaseOrderId": "PO-TST-0143",
+      "supplierId": "SUP-TST001",
+      "currency": "ZAR",
+      "amountMinor": 150000
+    },
+    {
+      "purchaseOrderId": "PO-TST-0144",
+      "supplierId": "SUP-TST002",
+      "currency": "ZAR",
+      "amountMinor": 94000
+    },
+    {
+      "purchaseOrderId": "PO-TST-0145",
+      "supplierId": "SUP-TST004",
+      "currency": "ZAR",
+      "amountMinor": 5555
+    },
+    {
+      "purchaseOrderId": "PO-TST-0146",
+      "supplierId": "SUP-TST005",
+      "currency": "ZAR",
+      "amountMinor": 221000
+    },
+    {
+      "purchaseOrderId": "PO-TST-0147",
+      "supplierId": "SUP-TST002",
+      "currency": "ZAR",
+      "amountMinor": 187500
+    },
+    {
+      "purchaseOrderId": "PO-TST-0148",
+      "supplierId": "SUP-TST003",
+      "currency": "ZAR",
+      "amountMinor": 94000
+    },
+    {
+      "purchaseOrderId": "PO-TST-0149",
+      "supplierId": "SUP-TST004",
+      "currency": "ZAR",
+      "amountMinor": 5555
+    },
+    {
+      "purchaseOrderId": "PO-TST-0150",
+      "supplierId": "SUP-TST005",
+      "currency": "ZAR",
+      "amountMinor": 33000
+    },
+    {
+      "purchaseOrderId": "PO-TST-0151",
+      "supplierId": "SUP-TST001",
+      "currency": "ZAR",
+      "amountMinor": 450000
+    },
+    {
+      "purchaseOrderId": "PO-TST-0152",
+      "supplierId": "SUP-TST002",
+      "currency": "ZAR",
+      "amountMinor": 250000
+    },
+    {
+      "purchaseOrderId": "PO-TST-0153",
+      "supplierId": "SUP-TST003",
+      "currency": "ZAR",
+      "amountMinor": 1500000
+    },
+    {
+      "purchaseOrderId": "PO-TST-0154",
+      "supplierId": "SUP-TST004",
+      "currency": "ZAR",
+      "amountMinor": 42000
+    },
+    {
+      "purchaseOrderId": "PO-TST-0155",
+      "supplierId": "SUP-TST005",
+      "currency": "ZAR",
+      "amountMinor": 900000
+    },
+    {
+      "purchaseOrderId": "PO-TST-0156",
+      "supplierId": "SUP-TST001",
+      "currency": "ZAR",
+      "amountMinor": 123000
+    }
+  ],
+  "goodsReceipts": [
+    {
+      "purchaseOrderId": "PO-TST-0101",
+      "receivedMinor": 123450,
+      "receivedAt": "2026-09-28T09:00:00.000Z"
+    },
+    {
+      "purchaseOrderId": "PO-TST-0102",
+      "receivedMinor": 250000,
+      "receivedAt": "2026-09-28T09:00:00.000Z"
+    },
+    {
+      "purchaseOrderId": "PO-TST-0103",
+      "receivedMinor": 1875000,
+      "receivedAt": "2026-09-28T09:00:00.000Z"
+    },
+    {
+      "purchaseOrderId": "PO-TST-0104",
+      "receivedMinor": 42110,
+      "receivedAt": "2026-09-28T09:00:00.000Z"
+    },
+    {
+      "purchaseOrderId": "PO-TST-0105",
+      "receivedMinor": 999999,
+      "receivedAt": "2026-09-28T09:00:00.000Z"
+    },
+    {
+      "purchaseOrderId": "PO-TST-0106",
+      "receivedMinor": 57500,
+      "receivedAt": "2026-09-28T09:00:00.000Z"
+    },
+    {
+      "purchaseOrderId": "PO-TST-0107",
+      "receivedMinor": 330000,
+      "receivedAt": "2026-09-28T09:00:00.000Z"
+    },
+    {
+      "purchaseOrderId": "PO-TST-0108",
+      "receivedMinor": 6666,
+      "receivedAt": "2026-09-28T09:00:00.000Z"
+    },
+    {
+      "purchaseOrderId": "PO-TST-0109",
+      "receivedMinor": 1200000,
+      "receivedAt": "2026-09-28T09:00:00.000Z"
+    },
+    {
+      "purchaseOrderId": "PO-TST-0110",
+      "receivedMinor": 84525,
+      "receivedAt": "2026-09-28T09:00:00.000Z"
+    },
+    {
+      "purchaseOrderId": "PO-TST-0111",
+      "receivedMinor": 123450,
+      "receivedAt": "2026-09-28T09:00:00.000Z"
+    },
+    {
+      "purchaseOrderId": "PO-TST-0112",
+      "receivedMinor": 250000,
+      "receivedAt": "2026-09-28T09:00:00.000Z"
+    },
+    {
+      "purchaseOrderId": "PO-TST-0113",
+      "receivedMinor": 125000,
+      "receivedAt": "2026-09-28T09:00:00.000Z"
+    },
+    {
+      "purchaseOrderId": "PO-TST-0114",
+      "receivedMinor": 1875000,
+      "receivedAt": "2026-09-28T09:00:00.000Z"
+    },
+    {
+      "purchaseOrderId": "PO-TST-0115",
+      "receivedMinor": 1234567,
+      "receivedAt": "2026-09-28T09:00:00.000Z"
+    },
+    {
+      "purchaseOrderId": "PO-TST-0116",
+      "receivedMinor": 1234567,
+      "receivedAt": "2026-09-28T09:00:00.000Z"
+    },
+    {
+      "purchaseOrderId": "PO-TST-0117",
+      "receivedMinor": 123450,
+      "receivedAt": "2026-09-28T09:00:00.000Z"
+    },
+    {
+      "purchaseOrderId": "PO-TST-0118",
+      "receivedMinor": 250000,
+      "receivedAt": "2026-09-28T09:00:00.000Z"
+    },
+    {
+      "purchaseOrderId": "PO-TST-0119",
+      "receivedMinor": 1875000,
+      "receivedAt": "2026-09-28T09:00:00.000Z"
+    },
+    {
+      "purchaseOrderId": "PO-TST-0120",
+      "receivedMinor": 42110,
+      "receivedAt": "2026-09-28T09:00:00.000Z"
+    },
+    {
+      "purchaseOrderId": "PO-TST-0121",
+      "receivedMinor": 999999,
+      "receivedAt": "2026-09-28T09:00:00.000Z"
+    },
+    {
+      "purchaseOrderId": "PO-TST-0122",
+      "receivedMinor": 57500,
+      "receivedAt": "2026-09-28T09:00:00.000Z"
+    },
+    {
+      "purchaseOrderId": "PO-TST-0123",
+      "receivedMinor": 330000,
+      "receivedAt": "2026-09-28T09:00:00.000Z"
+    },
+    {
+      "purchaseOrderId": "PO-TST-0124",
+      "receivedMinor": 6666,
+      "receivedAt": "2026-09-28T09:00:00.000Z"
+    },
+    {
+      "purchaseOrderId": "PO-TST-0125",
+      "receivedMinor": 1200000,
+      "receivedAt": "2026-09-28T09:00:00.000Z"
+    },
+    {
+      "purchaseOrderId": "PO-TST-0126",
+      "receivedMinor": 84525,
+      "receivedAt": "2026-09-28T09:00:00.000Z"
+    },
+    {
+      "purchaseOrderId": "PO-TST-0127",
+      "receivedMinor": 123450,
+      "receivedAt": "2026-09-28T09:00:00.000Z"
+    },
+    {
+      "purchaseOrderId": "PO-TST-0128",
+      "receivedMinor": 250000,
+      "receivedAt": "2026-09-28T09:00:00.000Z"
+    },
+    {
+      "purchaseOrderId": "PO-TST-0129",
+      "receivedMinor": 1875000,
+      "receivedAt": "2026-09-28T09:00:00.000Z"
+    },
+    {
+      "purchaseOrderId": "PO-TST-0130",
+      "receivedMinor": 42110,
+      "receivedAt": "2026-09-28T09:00:00.000Z"
+    },
+    {
+      "purchaseOrderId": "PO-TST-0131",
+      "receivedMinor": 187500,
+      "receivedAt": "2026-09-28T09:00:00.000Z"
+    },
+    {
+      "purchaseOrderId": "PO-TST-0132",
+      "receivedMinor": 6420,
+      "receivedAt": "2026-09-28T09:00:00.000Z"
+    },
+    {
+      "purchaseOrderId": "PO-TST-0133",
+      "receivedMinor": 742075,
+      "receivedAt": "2026-09-28T09:00:00.000Z"
+    },
+    {
+      "purchaseOrderId": "PO-TST-0134",
+      "receivedMinor": 33000,
+      "receivedAt": "2026-09-28T09:00:00.000Z"
+    },
+    {
+      "purchaseOrderId": "PO-TST-0135",
+      "receivedMinor": 330000,
+      "receivedAt": "2026-09-28T09:00:00.000Z"
+    },
+    {
+      "purchaseOrderId": "PO-TST-0136",
+      "receivedMinor": 441000,
+      "receivedAt": "2026-09-28T09:00:00.000Z"
+    },
+    {
+      "purchaseOrderId": "PO-TST-0137",
+      "receivedMinor": 250000,
+      "receivedAt": "2026-09-28T09:00:00.000Z"
+    },
+    {
+      "purchaseOrderId": "PO-TST-0138",
+      "receivedMinor": 88000,
+      "receivedAt": "2026-09-28T09:00:00.000Z"
+    },
+    {
+      "purchaseOrderId": "PO-TST-0139",
+      "receivedMinor": 187500,
+      "receivedAt": "2026-09-28T09:00:00.000Z"
+    },
+    {
+      "purchaseOrderId": "PO-TST-0140",
+      "receivedMinor": 6420,
+      "receivedAt": "2026-09-28T09:00:00.000Z"
+    },
+    {
+      "purchaseOrderId": "PO-TST-0141",
+      "receivedMinor": 742075,
+      "receivedAt": "2026-09-28T09:00:00.000Z"
+    },
+    {
+      "purchaseOrderId": "PO-TST-0142",
+      "receivedMinor": 33000,
+      "receivedAt": "2026-09-28T09:00:00.000Z"
+    },
+    {
+      "purchaseOrderId": "PO-TST-0143",
+      "receivedMinor": 150000,
+      "receivedAt": "2026-09-28T09:00:00.000Z"
+    },
+    {
+      "purchaseOrderId": "PO-TST-0144",
+      "receivedMinor": 94000,
+      "receivedAt": "2026-09-28T09:00:00.000Z"
+    },
+    {
+      "purchaseOrderId": "PO-TST-0145",
+      "receivedMinor": 5555,
+      "receivedAt": "2026-09-28T09:00:00.000Z"
+    },
+    {
+      "purchaseOrderId": "PO-TST-0146",
+      "receivedMinor": 221000,
+      "receivedAt": "2026-09-28T09:00:00.000Z"
+    },
+    {
+      "purchaseOrderId": "PO-TST-0147",
+      "receivedMinor": 187500,
+      "receivedAt": "2026-09-28T09:00:00.000Z"
+    },
+    {
+      "purchaseOrderId": "PO-TST-0148",
+      "receivedMinor": 94000,
+      "receivedAt": "2026-09-28T09:00:00.000Z"
+    },
+    {
+      "purchaseOrderId": "PO-TST-0149",
+      "receivedMinor": 5555,
+      "receivedAt": "2026-09-28T09:00:00.000Z"
+    },
+    {
+      "purchaseOrderId": "PO-TST-0150",
+      "receivedMinor": 33000,
+      "receivedAt": "2026-09-28T09:00:00.000Z"
+    },
+    {
+      "purchaseOrderId": "PO-TST-0151",
+      "receivedMinor": 450000,
+      "receivedAt": "2026-09-28T09:00:00.000Z"
+    },
+    {
+      "purchaseOrderId": "PO-TST-0152",
+      "receivedMinor": 250000,
+      "receivedAt": "2026-09-28T09:00:00.000Z"
+    },
+    {
+      "purchaseOrderId": "PO-TST-0153",
+      "receivedMinor": 1500000,
+      "receivedAt": "2026-09-28T09:00:00.000Z"
+    },
+    {
+      "purchaseOrderId": "PO-TST-0154",
+      "receivedMinor": 42000,
+      "receivedAt": "2026-09-28T09:00:00.000Z"
+    },
+    {
+      "purchaseOrderId": "PO-TST-0155",
+      "receivedMinor": 900000,
+      "receivedAt": "2026-09-28T09:00:00.000Z"
+    },
+    {
+      "purchaseOrderId": "PO-TST-0156",
+      "receivedMinor": 123000,
+      "receivedAt": "2026-09-28T09:00:00.000Z"
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+# The Warden on Railway (docs/HOSTED-WARDEN.md). Build context: the repository root.
+# Nothing secret is copied into this image: the keys and state arrive through the SIGNOFF_WARDEN_BUNDLE variable on the
+# first start and then live on the volume mounted at /data.
+FROM node:24-slim
+
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+COPY apps/warden/package.json apps/warden/
+COPY apps/agent/package.json apps/agent/
+COPY apps/console/package.json apps/console/
+COPY packages/ packages/
+# Development dependencies are needed: the Warden runs its TypeScript through tsx. Install scripts are skipped (the
+# root one installs a git hook).
+RUN npm ci --ignore-scripts
+
+COPY tsconfig.base.json ./
+COPY apps/warden/ apps/warden/
+COPY deploy/warden/railway-start.mjs deploy/warden/
+
+ENV NODE_ENV=production \
+    SIGNOFF_LOCAL_DIR=/data
+EXPOSE 8080
+
+CMD ["node", "deploy/warden/railway-start.mjs"]

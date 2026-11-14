@@ -1,0 +1,41 @@
+name: Bug report
+description: Something does not work as documented.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Never paste a seed, key, password, app password or `.env` value here (rule R-12). Testnet hashes are fine.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: The command you ran and what you saw. Paste output with secrets removed.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: input
+    id: commit
+    attributes:
+      label: Commit or branch
+      placeholder: 187e796 on feat/credentials-escrow-x402
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options: [Warden, Agent, Mail watcher, Console, Ledger or Testnet, Deployment, Docs]
+    validations:
+      required: true
+  - type: dropdown
+    id: money
+    attributes:
+      label: Could this move money wrongly?
+      description: A wrong, duplicate or unauthorised payment is a security issue; report it privately as SECURITY.md describes instead.
+      options: ['No', 'Yes (stop and follow SECURITY.md)']
+    validations:
+      required: true

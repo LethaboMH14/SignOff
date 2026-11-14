@@ -27,3 +27,16 @@ id_ed25519
 Thumbs.db
 .idea/
 .vscode/
+
+# Agent runtime data: the watched inbox holds invoices, and the state folder holds the decision log. Neither is committed.
+/apps/agent/inbox/
+/apps/agent/state/
+
+# Generated fictional invoices: rebuilt by `npm run gen:invoices`; only labels.json and the
+# generator are committed (binary files are large and reproducible from the seed).
+/apps/agent/fixtures/generated/**/*.pdf
+/apps/agent/fixtures/generated/**/*.png
+/apps/agent/fixtures/generated/**/*.jpg
+
+# Local-only dataset downloads (licence-restricted; used for measurement, never committed).
+/.local-datasets/

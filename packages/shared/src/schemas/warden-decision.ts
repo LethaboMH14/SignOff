@@ -7,6 +7,7 @@ export const WardenReasonCode = z.enum([
   'PAYEE_NOT_VERIFIED',
   'PAYEE_CHANGED',
   'SUPPLIER_NOT_APPROVED',
+  'SUPPLIER_CREDENTIAL_MISSING',
   'MISSING_EVIDENCE',
   'AMOUNT_MISMATCH',
   'DUPLICATE',
@@ -17,6 +18,9 @@ export const WardenReasonCode = z.enum([
   'UNSUPPORTED_TRANSACTION',
   'SIGNER_CHANGE_NOT_APPROVED',
   'INVARIANT_FAILED',
+  'ACCOUNT_BUSY',
+  'RECEIVING_CAPACITY',
+  'OWNER_APPROVAL_UNAVAILABLE',
 ]);
 
 export type WardenReasonCode = z.infer<typeof WardenReasonCode>;
@@ -43,6 +47,8 @@ export const WardenDecision = z.discriminatedUnion('decision', [
     ...DecisionCommon,
     decision: z.literal('ALLOW'),
     reasons: z.array(WardenReason).length(0),
+    /** True when the Warden will not co-sign until the owner signs too (a high-value payment). Optional, so older answers still parse. */
+    ownerApprovalRequired: z.boolean().optional(),
   }),
   z.strictObject({
     ...DecisionCommon,

@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "suppliers": [
+    {
+      "supplierId": "SUP-TST001",
+      "legalName": "Lumen Test Supplies (Pty) Ltd",
+      "enrolledPayeeAsPrinted": "FICT-ACC-1001",
+      "status": "approved"
+    }
+  ]
+}

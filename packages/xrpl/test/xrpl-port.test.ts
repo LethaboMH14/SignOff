@@ -86,7 +86,12 @@ describe('createXrplPort against the ledger model', () => {
     );
     await port.submit(holder.sign(prepared).tx_blob);
     ledger.advance();
-    expect(await port.trustLine(holder.address, token)).toEqual({ balance: '0', limit: '500' });
+    expect(await port.trustLine(holder.address, token)).toEqual({
+      balance: '0',
+      limit: '500',
+      frozenByIssuer: false,
+      frozenByHolder: false,
+    });
   });
 
   it('follows pagination markers until the line is found', async () => {
@@ -110,6 +115,8 @@ describe('createXrplPort against the ledger model', () => {
     expect(await port.trustLine('rHolder', { currency: TOKEN, issuer: 'rIssuer' })).toEqual({
       balance: '7',
       limit: '70',
+      frozenByIssuer: false,
+      frozenByHolder: false,
     });
     expect(seen).toEqual([undefined, 'next']);
   });

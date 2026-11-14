@@ -32,7 +32,7 @@ The agent cannot sign or submit payments alone. Warden is independently deployed
 
 ## Proposed stack
 
-TypeScript on Node 24, React and Vite for the console, LangGraph.js for orchestration, Zod for schemas, Anthropic Messages API with Claude Haiku for extraction and review, and xrpl.js for ledger operations. Proposed deployment uses separate Cloud Run services and identities for the console, worker and Warden, Firestore for durable state, Firebase Auth for the operator, and Secret Manager for credentials. Confirm provider access, permissions and budget before deployment. A fixture mode is useful for development and must be labelled.
+TypeScript on Node 24, React and Vite for the console, a typed in-house state graph for orchestration (not LangGraph.js), Zod for schemas, OpenAI-compatible chat APIs for extraction and review through OpenRouter, Groq, Gemini and Meta (ADR 0006: no Anthropic or Claude models, which the code refuses), and xrpl.js for ledger operations. Proposed deployment uses separate Cloud Run services and identities for the console, worker and Warden, Firestore for durable state, Firebase Auth for the operator, and Secret Manager for credentials. Confirm provider access, permissions and budget before deployment. A fixture mode is useful for development and must be labelled.
 
 ## XRPL spike
 

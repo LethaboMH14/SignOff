@@ -1,6 +1,6 @@
 # Agent reliability: handling hallucination
 
-**Planned design. Nothing here is built or measured yet.**
+**Status (2026-11-10): built in `apps/agent` and measured only on the fictional labelled set, in simulated mode. No live model has been measured. See [TEST-LOG](logs/TEST-LOG.md) T-076 to T-088 and `apps/agent/results/simulated-eval.md`. Sections below that describe design remain design.**
 
 The design assumes the agents will sometimes hallucinate. The goal is that a hallucination can only cause a hold, never a wrong payment. **"No wrong payment reaches the ledger" is a test target to be measured, not a guarantee.**
 

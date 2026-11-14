@@ -105,6 +105,12 @@ export async function sendAndReconcile(
     const mightAlreadyExist =
       outcome.engineResult === 'tefPAST_SEQ' || outcome.engineResult === 'tefALREADY';
     if (classifySubmitResult(outcome.engineResult) === 'rejected' && !mightAlreadyExist) {
+      // A tef or tem answer is final only after one look at validated history. The same blob may have been validated
+      // by an earlier submission whose answer was lost, so a payment that landed is never recorded as rejected.
+      const settled = await settledByHistory(plan, options);
+      if (settled !== null) {
+        return await finish(plan, settled, now, journal);
+      }
       await journal.append(record(plan, 'rejected', now(), { engineResult: outcome.engineResult }));
       return { kind: 'rejected', engineResult: outcome.engineResult };
     }
@@ -114,6 +120,27 @@ export async function sendAndReconcile(
     await journal.append(record(plan, 'submitted', now(), { reason: 'no-response' }));
   }
   return reconcile(plan, options, pending);
+}
+
+/**
+ * One look at validated history for a hash the submit answer called rejected. Only a settled answer (paid, failed or
+ * held) is returned. Anything still open, or expired, returns null and the rejection stands.
+ */
+async function settledByHistory(
+  plan: SendPlan,
+  options: ReliableOptions,
+): Promise<Exclude<Decision, { kind: 'wait' }> | null> {
+  const lastValidatedLedger = await options.port.validatedLedgerIndex();
+  const lookup = await options.port.lookup(plan.hash);
+  const decision = decide({
+    expected: plan.expected,
+    lookup,
+    lastValidatedLedger,
+    lastLedgerSequence: plan.lastLedgerSequence,
+  });
+  return decision.kind === 'paid' || decision.kind === 'failed' || decision.kind === 'hold'
+    ? decision
+    : null;
 }
 
 /**

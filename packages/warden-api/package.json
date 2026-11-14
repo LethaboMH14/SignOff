@@ -1,0 +1,17 @@
+{
+  "name": "@signoff/warden-api",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The Warden's wire contract: request signing, result types and the caller client, shared by the Warden and the agent.",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=24.0.0 <25"
+  },
+  "scripts": {
+    "typecheck": "tsc --project tsconfig.json"
+  },
+  "dependencies": {
+    "xrpl": "5.3.0"
+  }
+}

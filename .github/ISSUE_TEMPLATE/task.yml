@@ -1,0 +1,23 @@
+name: Task
+description: A piece of planned work (rule R-16 - work starts from an issue).
+labels: [task]
+body:
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Outcome
+      description: What is true when this is done.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance checks
+      description: The tests or Testnet evidence that prove it (rule R-2).
+    validations:
+      required: true
+  - type: input
+    id: gate
+    attributes:
+      label: Gate or issue id
+      placeholder: B3, C5, P2

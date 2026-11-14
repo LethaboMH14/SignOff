@@ -32,6 +32,28 @@ export function desiredSignerList(agent: RegistryAccount, warden: RegistryAccoun
   };
 }
 
+/** The quorum of the high-value (treasury) account: agent, Warden and the owner must all sign. */
+export const HIGH_VALUE_SIGNER_QUORUM = 3;
+
+/**
+ * The signer list of the high-value account. A ledger signer list cannot depend on the amount, so payments
+ * above the threshold come from a separate account whose list adds the owner and needs all three signatures.
+ */
+export function highValueSignerList(
+  agent: RegistryAccount,
+  warden: RegistryAccount,
+  owner: Pick<RegistryAccount, 'address'>,
+): SignerListView {
+  return {
+    quorum: HIGH_VALUE_SIGNER_QUORUM,
+    entries: [
+      { account: agent.address, weight: AGENT_SIGNER_WEIGHT },
+      { account: warden.address, weight: WARDEN_SIGNER_WEIGHT },
+      { account: owner.address, weight: 1 },
+    ],
+  };
+}
+
 export interface SignerReport {
   readonly signerList: 'set' | 'present';
   readonly masterDisabled: boolean;

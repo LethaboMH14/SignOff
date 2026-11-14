@@ -2,6 +2,7 @@ import { Client, type SubmittableTransaction, type Wallet, xrpToDrops } from 'xr
 import { assertTestnetEndpoint, NetworkPolicyError, testnetEndpoints } from './network.js';
 import { TESTNET_NETWORK_ID } from './constants.js';
 import type { Delivered, LedgerLookup } from './reconcile.js';
+import { LSF_ACCEPTED, type CredentialTypeRef } from './credentials.js';
 import type {
   AccountSnapshot,
   LedgerPort,
@@ -54,6 +55,10 @@ interface AccountLinesResponse {
       readonly currency: string;
       readonly balance: string;
       readonly limit: string;
+      /** Set by the holder on its own line. */
+      readonly freeze?: boolean;
+      /** Set by the issuer on the holder's line. */
+      readonly freeze_peer?: boolean;
     }[];
     readonly marker?: unknown;
   };
@@ -116,6 +121,18 @@ function signerListOf(lists: readonly SignerListJson[] | undefined): SignerListV
  * Adapts an xrpl.js client to the LedgerPort the orchestration uses. Every response is read through a
  * minimal shape, so a change in the library's typings cannot silently change what is read.
  */
+/** The fields of a ledger_entry answer this port reads. */
+interface LedgerEntryResponse {
+  readonly result: {
+    readonly node?: {
+      readonly Flags?: number;
+      readonly AcceptedCredentials?: readonly {
+        readonly Credential: { readonly Issuer: string; readonly CredentialType: string };
+      }[];
+    };
+  };
+}
+
 export function createXrplPort(client: Client, endpoint: string): LedgerPort {
   async function serverInfo(): Promise<ServerInfoResponse['result']['info']> {
     const response = (await client.request({
@@ -207,11 +224,58 @@ export function createXrplPort(client: Client, endpoint: string): LedgerPort {
           (candidate) => candidate.currency === token.currency,
         );
         if (line !== undefined) {
-          return { balance: line.balance, limit: line.limit };
+          return {
+            balance: line.balance,
+            limit: line.limit,
+            frozenByIssuer: line.freeze_peer === true,
+            frozenByHolder: line.freeze === true,
+          };
         }
         marker = response.result.marker;
       } while (marker !== undefined);
       return null;
+    },
+
+    async credentialAccepted(
+      subject: string,
+      issuer: string,
+      credentialType: string,
+    ): Promise<boolean> {
+      try {
+        const response = (await client.request({
+          command: 'ledger_entry',
+          credential: { subject, issuer, credential_type: credentialType },
+          ledger_index: 'validated',
+        } as unknown as Parameters<Client['request']>[0])) as unknown as LedgerEntryResponse;
+        return ((response.result.node?.Flags ?? 0) & LSF_ACCEPTED) !== 0;
+      } catch (error) {
+        if (isRippledError(error, 'entryNotFound')) {
+          return false;
+        }
+        throw error;
+      }
+    },
+
+    async permissionedDomainAccepts(
+      owner: string,
+      sequence: number,
+    ): Promise<readonly CredentialTypeRef[] | null> {
+      try {
+        const response = (await client.request({
+          command: 'ledger_entry',
+          permissioned_domain: { account: owner, seq: sequence },
+          ledger_index: 'validated',
+        } as unknown as Parameters<Client['request']>[0])) as unknown as LedgerEntryResponse;
+        return (response.result.node?.AcceptedCredentials ?? []).map((item) => ({
+          issuer: item.Credential.Issuer,
+          credentialType: item.Credential.CredentialType,
+        }));
+      } catch (error) {
+        if (isRippledError(error, 'entryNotFound')) {
+          return null;
+        }
+        throw error;
+      }
     },
 
     async autofill(

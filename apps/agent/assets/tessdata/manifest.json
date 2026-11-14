@@ -1,0 +1,16 @@
+{
+  "notice": "Vendored Tesseract language data. Copied unchanged from the pinned npm packages, which carry the tessdata 4.0.0 best (integer) models. The OCR module checks these SHA-256 hashes before every recognition and stops with OCR_LANGUAGE_DATA_MISMATCH if one differs.",
+  "engine": { "package": "tesseract.js", "version": "7.0.0", "licence": "Apache-2.0" },
+  "files": [
+    {
+      "name": "eng.traineddata.gz",
+      "sha256": "45b4cb346724ac1774f1c36f42f182b887bcdb28ebe63e6fff90ac41f3fcff91",
+      "source": "@tesseract.js-data/eng@1.0.0 (4.0.0_best_int); licence MIT for the package, tessdata model Apache-2.0"
+    },
+    {
+      "name": "afr.traineddata.gz",
+      "sha256": "a2a9ec1631e4d1a80f89518bd60c680464d3b87afa1483178859c1af19fdc9df",
+      "source": "@tesseract.js-data/afr@1.0.0 (4.0.0_best_int); licence MIT for the package, tessdata model Apache-2.0"
+    }
+  ]
+}

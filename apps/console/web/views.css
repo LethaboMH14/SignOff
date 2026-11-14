@@ -1,0 +1,336 @@
+/*
+ * The four operator views added for the demo: the evidence path (drawn in turn, and stopped at a changed payout
+ * destination), the limit fields with their effect in words, the simulated ZAR payout label, and the fixture banner.
+ * Motion is for the path only; under reduced motion every stage is shown at its end state.
+ */
+
+/* The evidence path. Stages draw in turn; a stopped stage pulses once and then stays visible. */
+.evidence {
+  margin: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.evidence-path {
+  list-style: none;
+  margin: 0;
+  padding: 4px 0 0;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.stage {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 0 6px;
+  text-align: center;
+  animation: stage-in 420ms ease-out both;
+  animation-delay: calc(var(--i, 0) * 170ms);
+}
+
+/* The connector before each stage, drawn from the stage before it. Coloured cobalt once the stage before is done. */
+.stage + .stage::before {
+  content: '';
+  position: absolute;
+  top: 17px;
+  left: calc(-50% + 20px);
+  right: calc(50% + 20px);
+  height: 3px;
+  border-radius: 2px;
+  background: var(--track);
+  transform-origin: left center;
+  animation: connector-draw 380ms ease-out both;
+  animation-delay: calc(var(--i, 0) * 170ms - 120ms);
+}
+
+.stage-done + .stage::before {
+  background: var(--verified);
+}
+
+.stage-stopped + .stage::before {
+  background: repeating-linear-gradient(90deg, var(--exception) 0 6px, transparent 6px 10px);
+}
+
+.stage-mark {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1;
+  border: 2px solid var(--ink);
+  background: var(--card);
+  color: var(--ink);
+}
+
+.stage-done .stage-mark {
+  background: var(--verified);
+  border-color: var(--verified);
+  color: var(--verified-ink);
+}
+
+.stage-stopped .stage-mark {
+  background: var(--exception);
+  border-color: var(--ink);
+  color: var(--exception-ink);
+  animation: stop-pulse 900ms ease-out 2 both;
+  animation-delay: calc(var(--i, 0) * 170ms + 380ms);
+}
+
+.stage-not-reached .stage-mark {
+  border-style: dashed;
+  border-color: var(--ink-3);
+  color: var(--ink-3);
+  background: transparent;
+}
+
+.stage-text {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.stage-text b {
+  font-size: 14px;
+  line-height: 1.25;
+}
+
+.stage-text small {
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--ink-2);
+  overflow-wrap: anywhere;
+}
+
+.stage-words {
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.evidence-stop {
+  font-weight: 700;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--card);
+  border-left: 5px solid var(--exception);
+}
+
+/* Limits: each field says what its change does, in words and a symbol beside the amount. */
+.limits-rule {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--card);
+}
+
+.limit-field {
+  display: grid;
+  gap: 4px;
+}
+
+.limit-current {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-2);
+}
+
+.limit-effect {
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink-2);
+}
+
+.limit-lower {
+  color: var(--verified);
+}
+
+.limit-raise {
+  color: #7a4a00;
+}
+
+.limit-unknown {
+  color: var(--ink-3);
+}
+
+/* The simulated ZAR payout: always labelled, never presented as money sent. */
+.simulated-payout {
+  display: grid;
+  gap: 6px;
+  margin-top: 12px;
+  padding: 14px;
+  border-radius: 16px;
+  border: 2px dashed var(--exception);
+  background: var(--card);
+}
+
+.simulated-payout h3 {
+  margin: 0;
+  font-size: 17px;
+}
+
+.simulated-payout p {
+  margin: 0;
+}
+
+.tag-simulated {
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--exception);
+  color: var(--exception-ink);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  vertical-align: 2px;
+}
+
+/* The demo page: one column that cannot grow wider than the screen, and a row of view links that wraps. */
+.demo,
+.invoice,
+.receipt,
+.evidence {
+  min-width: 0;
+}
+
+.demo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+  max-width: 980px;
+  margin: 0 auto;
+}
+
+.invoice,
+.receipt {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.demo-views {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.demo-views a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--ink-3);
+  background: var(--card);
+  color: var(--ink);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.demo-views a[aria-current='page'] {
+  background: var(--ink);
+  color: #ffffff;
+}
+
+.demo-views a:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* A fixture banner, shown on the demo page only, so nothing in a screenshot can pass for live data. */
+.fixture-banner {
+  margin: 0 0 12px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: var(--ink);
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+/* Phones: the path runs down the screen, with each connector vertical. Nothing scrolls sideways. */
+@media (max-width: 719px) {
+  .evidence-path {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+    padding-top: 0;
+  }
+
+  .stage {
+    grid-template-columns: 36px minmax(0, 1fr);
+    justify-items: start;
+    align-items: start;
+    gap: 12px;
+    padding: 0;
+    text-align: left;
+  }
+
+  .stage + .stage::before {
+    top: -14px;
+    bottom: auto;
+    left: 16px;
+    right: auto;
+    width: 3px;
+    height: 14px;
+    transform-origin: center top;
+    animation-name: connector-draw-vertical;
+    animation-delay: calc(var(--i, 0) * 170ms - 120ms);
+  }
+
+  .stage-text {
+    padding-top: 6px;
+  }
+
+  .stage-text small {
+    font-size: 14px;
+  }
+}
+
+@keyframes stage-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes connector-draw {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes connector-draw-vertical {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes stop-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(242, 179, 61, 0.7);
+  }
+  100% {
+    box-shadow: 0 0 0 12px rgba(242, 179, 61, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stage,
+  .stage + .stage::before,
+  .stage-stopped .stage-mark {
+    animation: none;
+  }
+}

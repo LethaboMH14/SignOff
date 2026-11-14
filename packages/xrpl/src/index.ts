@@ -20,3 +20,4 @@ export * from './payments.js';
 export * from './rejections.js';
 export * from './drills.js';
 export * from './rebuild.js';
+export * from './credentials.js';

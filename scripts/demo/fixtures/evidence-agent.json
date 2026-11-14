@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "invoices": [
+    {
+      "fingerprint": "67c1fd5a623d4d0767702f602c6c2b5345050f6d86e5633fcec9fe0c89937e16",
+      "supplierId": "SUP-TST001",
+      "invoiceNumber": "INV-DEMO-0001",
+      "currency": "ZAR",
+      "amountMinor": 2000,
+      "purchaseOrderId": "PO-DEMO-0001",
+      "payeeAccountAsPrinted": "FICT-ACC-1001"
+    }
+  ],
+  "purchaseOrders": [
+    {
+      "purchaseOrderId": "PO-DEMO-0001",
+      "supplierId": "SUP-TST001",
+      "currency": "ZAR",
+      "amountMinor": 2000
+    }
+  ],
+  "goodsReceipts": [
+    {
+      "purchaseOrderId": "PO-DEMO-0001",
+      "receivedMinor": 2000,
+      "receivedAt": "2026-11-12T09:00:00.000Z"
+    }
+  ]
+}
