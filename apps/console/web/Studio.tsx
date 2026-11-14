@@ -110,7 +110,9 @@ function QueueTable({
           type="button"
           key={row.rowId}
           className="so-queue-line clickable"
-          onClick={() => { onOpen(row); }}
+          onClick={() => {
+            onOpen(row);
+          }}
         >
           <div>
             <b className="so-mono">{row.invoiceRef}</b>
@@ -183,7 +185,13 @@ function ControlCard({
         <span>Rand payout to supplier</span>
         <b>SIMULATED</b>
       </div>
-      <button type="button" className="so-btn so-btn-small" onClick={() => { go('warden'); }}>
+      <button
+        type="button"
+        className="so-btn so-btn-small"
+        onClick={() => {
+          go('warden');
+        }}
+      >
         Open the Warden engine ↗
       </button>
     </div>
@@ -216,7 +224,13 @@ function Overview({ desk, go }: { readonly desk: DeskState; readonly go: (page: 
         title="One clear decision at a time."
         lede="Your agent handles the routine. SignOff brings forward the exceptions that need a responsible person."
       >
-        <button type="button" className="so-btn" onClick={() => { go('payments'); }}>
+        <button
+          type="button"
+          className="so-btn"
+          onClick={() => {
+            go('payments');
+          }}
+        >
           View all payments →
         </button>
       </PageHeader>
@@ -270,7 +284,9 @@ function Overview({ desk, go }: { readonly desk: DeskState; readonly go: (page: 
                 <button
                   type="button"
                   className="so-btn so-btn-primary"
-                  onClick={() => { open(featured); }}
+                  onClick={() => {
+                    open(featured);
+                  }}
                 >
                   Review evidence →
                 </button>
@@ -298,7 +314,9 @@ function Overview({ desk, go }: { readonly desk: DeskState; readonly go: (page: 
             <button
               type="button"
               className="so-btn so-btn-small so-btn-plain"
-              onClick={() => { go('payments'); }}
+              onClick={() => {
+                go('payments');
+              }}
             >
               Open payment desk ↗
             </button>
@@ -314,7 +332,9 @@ function Overview({ desk, go }: { readonly desk: DeskState; readonly go: (page: 
             <button
               type="button"
               className="so-btn so-btn-small so-btn-plain"
-              onClick={() => { go('map'); }}
+              onClick={() => {
+                go('map');
+              }}
             >
               Agent map →
             </button>
@@ -375,7 +395,13 @@ function Evidence({ desk, go }: { readonly desk: DeskState; readonly go: (page: 
         title="The truth, beside the document."
         lede="Each held invoice with the rule it broke, what the Warden decided, and the safe next step. There is no approve-anyway button."
       >
-        <button type="button" className="so-btn" onClick={() => { go('payments'); }}>
+        <button
+          type="button"
+          className="so-btn"
+          onClick={() => {
+            go('payments');
+          }}
+        >
           Back to payment desk
         </button>
       </PageHeader>
@@ -395,7 +421,9 @@ function Evidence({ desk, go }: { readonly desk: DeskState; readonly go: (page: 
                 type="button"
                 key={row.rowId}
                 className={`so-run ${desk.openId === row.rowId ? 'selected' : ''}`}
-                onClick={() => { desk.openInvoice(row.rowId); }}
+                onClick={() => {
+                  desk.openInvoice(row.rowId);
+                }}
               >
                 <b className="so-mono">{row.invoiceRef}</b>
                 <small>{row.reason}</small>
@@ -887,7 +915,9 @@ export function Studio({ session, onSession, onSignOut }: StudioProps) {
                 key={id}
                 className={`so-nav-btn ${page === id ? 'active' : ''}`}
                 aria-current={page === id ? 'page' : undefined}
-                onClick={() => { go(id); }}
+                onClick={() => {
+                  go(id);
+                }}
               >
                 <span className="so-glyph" aria-hidden="true">
                   {glyph}
@@ -943,7 +973,9 @@ export function Studio({ session, onSession, onSignOut }: StudioProps) {
               type="button"
               className="so-iconbtn so-mobile-menu"
               aria-label="Open navigation"
-              onClick={() => { setMenuOpen((open) => !open); }}
+              onClick={() => {
+                setMenuOpen((open) => !open);
+              }}
             >
               ☰
             </button>
