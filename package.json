@@ -85,7 +85,7 @@
   },
   "dependencies": {
     "express": "4.22.3",
-    "nodemailer": "10.3.1",
+    "nodemailer": "10.4.0",
     "x402-xrpl": "0.3.4"
   }
 }
